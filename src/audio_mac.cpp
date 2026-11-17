@@ -2,6 +2,7 @@
 #include <AudioUnit/AudioUnit.h>
 #include <CoreAudio/CoreAudio.h>
 #include <CoreFoundation/CoreFoundation.h>
+#include <mach/mach_time.h>
 #include <algorithm>
 #include <atomic>
 #include <cmath>
@@ -40,7 +41,7 @@ std::vector<AudioDevice> enumerate_audio_devices() {
     std::vector<AudioDevice> out; for(auto d:ids())out.push_back({string_prop(d,kAudioDevicePropertyDeviceUID),string_prop(d,kAudioObjectPropertyName),channels(d,true),channels(d,false),rate(d)}); return out;
 }
 struct AudioStream::Impl {
-    struct Status {std::atomic<bool> active{false},invalidated{false};};
+    struct Status {std::atomic<bool> active{false},invalidated{false};std::atomic<std::uint64_t> last_callback{0};};
     // A notification may already be in flight when its listener is removed.
     // Its opaque token never points into Impl. The registry hands it shared
     // ownership of Status, and a late callback simply finds no registered token.
@@ -52,7 +53,7 @@ struct AudioStream::Impl {
     std::shared_ptr<Status> status=std::make_shared<Status>();
     AudioUnit unit{}; bool input{}; AudioCallback callback;
     AudioDeviceID device=kAudioObjectUnknown;std::uintptr_t listener_token=0;
-    std::array<AudioObjectPropertyAddress,3> watched{};std::size_t listener_count=0;
+    std::array<AudioObjectPropertyAddress,4> watched{};std::size_t listener_count=0;
     static OSStatus changed(AudioObjectID,UInt32,const AudioObjectPropertyAddress*,void* context) noexcept {
         std::shared_ptr<Status> state;
         {auto& r=registry();std::lock_guard lock(r.mutex);auto i=r.entries.find(reinterpret_cast<std::uintptr_t>(context));if(i!=r.entries.end())state=i->second;}
@@ -61,7 +62,7 @@ struct AudioStream::Impl {
     void watch(AudioDeviceID selected){
         device=selected;status=std::make_shared<Status>();
         {auto& r=registry();std::lock_guard lock(r.mutex);listener_token=r.next++;r.entries.emplace(listener_token,status);}
-        watched={prop(kAudioDevicePropertyDeviceIsAlive),prop(kAudioDevicePropertyNominalSampleRate),prop(kAudioDevicePropertyStreamConfiguration,input?kAudioDevicePropertyScopeInput:kAudioDevicePropertyScopeOutput)};
+        watched={prop(kAudioDevicePropertyDeviceIsAlive),prop(kAudioDevicePropertyNominalSampleRate),prop(kAudioDevicePropertyBufferFrameSize),prop(kAudioDevicePropertyStreamConfiguration,input?kAudioDevicePropertyScopeInput:kAudioDevicePropertyScopeOutput)};
         for(const auto& address:watched){check(AudioObjectAddPropertyListener(device,&address,changed,reinterpret_cast<void*>(listener_token)),"Watch audio device changes");++listener_count;}
     }
     void unwatch()noexcept{
@@ -74,11 +75,13 @@ struct AudioStream::Impl {
     void invalidate()noexcept{status->invalidated.store(true,std::memory_order_release);status->active.store(false,std::memory_order_release);}
     static void silence(AudioBufferList* output)noexcept{if(output)for(UInt32 i=0;i<output->mNumberBuffers;++i)if(output->mBuffers[i].mData)std::memset(output->mBuffers[i].mData,0,output->mBuffers[i].mDataByteSize);}
 
+    std::size_t callback_hint{};std::uint64_t stall_ticks{};
     unsigned channel_count{}; double native_rate{}, phase{}; std::size_t pending{}; bool primed{};
     static constexpr std::size_t capacity=131072;
     std::vector<float> native, stereo, converted; float previous[2]{};
     static OSStatus process(void* ref, AudioUnitRenderActionFlags* flags,const AudioTimeStamp* time,UInt32,UInt32 frames,AudioBufferList* output) noexcept {
         auto& s=*static_cast<Impl*>(ref);
+        s.status->last_callback.store(mach_absolute_time(),std::memory_order_relaxed);
         if(s.status->invalidated.load(std::memory_order_acquire)){silence(output);return kAudioUnitErr_Uninitialized;}
         if(frames>16384){s.invalidate();silence(output);return kAudioUnitErr_TooManyFramesToProcess;}
         if(s.input) {
@@ -122,8 +125,13 @@ void AudioStream::open(const std::string& uid,bool input,AudioCallback callback)
     AudioDeviceID chosen=kAudioObjectUnknown; for(auto d:ids())if(string_prop(d,kAudioDevicePropertyDeviceUID)==uid){chosen=d;break;}
     if(chosen==kAudioObjectUnknown)throw std::runtime_error("Audio device unavailable: "+uid);
     const unsigned count=channels(chosen,input);if(!count)throw std::runtime_error("Device has no channels in requested direction");
+    mach_timebase_info_data_t timebase{};mach_timebase_info(&timebase);s.stall_ticks=2000000000ULL*timebase.denom/timebase.numer;
     s.input=input;s.callback=std::move(callback);s.channel_count=std::min(count,2u);s.native_rate=rate(chosen);
     if(s.native_rate<8000||s.native_rate>192000)throw std::runtime_error("Unsupported device sample rate");
+    UInt32 quantum=0,quantum_size=sizeof(quantum);auto quantum_property=prop(kAudioDevicePropertyBufferFrameSize);
+    if(AudioObjectGetPropertyData(chosen,&quantum_property,0,nullptr,&quantum_size,&quantum)==noErr)
+        s.callback_hint=static_cast<std::size_t>(std::ceil(quantum*48000.0/s.native_rate))+2;
+    else s.callback_hint=0;
     s.native.resize(Impl::capacity*2);s.stereo.resize(Impl::capacity*2);s.converted.resize(Impl::capacity*2);
     AudioComponentDescription desc{kAudioUnitType_Output,kAudioUnitSubType_HALOutput,kAudioUnitManufacturer_Apple,0,0};
     auto component=AudioComponentFindNext(nullptr,&desc);if(!component)throw std::runtime_error("Core Audio HAL component unavailable");
@@ -144,12 +152,17 @@ void AudioStream::open(const std::string& uid,bool input,AudioCallback callback)
 void AudioStream::start(){
     auto& s=*impl_;if(!s.unit)throw std::runtime_error("Audio stream not open");
     if(s.status->invalidated.load())throw std::runtime_error("Audio device changed; reopen the stream");
-    s.status->active=true;
+    s.status->last_callback=mach_absolute_time();s.status->active=true;
     OSStatus result=AudioOutputUnitStart(s.unit);
     if(result){s.status->active=false;check(result,"Start audio stream (check microphone permission)");}
     if(s.status->invalidated.load()){AudioOutputUnitStop(s.unit);s.status->active=false;throw std::runtime_error("Audio device changed while starting");}
 }
 void AudioStream::stop()noexcept{if(impl_->unit)AudioOutputUnitStop(impl_->unit);impl_->status->active=false;}
 void AudioStream::close()noexcept{impl_->unwatch();stop();if(impl_->unit){AudioUnitUninitialize(impl_->unit);AudioComponentInstanceDispose(impl_->unit);impl_->unit=nullptr;}impl_->callback={};}
-bool AudioStream::running()const noexcept{return impl_->status->active.load()&&!impl_->status->invalidated.load();}
+std::size_t AudioStream::callback_frames_hint()const noexcept{return impl_->callback_hint;}
+bool AudioStream::running()const noexcept{
+    if(!impl_->status->active.load()||impl_->status->invalidated.load())return false;
+    const auto last=impl_->status->last_callback.load(std::memory_order_relaxed);
+    return mach_absolute_time()-last<=impl_->stall_ticks;
+}
 }

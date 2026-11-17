@@ -14,6 +14,7 @@ int main(){try{
     auto silence=[&](float* samples,std::size_t frames){std::fill_n(samples,frames*2,0.f);rendered+=frames;};
     bridge::AudioStream stream;
     stream.open(selected->id,false,silence);stream.start();
+    require(stream.callback_frames_hint()>0,"Native callback quantum unavailable");
     std::this_thread::sleep_for(std::chrono::milliseconds(150));
     require(stream.running(),"native output not running");
     require(rendered>0,"native output did not request samples");
@@ -26,9 +27,17 @@ int main(){try{
     stream.open(selected->id,false,silence);stream.start();
     bridge::AudioStream::Impl::changed(0,0,nullptr,reinterpret_cast<void*>(oldToken));
     require(stream.running(),"stale callback invalidated reopened stream");
+    // Simulate a driver that silently stops delivering callbacks without a
+    // device-change notification, while the wrapper still considers it active.
+    bridge::check(AudioOutputUnitStop(stream.impl_->unit),"Inject stopped callback clock");
+    stream.impl_->status->last_callback=mach_absolute_time()-stream.impl_->stall_ticks-1;
+    require(!stream.running(),"stalled callback clock did not invalidate running status");
+    stream.close();stream.open(selected->id,false,silence);stream.start();
+    require(stream.running(),"stalled callback recovery did not reset heartbeat");
     stream.close();require(!stream.running(),"closed stream reports running");
     auto& registry=bridge::AudioStream::Impl::registry();
     {std::lock_guard lock(registry.mutex);require(registry.entries.empty(),"listener state leaked after close");}
-    std::cout<<"Native silent playback and listener invalidation/reopen/cleanup passed\n";
+    std::cout<<"Observed callback quantum hint: "<<stream.callback_frames_hint()<<" frames at 48kHz\n";
+    std::cout<<"Native silent playback and listener invalidation/stall/reopen/cleanup passed\n";
     return 0;
 }catch(const std::exception& error){std::cerr<<error.what()<<'\n';return 1;}}

@@ -30,14 +30,15 @@ struct AudioStream::Impl {std::string id;bool input=false;AudioCallback callback
 AudioStream::AudioStream():impl_(std::make_unique<Impl>()){}
 AudioStream::~AudioStream(){close();}
 void AudioStream::open(const std::string&id,bool input,AudioCallback callback){close();if(!valid(id))throw std::runtime_error("Unknown fake audio device: "+id);bool is_input=id.ends_with("playback")||id.ends_with("-mic");if(input!=is_input)throw std::runtime_error("Wrong fake audio direction");impl_->id=id;impl_->input=input;impl_->callback=std::move(callback);}
-void AudioStream::start(){auto&v=*impl_;if(v.active)return;if(!v.callback)throw std::runtime_error("Fake stream not open");v.active=true;v.worker=std::thread([&v]{std::array<float,480> buffer{};uint64_t sample=0;size_t measured=0;double squares=0;std::array<double,4>sine{},cosine{};bool mac=v.id.starts_with("mac-");double hz=v.id.ends_with("playback")?(mac?600:400):(mac?1200:1000);auto next=std::chrono::steady_clock::now();while(v.active){
+void AudioStream::start(){auto&v=*impl_;if(v.active)return;if(!v.callback)throw std::runtime_error("Fake stream not open");v.active=true;v.worker=std::thread([&v]{std::array<float,480> buffer{};uint64_t sample=0;size_t measured=0;double squares=0;std::array<double,4>sine{},cosine{};bool mac=v.id.starts_with("mac-");double hz=v.id.ends_with("playback")?(mac?600:400):(mac?1200:1000);const char* metricsMode=std::getenv("BRIDGE_FAKE_METRICS");const bool metrics=!metricsMode||std::string(metricsMode)!="0";auto next=std::chrono::steady_clock::now();while(v.active){
  if(v.input){for(size_t n=0;n<240;++n){float x=float(.15*std::sin(2*pi*hz*double(sample+n)/48000));buffer[2*n]=buffer[2*n+1]=x;}}
  else buffer.fill(0);
  v.callback(buffer.data(),240);
- if(!v.input){for(size_t n=0;n<240;++n){double x=buffer[2*n];if(!std::isfinite(x))throw std::runtime_error("Non-finite audio output");squares+=x*x;for(size_t i=0;i<4;++i){double a=2*pi*frequencies[i]*double(sample+n)/48000;sine[i]+=x*std::sin(a);cosine[i]+=x*std::cos(a);}}measured+=240;if(measured>=4800){log_metrics(v.id,squares,sine,cosine,measured);measured=0;squares=0;sine.fill(0);cosine.fill(0);}}
+ if(!v.input&&metrics){for(size_t n=0;n<240;++n){double x=buffer[2*n];if(!std::isfinite(x))throw std::runtime_error("Non-finite audio output");squares+=x*x;for(size_t i=0;i<4;++i){double a=2*pi*frequencies[i]*double(sample+n)/48000;sine[i]+=x*std::sin(a);cosine[i]+=x*std::cos(a);}}measured+=240;if(measured>=4800){log_metrics(v.id,squares,sine,cosine,measured);measured=0;squares=0;sine.fill(0);cosine.fill(0);}}
  sample+=240;next+=std::chrono::milliseconds(5);std::this_thread::sleep_until(next);
  }});}
 void AudioStream::stop()noexcept{impl_->active=false;if(impl_->worker.joinable())impl_->worker.join();}
 void AudioStream::close()noexcept{stop();impl_->callback={};impl_->id.clear();}
+std::size_t AudioStream::callback_frames_hint()const noexcept{return 240;}
 bool AudioStream::running()const noexcept{return impl_->active;}
 }

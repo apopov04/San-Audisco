@@ -85,6 +85,10 @@ public:
         reportedRatio_.store(1,std::memory_order_relaxed);
         discontinuities.fetch_add(1,std::memory_order_relaxed);
     }
+    // Consumer only; changing latency is an explicit discontinuity.
+    void set_target_frames(std::size_t frames) noexcept {
+        target_=std::clamp(frames,std::size_t(2),CapacityFrames-2);discard();
+    }
     // Observational only. Concurrent producer/consumer sampling can be skewed;
     // clamp instead of leaking an unsigned subtraction wrap to diagnostics.
     std::size_t available() const noexcept {
@@ -95,7 +99,7 @@ public:
 private:
     static float sanitize(float f) noexcept {return std::isfinite(f)?f:0.f;}
     static void zero(float* p,std::size_t frames) noexcept {std::fill_n(p,frames*2,0.f);}
-    const std::size_t target_;
+    std::size_t target_;
     std::array<float,CapacityFrames*2> data_{};
     alignas(64) std::atomic<std::size_t> write_{0};
     alignas(64) std::atomic<std::size_t> read_{0};

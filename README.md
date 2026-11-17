@@ -2,13 +2,14 @@
 
 Experimental native Windows and macOS audio bridge. It mixes two computers into one headphone output and feeds one microphone to voice applications on both computers. The primary computer owns headphone playback; the microphone source is selected independently.
 
-This is a development build. It has automated audio-routing, real encrypted localhost network, codec, clock-drift and native macOS silent-playback tests. It has not been validated with a Windows audio device, AirPods, Discord or Deadlock. Windows binaries are cross-compiled; this is not Windows runtime validation. Hardware testing remains necessary before calling it suitable for gaming.
+This is a development build. Native Mac tests, Windows executables under Wine, and a mixed Mac/Windows process pair pass routing and encrypted-network tests. Core Audio and Wine-translated WASAPI have rendered silence successfully. Actual Windows drivers, AirPods, Discord and Deadlock remain untested. Hardware testing is required before calling it suitable for gaming; see VALIDATION.md for the exact evidence.
 
 ## Files and launch
 
-- Mac: `dist/AudioBridge.app`. Open it, select the four explicit audio devices, enter the Windows computer's numeric IPv4 address, select a shared pairing-key file, and start.
-- Windows: `dist/windows/AudioBridgeApp.exe` launches the adjacent `audiobridge.exe`. Open Setup, choose the peer address, shared key and four device routes, then start. An advanced configuration file remains optional.
-- CLI: `audiobridge devices`, `audiobridge keygen FILE`, `audiobridge run CONFIG`.
+- Mac: `dist/AudioBridge.app`. Open it, select the virtual cables and any physical audio devices this Mac will use, enter the Windows computer's numeric IPv4 address, select a shared pairing-key file, and start.
+- Windows: `dist/windows/AudioBridgeApp.exe` launches the adjacent `audiobridge.exe`. Open Setup, choose the peer address, shared key and audio routes, then start. An advanced configuration file remains optional.
+- CLI: `audiobridge devices`, `audiobridge keygen FILE`, `audiobridge key-import ID FILE`, `audiobridge key-delete ID`, `audiobridge run CONFIG`.
+- Mac builds target Apple Silicon and macOS 13 or newer; execution has only been tested on this macOS 26 host. Windows builds target x64, with Windows 10/11 as the intended hosts; genuine Windows execution remains an acceptance test.
 
 The apps are development signed on Mac and unsigned on Windows; no trusted distribution certificate or notarization has been supplied. Do not disable system security to run them. Build from source or use your normal developer approval flow.
 
@@ -27,11 +28,15 @@ The two cables must be separate:
 
 Never choose Cable B as the playback source, Cable A as the microphone destination, or a virtual microphone as the physical microphone source. Do not enable Windows “Listen to this device.” Keep the AirPods physical microphone closed if using the MacBook microphone for better playback quality.
 
+For the Windows 10 / i7-7700 / AirPods Pro 3 target, follow HARDWARE_TEST.md.
+
 The initial primary is Windows; the initial microphone source is Mac. The session begins globally muted. Once both computers connect, explicitly unmute. Primary/source changes and reconnection mute the session again. Connect AirPods through operating-system Bluetooth settings before switching primary. This build does not implement automatic Bluetooth switching.
 
 ## Pairing
 
-Generate one 32-byte random key using the Mac button or `audiobridge keygen pairing.key`. Transfer that file privately to the other computer. Select the local path on each device. This is a manual pairing-token prototype; QR discovery, Keychain/DPAPI storage, and friendly pairing verification remain future work. The secret is never written to logs or command arguments by the application. The key file must be protected on both computers.
+Generate one 32-byte random key using either app or `audiobridge keygen pairing.key`. Transfer that file privately to the other computer and select its local path on each device. On Start, each interface imports the key into protected storage: Keychain on Mac, current-user DPAPI on Windows. The saved configuration contains only `key_id=paired-peer`. Once imported on both devices, the transfer copies can be deleted; they are never deleted automatically. The secret is never written to logs or command arguments. Protect the transfer file while it exists.
+
+CLI users can run `audiobridge key-import paired-peer pairing.key` and use `key_id=paired-peer` in the configuration. Legacy `key_file=PATH` remains supported; `key_id` takes precedence. `key-delete paired-peer` forgets the local credential. Automatic discovery and QR pairing are not implemented.
 
 Both apps use UDP 45670 by default, and each is configured with the other's numeric IPv4 address. Permit the executable through the private-network firewall. Guest network client isolation can prevent connectivity. There are no cloud relays or accounts.
 
@@ -44,14 +49,14 @@ device=windows
 peer=192.168.1.20
 port=45670
 peer_port=45670
-key_file=C:\Users\you\Documents\pairing.key
+key_id=paired-peer
 playback_input=ID_OF_CABLE_A_RECORDING_ENDPOINT
 microphone_output=ID_OF_CABLE_B_PLAYBACK_ENDPOINT
 headphones_output=ID_OF_AIRPODS_PLAYBACK_ENDPOINT
 physical_microphone=ID_OF_PHYSICAL_MICROPHONE
 ```
 
-On Mac use `device=mac`, the Windows peer address and Mac device IDs/paths. The native Mac interface writes this configuration to Application Support/AudioBridge. At present all four fields must be configured even when that machine is secondary.
+On Mac use `device=mac`, the Windows peer address and Mac device IDs/paths. The native Mac interface writes this configuration to Application Support/AudioBridge. The two virtual cable fields are required. Headphones and a physical microphone can be omitted on a computer that does not own those roles. An unconfigured headphone role produces no listening output; an unconfigured microphone source captures no voice; stop the local app, configure the device, and restart to use it. Mixer controls become available once the engine starts (Mac: once connected).
 
 CLI accepts newline commands while running:
 
@@ -92,15 +97,17 @@ For sanitizers configure a separate build with `-DBRIDGE_SANITIZE=ON`. The outpu
 
 ## Architecture and implementation status
 
-C++ engine: stereo float 48kHz buses, microphone mono fold-down, independent route gates, gain ramps, peak limiter, atomic settings snapshots. The audio callbacks use preallocated queues. The worker handles networking, codec, routing and state replication. A bounded adaptive resampler corrects device clock differences. The current linear interpolation resampler is functional but needs a filtered replacement for optimal quality.
+C++ engine: stereo float 48kHz buses, microphone mono fold-down, independent route gates, gain ramps, peak limiter, atomic settings snapshots. The audio callbacks use preallocated queues. Headphone playback mixes directly in its output callback, so the local listening path crosses one queue. A separate capture queue feeds the worker, which handles networking, codec, microphone routing and state replication. A bounded adaptive resampler corrects device clock differences. The current linear interpolation resampler is functional but needs a filtered replacement for optimal quality.
 
 Native audio: macOS Core Audio HAL/AudioUnit; Windows WASAPI shared-mode event callbacks. GUI: SwiftUI on Mac and Win32 on Windows. Physical devices are explicitly selected; the app does not change system defaults.
 
 Transport: libsodium XChaCha20-Poly1305 with a pre-shared random key, fresh session epochs, recipient binding and anti-replay window. Opus stereo at 128kbps for playback and 48kbps for microphone, 5ms frames, complexity 3. Bounded jitter buffers reorder packets. Controls are periodically replicated with version/acknowledgement, with Windows as coordinator regardless of audio primary. Local-only LAN, numeric IPv4.
 
-The initial hardware buffer targets are conservative: 1536 frames (32 ms) per hardware boundary. Capture and playback together can add roughly 64 ms before virtual-driver and network buffering. Optional `buffer_frames=256..2048` in the configuration permits measured tuning; values too small for actual callback sizes can cause dropouts. Total game latency and CPU load are not measured on the target PC, and may fail the original low-latency targets. The core has real-time discipline, but this implementation is not a guarantee of lower overhead than Discord on your hardware.
+Listening buffers automatically follow the larger capture/render callback hint plus 240 frames (5 ms), bounded to 256–4096 frames. If the device cannot report its callback size, the target is 1536 frames (32 ms). Remote playback has its own queue target of at least 960 frames (20 ms), so packet jitter does not increase the local game buffer. Network transmission and microphone hardware queues retain conservative 1536-frame targets. Optional `buffer_frames=256..2048` overrides the hardware/local-listening targets for measured tuning; the remote playback minimum remains 960 frames. Targets below the actual callback size can cause dropouts. A same-buffer simulated impulse test reduced local queue delay from 59.812 ms to 29.917 ms by removing one queue; this is not a measured AirPods latency.
 
-Outstanding product work includes device discovery and secure credential storage, acknowledged controls reflected consistently in both interfaces, complete device-loss recovery, production signing, filtered resampling, end-to-end latency measurements and performance tuning. The iPhone full audio-routing role is unsupported.
+The final paired CLI, using synthetic audio callbacks on this Mac, used approximately 2.2% (Windows role) and 3.1% (Mac role) of one CPU core, with about 6.8 MiB peak resident memory per process during a 20-second steady run. This includes codec, encrypted networking and routing, but excludes native drivers, GUI, Bluetooth and games. It does not establish performance on the target i7-7700 Windows PC.
+
+Both interfaces reflect acknowledged controls. Failed audio streams retry; missing callbacks for two seconds trigger recovery, and macOS format/device changes invalidate streams for reopening. Recovery has automated fault-injection coverage but still requires physical unplug/sleep/Bluetooth testing. Remaining work includes automatic discovery, friendly pairing verification, filtered resampling, production signing, hardware latency measurements and performance tuning. The iPhone full audio-routing role is unsupported.
 
 ## Hardware acceptance checklist
 
@@ -112,4 +119,4 @@ Outstanding product work includes device discovery and secure credential storage
 6. Run for two hours; test Wi-Fi interruptions, peer restart, sleep/wake, AirPods removal and Bluetooth reconnection.
 7. Reject gaming readiness if frame-time impact or audio latency is unacceptable. Automated localhost tests cannot establish these results.
 
-No physical microphone recording or driver installation has been performed during automated tests.
+No physical microphone recording or audio-driver installation has been performed during automated tests. Wine tests use an isolated prefix; Wine is a compatibility layer, not a Windows VM.

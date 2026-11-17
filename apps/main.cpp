@@ -1,8 +1,10 @@
 #include "bridge/audio.hpp"
 #include "bridge/engine.hpp"
 #include "bridge/transport.hpp"
+#include "bridge/credentials.hpp"
 #include "bridge/adaptive_ring.hpp"
 #include "bridge/control.hpp"
+#include "bridge/listening_mixer.hpp"
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -22,10 +24,42 @@
 #else
 #include <poll.h>
 #include <unistd.h>
+#include <fcntl.h>
 #endif
 using namespace bridge;
 namespace {
 std::filesystem::path utf8_path(std::string_view value) { return std::filesystem::path(std::u8string(value.begin(),value.end())); }
+void wipe(void* memory,std::size_t size) noexcept {
+    auto* p=static_cast<volatile unsigned char*>(memory);while(size--)*p++=0;
+}
+struct SecretKey {net::Key value{};~SecretKey(){wipe(value.data(),value.size());}};
+net::Key read_key_file(const std::filesystem::path& path) {
+    std::ifstream file(path,std::ios::binary);if(!file)throw std::runtime_error("Cannot open pairing key file");
+    struct SecretText {std::array<char,129> bytes{};~SecretText(){wipe(bytes.data(),bytes.size());}} text;
+    file.read(text.bytes.data(),text.bytes.size());const auto count=static_cast<std::size_t>(file.gcount());
+    if(file.bad()||count>128)throw std::runtime_error("Pairing key file exceeds 128 bytes or cannot be read");
+    auto whitespace=[](char c){return c==' '||c=='\t'||c=='\r'||c=='\n';};
+    std::size_t begin=0,end=count;while(begin<end&&whitespace(text.bytes[begin]))++begin;while(end>begin&&whitespace(text.bytes[end-1]))--end;
+    if(end-begin!=64)throw std::runtime_error("Pairing key file must contain exactly 64 hexadecimal characters");
+    net::Key key{};
+    auto nibble=[](char c)->int {if(c>='0'&&c<='9')return c-'0';if(c>='a'&&c<='f')return c-'a'+10;if(c>='A'&&c<='F')return c-'A'+10;return -1;};
+    for(std::size_t i=0;i<32;++i){int hi=nibble(text.bytes[begin+2*i]),lo=nibble(text.bytes[begin+2*i+1]);if(hi<0||lo<0){wipe(key.data(),key.size());throw std::runtime_error("Pairing key file contains non-hexadecimal characters");}key[i]=static_cast<uint8_t>((hi<<4)|lo);}return key;
+}
+void generate_key_file(const std::filesystem::path& path) {
+    SecretKey key{net::random_key()};auto hex=net::key_to_hex(key.value);hex+='\n';
+    struct WipeText {std::string& value;~WipeText(){wipe(value.data(),value.size());}} cleanup{hex};
+#ifdef _WIN32
+    HANDLE file=CreateFileW(path.c_str(),GENERIC_WRITE,0,nullptr,CREATE_NEW,FILE_ATTRIBUTE_NORMAL,nullptr);
+    if(file==INVALID_HANDLE_VALUE)throw std::runtime_error("Cannot create key file; existing files are never overwritten");
+    DWORD written=0;const bool ok=WriteFile(file,hex.data(),static_cast<DWORD>(hex.size()),&written,nullptr)&&written==hex.size()&&FlushFileBuffers(file);CloseHandle(file);
+    if(!ok){DeleteFileW(path.c_str());throw std::runtime_error("Cannot write pairing key file");}
+#else
+    const int fd=::open(path.c_str(),O_WRONLY|O_CREAT|O_EXCL,0600);
+    if(fd<0)throw std::runtime_error("Cannot create key file; existing files are never overwritten");
+    std::size_t offset=0;bool ok=true;while(offset<hex.size()){const auto n=::write(fd,hex.data()+offset,hex.size()-offset);if(n<0&&errno==EINTR)continue;if(n<=0){ok=false;break;}offset+=static_cast<std::size_t>(n);}if(ok&&::fsync(fd)!=0)ok=false;::close(fd);
+    if(!ok){::unlink(path.c_str());throw std::runtime_error("Cannot write pairing key file");}
+#endif
+}
 std::string quote(const std::string& s) {
     std::string o="\"";const char* hex="0123456789abcdef";
     for(unsigned char c:s){if(c=='"'||c=='\\'){o+='\\';o+=char(c);}else if(c<32){o+="\\u00";o+=hex[c>>4];o+=hex[c&15];}else o+=char(c);}return o+'"';
@@ -98,38 +132,49 @@ int main(int argc,char** argv) {try {
         for(auto& d:enumerate_audio_devices())std::cout<<"{\"id\":"<<quote(d.id)<<",\"name\":"<<quote(d.name)<<",\"inputs\":"<<d.input_channels<<",\"outputs\":"<<d.output_channels<<",\"rate\":"<<d.sample_rate<<"}\n";return 0;
     }
     if(argc==3&&std::string(argv[1])=="keygen") {
-        if(std::filesystem::exists(utf8_path(argv[2])))throw std::runtime_error("Key file exists; refusing overwrite");
-        std::ofstream f(utf8_path(argv[2]));if(!f)throw std::runtime_error("Cannot create key file");
-        f<<net::key_to_hex(net::random_key())<<'\n';f.close();if(!f)throw std::runtime_error("Cannot write key file");
-        std::filesystem::permissions(utf8_path(argv[2]),std::filesystem::perms::owner_read|std::filesystem::perms::owner_write);
+        generate_key_file(utf8_path(argv[2]));
         std::cout<<"Pairing key saved. Transfer privately to other computer.\n";return 0;
     }
+    if(argc==4&&std::string(argv[1])=="key-import") {
+        credentials::validate_id(argv[2]);SecretKey key{read_key_file(utf8_path(argv[3]))};
+        credentials::store_key(argv[2],key.value);
+        std::cout<<"Pairing key imported into protected storage. The transfer file is unchanged.\n";return 0;
+    }
+    if(argc==3&&std::string(argv[1])=="key-delete") {
+        bool removed=credentials::delete_key(argv[2]);
+        std::cout<<(removed?"Pairing credential deleted.\n":"Pairing credential was not present.\n");return 0;
+    }
     if(argc!=3||std::string(argv[1])!="run") {
-        std::cout<<"AudioBridge: devices | keygen FILE | run CONFIG\nCommands on stdin: primary 0|1, mic_source 0|1, win_volume 0..1, mac_volume 0..1, win_mute 0|1, mac_mute 0|1, win_deafen 0|1, mac_deafen 0|1, mute 0|1, deafen 0|1, balance -1..1, quit\n";return 0;
+        std::cout<<"AudioBridge: devices | keygen FILE | key-import ID FILE | key-delete ID | run CONFIG\nCommands on stdin: primary 0|1, mic_source 0|1, win_volume 0..1, mac_volume 0..1, win_mute 0|1, mac_mute 0|1, win_deafen 0|1, mac_deafen 0|1, mute 0|1, deafen 0|1, balance -1..1, quit\n";return 0;
     }
     auto config=read_config(argv[2]);auto required=[&](const char* k){if(config[k].empty())throw std::runtime_error(std::string("Missing config: ")+k);return config[k];};
     if(required("device")!="windows"&&required("device")!="mac")throw std::runtime_error("device must be windows or mac");
     Device local=required("device")=="windows"?Device::Windows:Device::Mac;
     const auto playbackId=required("playback_input"),micOutputId=required("microphone_output");
-    const auto headphoneId=required("headphones_output"),physicalMicId=required("physical_microphone");
+    // A secondary computer need not have headphones or a physical microphone.
+    // Missing routes remain explicit: selecting that role cannot use a default device.
+    const auto headphoneId=config["headphones_output"],physicalMicId=config["physical_microphone"];
     if(playbackId==micOutputId)throw std::runtime_error("Playback and microphone paths must use separate virtual cables");
-    std::ifstream keyfile(utf8_path(required("key_file")));std::string key;keyfile>>key;
-    net::Config nc;nc.key=net::key_from_hex(key);nc.peer_address=required("peer");
+    SecretKey key;
+    if(config.contains("key_id")&&!config["key_id"].empty())key.value=credentials::load_key(config["key_id"]);
+    else key.value=read_key_file(utf8_path(required("key_file")));
+    net::Config nc;nc.key=key.value;nc.peer_address=required("peer");
     if(config.contains("port"))nc.bind_port=port(config["port"]);if(config.contains("peer_port"))nc.peer_port=port(config["peer_port"]);
-    net::Transport network(nc);
+    net::Transport network(nc);wipe(nc.key.data(),nc.key.size());wipe(key.value.data(),key.value.size());
     Settings settings;settings.globalMute=true;
     // 32ms target covers typical 1024-frame device callbacks plus worker phase.
     // This is deliberately conservative until each real device is benchmarked.
     const auto hardwareBufferFrames=config.contains("buffer_frames")?buffer_frames(config["buffer_frames"]):1536;
-    AdaptiveAudioRing<8192> playbackIn{hardwareBufferFrames},micIn{hardwareBufferFrames},listenOut{hardwareBufferFrames},micOut{hardwareBufferFrames};
-    AdaptiveAudioRing<8192> networkPlayback{720},networkMicrophone{720};
+    AdaptiveAudioRing<8192> playbackIn{hardwareBufferFrames},micIn{hardwareBufferFrames},micOut{hardwareBufferFrames};
+    ListeningMixer listeningMixer(local,hardwareBufferFrames);
+    AdaptiveAudioRing<8192> networkMicrophone{720};
     std::atomic<bool> microphoneBlocked{true},listeningBlocked{true};
     AudioStream playback,microphone,listen,micSink;
-    playback.open(playbackId,true,[&](float* p,size_t n){playbackIn.push(p,n);});
+    playback.open(playbackId,true,[&](float* p,size_t n){playbackIn.push(p,n);listeningMixer.pushLocal(p,n);});
     micSink.open(micOutputId,false,[&](float* p,size_t n){micOut.pop(p,n);if(microphoneBlocked.load())std::fill(p,p+n*2,0.f);});
     playback.start();micSink.start();
     Engine engine(local);net::JitterBuffer jp,jm;net::AudioDecoder decoder;
-    std::array<float,480> lp{},rp{},lm{},rm{},heard{},localMic{},remoteMic{},txp{},txm{};
+    std::array<float,480> lp{},lm{},rm{},localMic{},remoteMic{},txp{},txm{};
     std::array<int16_t,480> wire{};
     uint64_t tick=0,revision=0,remoteRevision=0,request=0,appliedRequest=0,generation=0,nextSampleTime=0,playbackDiscontinuities=0,microphoneDiscontinuities=0;
     std::map<std::string,float> pending;
@@ -150,7 +195,7 @@ int main(int argc,char** argv) {try {
         microphoneBlocked=true;settings.globalMute=true;synchronized=false;
         revision=remoteRevision=request=appliedRequest=0;pending.clear();
         jp.reset();jm.reset();decoder.reset();
-        networkPlayback.discard();networkMicrophone.discard();
+        listeningMixer.requestReset(ListeningMixer::Remote);networkMicrophone.discard();
         // Producer is this worker, so only stop the output consumer before flush.
         micSink.stop();micOut.discard();resumeMicSink();previousMicBlocked=true;previousRemoteMicEnabled=false;
     };
@@ -195,35 +240,31 @@ int main(int argc,char** argv) {try {
         const bool ready=network.ready();
         if(!ready&&wasReady)resetRemote();wasReady=ready;
         if(!playback.running()&&began>=retryPlayback){
-            try {playback.close();playbackIn.discard();playback.open(playbackId,true,[&](float* p,size_t n){playbackIn.push(p,n);});playback.start();}
+            try {playback.close();playbackIn.discard();listeningMixer.requestReset(ListeningMixer::Local);playback.open(playbackId,true,[&](float* p,size_t n){playbackIn.push(p,n);listeningMixer.pushLocal(p,n);});playback.start();}
             catch(const std::exception& e){playback.close();std::cerr<<"Playback source unavailable: "<<e.what()<<'\n';retryPlayback=began+std::chrono::seconds(1);}
         }
         resumeMicSink();
         const bool roleChanged=previous.primary!=settings.primary||previous.microphoneSource!=settings.microphoneSource;
-        const bool hearingGateChanged=previous.globalDeafen!=settings.globalDeafen||
-            previous.routes[0].deafened!=settings.routes[0].deafened||previous.routes[1].deafened!=settings.routes[1].deafened||
-            previous.routes[0].silenced!=settings.routes[0].silenced||previous.routes[1].silenced!=settings.routes[1].silenced;
         if(roleChanged) {
             microphoneBlocked=true;listeningBlocked=true;microphone.close();listen.close();micSink.stop();
-            micIn.discard();listenOut.discard();micOut.discard();jp.reset();jm.reset();decoder.reset();
-            networkPlayback.discard();networkMicrophone.discard();
+            micIn.discard();listeningMixer.requestReset();micOut.discard();jp.reset();jm.reset();decoder.reset();
+            listeningMixer.requestReset(ListeningMixer::Remote);networkMicrophone.discard();
             // Both peers require explicit unmute after a route handover.
             settings.globalMute=true;if(local==Device::Windows)++revision;
             previousMicBlocked=true;previousRemoteMicEnabled=false;resumeMicSink();retryHeadphones=retryMicrophone=began;
-        } else if(hearingGateChanged) {
-            listeningBlocked=true;const bool restart=listen.running();listen.stop();listenOut.discard();
-            if(restart){
-                try {listen.start();}
-                catch(const std::exception& e){listen.close();std::cerr<<"Headphones restart unavailable: "<<e.what()<<'\n';retryHeadphones=began+std::chrono::seconds(1);}
-            }
         }
         previous=settings;
         if(settings.primary==local&&!listen.running()&&began>=retryHeadphones) {
-            try {listen.open(headphoneId,false,[&](float* p,size_t n){listenOut.pop(p,n);if(listeningBlocked.load())std::fill(p,p+n*2,0.f);});listen.start();}
+            try {if(headphoneId.empty())throw std::runtime_error("No headphones_output configured on the selected primary device");listen.open(headphoneId,false,[&](float* p,size_t n){listeningMixer.render(p,n);if(listeningBlocked.load())std::fill(p,p+n*2,0.f);});listen.start();}
             catch(const std::exception& e){listen.close();std::cerr<<"Headphones unavailable: "<<e.what()<<'\n';retryHeadphones=began+std::chrono::seconds(1);}
         } else if(settings.primary!=local&&listen.running())listen.close();
+        if(!config.contains("buffer_frames")&&listen.running()){
+            const auto captureFrames=playback.callback_frames_hint(),renderFrames=listen.callback_frames_hint();
+            const auto target=captureFrames&&renderFrames?std::clamp(std::max(captureFrames,renderFrames)+240,std::size_t(256),std::size_t(4096)):std::size_t(1536);
+            listeningMixer.setTargetFrames(target);
+        }
         if(settings.microphoneSource==local&&!microphone.running()&&began>=retryMicrophone) {
-            try {microphone.open(physicalMicId,true,[&](float* p,size_t n){micIn.push(p,n);});microphone.start();}
+            try {if(physicalMicId.empty())throw std::runtime_error("No physical_microphone configured on the selected microphone source");microphone.open(physicalMicId,true,[&](float* p,size_t n){micIn.push(p,n);});microphone.start();}
             catch(const std::exception& e){microphone.close();std::cerr<<"Microphone unavailable: "<<e.what()<<'\n';retryMicrophone=began+std::chrono::seconds(1);}
         } else if(settings.microphoneSource!=local&&microphone.running())microphone.close();
         if(tick%20==0&&ready) {
@@ -236,30 +277,36 @@ int main(int argc,char** argv) {try {
             if(!message.empty())network.send_control(std::span(reinterpret_cast<const uint8_t*>(message.data()),message.size()));
         }
         playbackIn.pop(lp.data(),240);micIn.pop(lm.data(),240);
-        auto receive=[&](net::JitterBuffer& jitter,AdaptiveAudioRing<8192>& ring,net::Stream stream,uint64_t& seenDiscontinuities,std::array<float,480>& out){
+        auto receive=[&](net::JitterBuffer& jitter,net::Stream stream,uint64_t& seenDiscontinuities){
+            const bool isPlayback=stream==net::Stream::Playback;
             if(jitter.discontinuity_count()!=seenDiscontinuities){
-                seenDiscontinuities=jitter.discontinuity_count();ring.discard();decoder.reset(stream);
+                seenDiscontinuities=jitter.discontinuity_count();
+                if(isPlayback)listeningMixer.requestReset(ListeningMixer::Remote);else networkMicrophone.discard();
+                decoder.reset(stream);
             }
-            // Release contiguous packets at their arrival pace; the adaptive
-            // consumer follows the sender's clock without growing delay.
+            // Do not advance the media timeline into a queue the audio callback
+            // has not cleared yet; otherwise its next reset destroys fresh data.
+            if(isPlayback&&listeningMixer.remoteResetPending())return;
             auto append=[&](std::optional<net::Packet> packet){
                 std::array<int16_t,480> samples{};
                 try {samples=packet?decoder.decode(*packet):decoder.conceal(stream);}
                 catch(const std::exception&){samples=decoder.conceal(stream);}
                 std::array<float,480> decoded{};
                 for(size_t i=0;i<decoded.size();++i)decoded[i]=samples[i]/32768.f;
-                ring.push(decoded.data(),240);
+                if(isPlayback)listeningMixer.pushRemote(decoded.data(),240);else networkMicrophone.push(decoded.data(),240);
             };
             for(unsigned i=0;i<12&&jitter.has_next();++i)append(jitter.pop());
-            // Wait while buffered audio covers the missing packet. At its
-            // deadline advance the jitter clock once and conceal that gap.
-            // Match the adaptive ring's 720-frame prefill. A lower threshold
-            // deadlocks recovery at e.g.480 queued frames: pop waits for720,
-            // while PLC refuses to append and the jitter clock never advances.
-            if(jitter.primed()&&ring.available()<720)append(jitter.pop());
-            ring.pop(out.data(),240);
+            // The headphone callback consumes decoded playback on its own
+            // clock; retain its remote reserve instead of chasing local prefill.
+            const auto available=isPlayback?listeningMixer.remoteAvailable():networkMicrophone.available();
+            const auto deadlineFrames=isPlayback?listeningMixer.targetFrames():480;
+            // Only conceal a known gap (a later packet has arrived), near its
+            // playout deadline. Filling prebuffer with speculative PLC advances
+            // the expected timestamp ahead of live packets and rejects them.
+            if(jitter.primed()&&jitter.size()>0&&available<deadlineFrames)append(jitter.pop());
         };
-        receive(jp,networkPlayback,net::Stream::Playback,playbackDiscontinuities,rp);receive(jm,networkMicrophone,net::Stream::Microphone,microphoneDiscontinuities,rm);
+        receive(jp,net::Stream::Playback,playbackDiscontinuities);receive(jm,net::Stream::Microphone,microphoneDiscontinuities);
+        networkMicrophone.pop(rm.data(),240);
         Settings effective=settings;
         if(!ready||!synchronized||!micSink.running()||(settings.primary==local&&!listen.running())||(settings.microphoneSource==local&&!microphone.running()))effective.globalMute=true;
         const bool micBlocked=effective.globalMute||effective.globalDeafen||effective.routes[int(local)].micMuted||effective.routes[int(local)].deafened;
@@ -278,8 +325,9 @@ int main(int argc,char** argv) {try {
             resumeMicSink();
         }
         previousMicBlocked=micBlocked;previousRemoteMicEnabled=remoteMicEnabled;
-        engine.setSettings(effective);engine.process({lp.data(),rp.data(),lm.data(),rm.data()},{heard.data(),localMic.data(),remoteMic.data(),txp.data(),txm.data()},240);
-        if(listen.running())listenOut.push(heard.data(),240);micOut.push(localMic.data(),240);
+        engine.setSettings(effective);listeningMixer.setSettings(effective);
+        engine.process({lp.data(),nullptr,lm.data(),rm.data()},{nullptr,localMic.data(),remoteMic.data(),txp.data(),txm.data()},240);
+        micOut.push(localMic.data(),240);
         listeningBlocked=effective.globalDeafen;microphoneBlocked=micBlocked;
         auto send=[&](net::Stream stream,const std::array<float,480>& audio){
             for(size_t i=0;i<480;++i)wire[i]=static_cast<int16_t>(std::clamp(audio[i],-1.f,0.999969f)*32768.f);
@@ -294,7 +342,7 @@ int main(int argc,char** argv) {try {
             for(int i=0;i<2;++i){const auto& r=settings.routes[i];const char* prefix=i==0?"win":"mac";
                 std::cout<<",\""<<prefix<<"_mute\":"<<(r.micMuted?"true":"false")<<",\""<<prefix<<"_deafen\":"<<(r.deafened?"true":"false")
                     <<",\""<<prefix<<"_volume\":"<<r.volume<<",\""<<prefix<<"_silence\":"<<(r.silenced?"true":"false");}
-            std::cout<<",\"buffer_frames\":"<<hardwareBufferFrames<<",\"playback_ready\":"<<(playback.running()?"true":"false")<<",\"mic_sink_ready\":"<<(micSink.running()?"true":"false")
+            std::cout<<",\"buffer_frames\":"<<hardwareBufferFrames<<",\"listening_buffer_frames\":"<<listeningMixer.targetFrames()<<",\"playback_ready\":"<<(playback.running()?"true":"false")<<",\"mic_sink_ready\":"<<(micSink.running()?"true":"false")
                 <<",\"headphones_ready\":"<<(listen.running()?"true":"false")<<",\"microphone_ready\":"<<(microphone.running()?"true":"false")
                 <<",\"rejected\":"<<network.rejected_packets()<<",\"drops\":"<<playbackIn.dropped.load()<<",\"settings\":"<<quote(control::snapshot(settings))<<"}"<<std::endl;
         }

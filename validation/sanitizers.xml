@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="(empty)"
+	tests="11"
+	failures="0"
+	disabled="0"
+	skipped="0"
+	hostname=""
+	time="33"
+	timestamp="2026-11-17T19:29:27"
+	>
+	<testcase name="engine" classname="engine" time="0.140088" status="run">
+		<properties/>
+		<system-out>engine tests passed (2048 route combinations, isolation, gains, nonfinite, ring, concurrency)
+</system-out>
+	</testcase>
+	<testcase name="transport" classname="transport" time="4.63754" status="run">
+		<properties/>
+		<system-out>PASS transport: encryption, tamper, wrong key, replay, session binding, reordering, bounded loss recovery, Opus audio, UDP duplex, heartbeat, timeout and reconnect
+</system-out>
+	</testcase>
+	<testcase name="integration" classname="integration" time="0.302584" status="run">
+		<properties/>
+		<system-out>PASS actual encrypted UDP -&gt; two routing engines -&gt; isolated playback and microphone
+</system-out>
+	</testcase>
+	<testcase name="adaptive_ring" classname="adaptive_ring" time="1.25127" status="run">
+		<properties/>
+		<system-out>clock -900 ppm -&gt; ratio -899.96 ppm, fill 481
+clock -500 ppm -&gt; ratio -499.97 ppm, fill 481
+clock +0 ppm -&gt; ratio +0.00 ppm, fill 480
+clock +500 ppm -&gt; ratio +499.97 ppm, fill 479
+clock +900 ppm -&gt; ratio +899.96 ppm, fill 479
+adaptive ring tests passed
+</system-out>
+	</testcase>
+	<testcase name="runtime" classname="runtime" time="15.1615" status="run">
+		<properties/>
+		<system-out>PASS initial mixed playback and fail-closed microphone
+PASS Mac command unmutes same microphone to both applications
+PASS Windows microphone mute leaves Mac microphone audible
+PASS Mac deafen gates its playback and its microphone destination
+PASS independent volume slider attenuates Windows source
+PASS balance endpoint selects Windows audio
+PASS silence affects listening only
+PASS primary handover moves mixed playback to Mac and blocks voice
+PASS voice can resume after primary handover
+PASS microphone source handover blocks voice
+PASS Windows microphone reaches both applications
+PASS global deafen silences playback and both microphones
+PASS undeafen restores prior route state
+PASS 300ms scheduler suspension recovers remote playback and microphone within 2s
+PASS peer crash fails microphone closed
+PASS reconnect preserves mute until explicit unmute
+PASS restarted peer command and microphone route recover
+PASS actual CLI runtime: 17 scenarios, two processes, encrypted Opus transport, fake device callbacks
+</system-out>
+	</testcase>
+	<testcase name="credentials_cli" classname="credentials_cli" time="0.699453" status="run">
+		<properties/>
+		<system-out>PASS CLI key generation, overwrite protection, invalid IDs, bounded parsing, no secret output and key_id precedence
+</system-out>
+	</testcase>
+	<testcase name="optional_routes" classname="optional_routes" time="5.80484" status="run">
+		<properties/>
+		<system-out>PASS unused Windows physical microphone and Mac headphones may be omitted
+PASS selecting absent microphone stays silent with diagnostic
+PASS selecting absent headphones stays silent with diagnostic
+PASS configured source and primary recover after unavailable-role selection
+</system-out>
+	</testcase>
+	<testcase name="control" classname="control" time="0.101745" status="run">
+		<properties/>
+		<system-out>control tests passed
+</system-out>
+	</testcase>
+	<testcase name="mac_audio_lifecycle" classname="mac_audio_lifecycle" time="0.306347" status="run">
+		<properties/>
+		<system-out>Observed callback quantum hint: 514 frames at 48kHz
+Native silent playback and listener invalidation/stall/reopen/cleanup passed
+</system-out>
+	</testcase>
+	<testcase name="credentials" classname="credentials" time="0.0503049" status="run">
+		<properties/>
+		<system-out>PASS credential identifiers and versioned record validation
+</system-out>
+	</testcase>
+	<testcase name="listening_mixer" classname="listening_mixer" time="5.30251" status="run">
+		<properties/>
+		<system-out>Same1536-frame target: direct impulse delay 29.917ms; previous two-queue path 59.812ms; saved 29.896ms
+108 callback/clock combinations passed without steady-state missing samples or overflow
+listening mixer tests passed
+</system-out>
+	</testcase>
+</testsuite>

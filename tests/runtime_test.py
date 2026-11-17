@@ -145,6 +145,23 @@ def main():
             def step(peer, commands):
                 when = time.time()
                 peer.command(commands)
+                if os.environ.get('BRIDGE_RUNTIME_STRESS') == '1' and commands in (
+                        'mac_deafen 0\nwin_volume 0.25', 'deafen 0'):
+                    if os.name == 'posix' and hasattr(signal, 'SIGSTOP'):
+                        # Fixed staggered pauses exercise control propagation and receive
+                        # re-priming while output callback queues are being reset. No audio
+                        # thresholds or settling windows are relaxed in this mode.
+                        for target, duration in ((win, .06), (mac, .09), (win, .04), (mac, .03)):
+                            target.process.send_signal(signal.SIGSTOP)
+                            try:
+                                time.sleep(duration)
+                            finally:
+                                if target.process.poll() is None:
+                                    target.process.send_signal(signal.SIGCONT)
+                            time.sleep(.025)
+                        print('STRESS fixed staggered peer pauses during control transition', flush=True)
+                    else:
+                        print('SKIP scheduler stress: SIGSTOP/SIGCONT unavailable', flush=True)
                 return when
             def audio(peer, sink, after, **kw):
                 return lambda: metric_check(peer, sink, after, **kw)

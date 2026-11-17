@@ -1,0 +1,3 @@
+Same1536-frame target: direct impulse delay 29.917ms; previous two-queue path 59.812ms; saved 29.896ms
+108 callback/clock combinations passed without steady-state missing samples or overflow
+listening mixer tests passed

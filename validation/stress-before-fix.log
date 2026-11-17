@@ -1,0 +1,221 @@
+Start testing: Nov 17 19:18 CET
+----------------------------------------------------------
+1/11 Testing: engine
+1/11 Test: engine
+Command: "/Users/apopov/Documents/Codex/2026-11-17/i-ha/work/build-release13/engine_test"
+Directory: /Users/apopov/Documents/Codex/2026-11-17/i-ha/work/build-release13
+"engine" start time: Nov 17 19:18 CET
+Output:
+----------------------------------------------------------
+engine tests passed (2048 route combinations, isolation, gains, nonfinite, ring, concurrency)
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"engine" end time: Nov 17 19:18 CET
+"engine" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/11 Testing: transport
+2/11 Test: transport
+Command: "/Users/apopov/Documents/Codex/2026-11-17/i-ha/work/build-release13/transport_test"
+Directory: /Users/apopov/Documents/Codex/2026-11-17/i-ha/work/build-release13
+"transport" start time: Nov 17 19:18 CET
+Output:
+----------------------------------------------------------
+PASS transport: encryption, tamper, wrong key, replay, session binding, reordering, bounded loss recovery, Opus audio, UDP duplex, heartbeat, timeout and reconnect
+<end of output>
+Test time =   4.61 sec
+----------------------------------------------------------
+Test Passed.
+"transport" end time: Nov 17 19:18 CET
+"transport" time elapsed: 00:00:04
+----------------------------------------------------------
+
+3/11 Testing: integration
+3/11 Test: integration
+Command: "/Users/apopov/Documents/Codex/2026-11-17/i-ha/work/build-release13/integration_test"
+Directory: /Users/apopov/Documents/Codex/2026-11-17/i-ha/work/build-release13
+"integration" start time: Nov 17 19:18 CET
+Output:
+----------------------------------------------------------
+PASS actual encrypted UDP -> two routing engines -> isolated playback and microphone
+<end of output>
+Test time =   0.28 sec
+----------------------------------------------------------
+Test Passed.
+"integration" end time: Nov 17 19:18 CET
+"integration" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/11 Testing: adaptive_ring
+4/11 Test: adaptive_ring
+Command: "/Users/apopov/Documents/Codex/2026-11-17/i-ha/work/build-release13/adaptive_ring_test"
+Directory: /Users/apopov/Documents/Codex/2026-11-17/i-ha/work/build-release13
+"adaptive_ring" start time: Nov 17 19:18 CET
+Output:
+----------------------------------------------------------
+clock -900 ppm -> ratio -899.96 ppm, fill 481
+clock -500 ppm -> ratio -499.97 ppm, fill 481
+clock +0 ppm -> ratio +0.00 ppm, fill 480
+clock +500 ppm -> ratio +499.97 ppm, fill 479
+clock +900 ppm -> ratio +899.96 ppm, fill 479
+adaptive ring tests passed
+<end of output>
+Test time =   0.04 sec
+----------------------------------------------------------
+Test Passed.
+"adaptive_ring" end time: Nov 17 19:18 CET
+"adaptive_ring" time elapsed: 00:00:00
+----------------------------------------------------------
+
+5/11 Testing: runtime
+5/11 Test: runtime
+Command: "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9" "/Users/apopov/Documents/Codex/2026-11-17/i-ha/outputs/AudioBridge/tests/runtime_test.py" "/Users/apopov/Documents/Codex/2026-11-17/i-ha/work/build-release13/runtime_fake"
+Directory: /Users/apopov/Documents/Codex/2026-11-17/i-ha/work/build-release13
+"runtime" start time: Nov 17 19:18 CET
+Output:
+----------------------------------------------------------
+PASS initial mixed playback and fail-closed microphone
+PASS Mac command unmutes same microphone to both applications
+PASS Windows microphone mute leaves Mac microphone audible
+PASS Mac deafen gates its playback and its microphone destination
+DIAGNOSTIC win.conf state {'connected': True, 'synchronized': True, 'primary': 0, 'mic_source': 1, 'muted': False, 'deafen': False, 'balance': 0, 'master': 1, 'win_mute': False, 'win_deafen': False, 'win_volume': 0.25, 'win_silence': False, 'mac_mute': False, 'mac_deafen': False, 'mac_volume': 1, 'mac_silence': False, 'buffer_frames': 1536, 'listening_buffer_frames': 480, 'playback_ready': True, 'mic_sink_ready': True, 'headphones_ready': True, 'microphone_ready': False, 'rejected': 0, 'drops': 0, 'settings': 'primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 1\nwin_volume 0.25\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n', '_received': 1794939498.002235} stderr []
+{"time":1794939498.096,"sink":"win-headphones","rms":0.05625580717845096,"tones":[0.037914266469775686,0.056276094129319984,0.00017697778109990438,0.00042424287172883963]}
+{"time":1794939498.115,"sink":"win-mic-sink","rms":0.10244434402384411,"tones":[0.00022874869514180829,0.00074320081412282868,0.0032912697110798767,0.13604065584626299]}
+{"time":1794939498.198,"sink":"win-headphones","rms":0.030737543983093356,"tones":[0.037254852399503678,0.017401231218224955,0.00041275044868822869,0.00013175871620098355]}
+{"time":1794939498.2149999,"sink":"win-mic-sink","rms":0.10035863654038769,"tones":[0.00012746078232906975,0.00019862090113915182,0.00099519705828972523,0.13263336974065895]}
+{"time":1794939498.296,"sink":"win-headphones","rms":0.041142543727089885,"tones":[0.036795615196687566,0.037015933011876161,0.00057338265674150362,0.00024213049055611552]}
+{"time":1794939498.3150001,"sink":"win-mic-sink","rms":0.091144745619345047,"tones":[0.00031673497727991237,0.00044012673910142177,0.0041284589392441597,0.12134427458626831]}
+{"time":1794939498.3959999,"sink":"win-headphones","rms":0.053816847364382518,"tones":[0.037228037242290742,0.052616749545564952,0.00015633171410984388,8.5963066911032111e-05]}
+{"time":1794939498.415,"sink":"win-mic-sink","rms":0.095098720751731064,"tones":[0.00035380313919463702,0.00028713110236474058,0.0021505357260458184,0.1269166997358939]}
+DIAGNOSTIC mac.conf state {'connected': True, 'synchronized': True, 'primary': 0, 'mic_source': 1, 'muted': False, 'deafen': False, 'balance': 0, 'master': 1, 'win_mute': False, 'win_deafen': False, 'win_volume': 0.25, 'win_silence': False, 'mac_mute': False, 'mac_deafen': False, 'mac_volume': 1, 'mac_silence': False, 'buffer_frames': 1536, 'listening_buffer_frames': 1536, 'playback_ready': True, 'mic_sink_ready': True, 'headphones_ready': False, 'microphone_ready': True, 'rejected': 0, 'drops': 0, 'settings': 'primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 1\nwin_volume 0.25\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n', '_received': 1794939498.002262} stderr []
+{"time":1794939497.7119999,"sink":"mac-mic-sink","rms":0.10557264630323508,"tones":[2.8957391560207758e-05,3.5108583430603718e-05,9.22547686127183e-05,0.14926711722279176]}
+{"time":1794939497.812,"sink":"mac-mic-sink","rms":0.10566694444000536,"tones":[2.68120630035202e-05,3.2191480197454951e-05,8.2145100304381168e-05,0.14940950886071316]}
+{"time":1794939497.9119999,"sink":"mac-mic-sink","rms":0.10563950285373264,"tones":[2.1793325565118795e-05,2.6263233010230264e-05,6.7604382760655933e-05,0.14937748959516692]}
+{"time":1794939498.0120001,"sink":"mac-mic-sink","rms":0.10559269381090938,"tones":[1.9861767718745033e-05,2.3747058580786819e-05,5.946888633146564e-05,0.14931742048431942]}
+{"time":1794939498.1110001,"sink":"mac-mic-sink","rms":0.10561922626521178,"tones":[1.8800217250133407e-05,2.2410764656425351e-05,5.6211079832292091e-05,0.14935535167049904]}
+{"time":1794939498.2130001,"sink":"mac-mic-sink","rms":0.10566262133095801,"tones":[1.5943676753341917e-05,1.8960246170741694e-05,4.666262860972125e-05,0.1494217056196426]}
+{"time":1794939498.313,"sink":"mac-mic-sink","rms":0.10556523017159179,"tones":[2.6327498282255999e-05,3.1342801252196271e-05,7.7851632008799825e-05,0.14926779848568694]}
+{"time":1794939498.4130001,"sink":"mac-mic-sink","rms":0.1056623503061434,"tones":[2.6704554919786555e-05,3.1707083207372368e-05,7.8195173330346135e-05,0.14940584382772029]}
+Traceback (most recent call last):
+  File "/Users/apopov/Documents/Codex/2026-11-17/i-ha/outputs/AudioBridge/tests/runtime_test.py", line 241, in <module>
+    main()
+  File "/Users/apopov/Documents/Codex/2026-11-17/i-ha/outputs/AudioBridge/tests/runtime_test.py", line 169, in main
+    verify('independent volume slider attenuates Windows source',
+  File "/Users/apopov/Documents/Codex/2026-11-17/i-ha/outputs/AudioBridge/tests/runtime_test.py", line 142, in verify
+    wait_for(lambda: all(f() for f in conditions), label)
+  File "/Users/apopov/Documents/Codex/2026-11-17/i-ha/outputs/AudioBridge/tests/runtime_test.py", line 97, in wait_for
+    raise AssertionError(description)
+AssertionError: independent volume slider attenuates Windows source
+<end of output>
+Test time =  11.74 sec
+----------------------------------------------------------
+Test Failed.
+"runtime" end time: Nov 17 19:18 CET
+"runtime" time elapsed: 00:00:11
+----------------------------------------------------------
+
+6/11 Testing: credentials_cli
+6/11 Test: credentials_cli
+Command: "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9" "/Users/apopov/Documents/Codex/2026-11-17/i-ha/outputs/AudioBridge/tests/credentials_cli_test.py" "/Users/apopov/Documents/Codex/2026-11-17/i-ha/work/build-release13/runtime_fake"
+Directory: /Users/apopov/Documents/Codex/2026-11-17/i-ha/work/build-release13
+"credentials_cli" start time: Nov 17 19:18 CET
+Output:
+----------------------------------------------------------
+PASS CLI key generation, overwrite protection, invalid IDs, bounded parsing, no secret output and key_id precedence
+<end of output>
+Test time =   0.09 sec
+----------------------------------------------------------
+Test Passed.
+"credentials_cli" end time: Nov 17 19:18 CET
+"credentials_cli" time elapsed: 00:00:00
+----------------------------------------------------------
+
+7/11 Testing: optional_routes
+7/11 Test: optional_routes
+Command: "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9" "/Users/apopov/Documents/Codex/2026-11-17/i-ha/outputs/AudioBridge/tests/optional_routes_test.py" "/Users/apopov/Documents/Codex/2026-11-17/i-ha/work/build-release13/runtime_fake"
+Directory: /Users/apopov/Documents/Codex/2026-11-17/i-ha/work/build-release13
+"optional_routes" start time: Nov 17 19:18 CET
+Output:
+----------------------------------------------------------
+PASS unused Windows physical microphone and Mac headphones may be omitted
+PASS selecting absent microphone stays silent with diagnostic
+PASS selecting absent headphones stays silent with diagnostic
+PASS configured source and primary recover after unavailable-role selection
+<end of output>
+Test time =   5.73 sec
+----------------------------------------------------------
+Test Passed.
+"optional_routes" end time: Nov 17 19:18 CET
+"optional_routes" time elapsed: 00:00:05
+----------------------------------------------------------
+
+8/11 Testing: control
+8/11 Test: control
+Command: "/Users/apopov/Documents/Codex/2026-11-17/i-ha/work/build-release13/control_test"
+Directory: /Users/apopov/Documents/Codex/2026-11-17/i-ha/work/build-release13
+"control" start time: Nov 17 19:18 CET
+Output:
+----------------------------------------------------------
+control tests passed
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"control" end time: Nov 17 19:18 CET
+"control" time elapsed: 00:00:00
+----------------------------------------------------------
+
+9/11 Testing: mac_audio_lifecycle
+9/11 Test: mac_audio_lifecycle
+Command: "/Users/apopov/Documents/Codex/2026-11-17/i-ha/work/build-release13/mac_audio_lifecycle_test"
+Directory: /Users/apopov/Documents/Codex/2026-11-17/i-ha/work/build-release13
+"mac_audio_lifecycle" start time: Nov 17 19:18 CET
+Output:
+----------------------------------------------------------
+Observed callback quantum hint: 514 frames at 48kHz
+Native silent playback and listener invalidation/reopen/cleanup passed
+<end of output>
+Test time =   0.27 sec
+----------------------------------------------------------
+Test Passed.
+"mac_audio_lifecycle" end time: Nov 17 19:18 CET
+"mac_audio_lifecycle" time elapsed: 00:00:00
+----------------------------------------------------------
+
+10/11 Testing: credentials
+10/11 Test: credentials
+Command: "/Users/apopov/Documents/Codex/2026-11-17/i-ha/work/build-release13/credentials_test"
+Directory: /Users/apopov/Documents/Codex/2026-11-17/i-ha/work/build-release13
+"credentials" start time: Nov 17 19:18 CET
+Output:
+----------------------------------------------------------
+PASS credential identifiers and versioned record validation
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"credentials" end time: Nov 17 19:18 CET
+"credentials" time elapsed: 00:00:00
+----------------------------------------------------------
+
+11/11 Testing: listening_mixer
+11/11 Test: listening_mixer
+Command: "/Users/apopov/Documents/Codex/2026-11-17/i-ha/work/build-release13/listening_mixer_test"
+Directory: /Users/apopov/Documents/Codex/2026-11-17/i-ha/work/build-release13
+"listening_mixer" start time: Nov 17 19:18 CET
+Output:
+----------------------------------------------------------
+Same1536-frame target: direct impulse delay 29.917ms; previous two-queue path 59.812ms; saved 29.896ms
+108 callback/clock combinations passed without steady-state missing samples or overflow
+listening mixer tests passed
+<end of output>
+Test time =   0.15 sec
+----------------------------------------------------------
+Test Passed.
+"listening_mixer" end time: Nov 17 19:18 CET
+"listening_mixer" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Nov 17 19:18 CET

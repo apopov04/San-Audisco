@@ -26,6 +26,8 @@ public:
     void stop() noexcept;
     void close() noexcept;
     bool running() const noexcept;
+    // Estimated maximum callback quantum in 48kHz frames; 0 when unknown.
+    std::size_t callback_frames_hint() const noexcept;
 private:
     struct Impl;
     std::unique_ptr<Impl> impl_;

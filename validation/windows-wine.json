@@ -1,0 +1,127 @@
+{
+  "environment": "macOS arm64, Wine 11.0 x64 via existing Rosetta; not native Windows",
+  "wine_asset": "https://github.com/Gcenx/macOS_Wine_builds/releases/download/11.0_1/wine-stable-11.0_1-osx64.tar.xz",
+  "wine_sha256": "b50dc50ec7f41d58b115a6b685d4d1315ba3c797bd3aa0f49213f2703cb82388",
+  "unit_tests": [
+    {
+      "name": "engine",
+      "exit_code": 0,
+      "stdout": "engine tests passed (2048 route combinations, isolation, gains, nonfinite, ring, concurrency)",
+      "stderr": ""
+    },
+    {
+      "name": "control",
+      "exit_code": 0,
+      "stdout": "control tests passed",
+      "stderr": ""
+    },
+    {
+      "name": "adaptive_ring",
+      "exit_code": 0,
+      "stdout": "clock -900 ppm -> ratio -899.96 ppm, fill 481\nclock -500 ppm -> ratio -499.97 ppm, fill 481\nclock +0 ppm -> ratio +0.00 ppm, fill 480\nclock +500 ppm -> ratio +499.97 ppm, fill 479\nclock +900 ppm -> ratio +899.96 ppm, fill 479\nadaptive ring tests passed",
+      "stderr": ""
+    },
+    {
+      "name": "transport",
+      "exit_code": 0,
+      "stdout": "PASS transport: encryption, tamper, wrong key, replay, session binding, reordering, bounded loss recovery, Opus audio, UDP duplex, heartbeat, timeout and reconnect",
+      "stderr": ""
+    },
+    {
+      "name": "integration",
+      "exit_code": 0,
+      "stdout": "PASS actual encrypted UDP -> two routing engines -> isolated playback and microphone",
+      "stderr": ""
+    }
+  ],
+  "windows_runtime": {
+    "exit_code": 0,
+    "scenarios": 16,
+    "skipped": "POSIX SIGSTOP/SIGCONT scheduler suspension",
+    "test_backend": "deterministic fake audio devices; real Windows executable, control, networking and Opus"
+  },
+  "wasapi_silent_render": {
+    "exit_code": 0,
+    "frames": 24064,
+    "duration_ms": 500,
+    "physical_backend": "Wine WASAPI translation into Mac CoreAudio; not Windows driver validation"
+  },
+  "credentials_dpapi_roundtrip": {
+    "exit_code": 0,
+    "scope": "isolated Wine prefix temporary credential; removed"
+  },
+  "mixed_platform_runtime": {
+    "exit_code": 0,
+    "scenarios": 13,
+    "peers": [
+      "native macOS arm64",
+      "Windows x64 PE under Wine"
+    ],
+    "hardware": "fake audio devices"
+  },
+  "native_win32_gui": {
+    "exit_code": 0,
+    "checks": [
+      "window launch",
+      "43 controls",
+      "four direction-filtered dropdowns populated by real WASAPI device enumeration",
+      "clean shutdown"
+    ],
+    "bug_fixed": "capture_cli final stdout drain race"
+  },
+  "gui_pairing": {
+    "exit_code": 0,
+    "checks": [
+      "Unicode key import",
+      "DPAPI saved credential",
+      "matching port45670",
+      "restart with plaintext key file removed"
+    ],
+    "hardware": "fake audio devices"
+  },
+  "binaries": {
+    "audiobridge.exe": {
+      "sha256": "e92ad5649510e37cb97d7629424d2a0d168084dda447fe7d4f9ca8f2f3cd39f3",
+      "bytes": 3998208
+    },
+    "AudioBridgeApp.exe": {
+      "sha256": "04d444e450f64a4013fa6aa80c234ee09b09eacbc44e5f74ec9f372823e6ddbc",
+      "bytes": 1602048
+    }
+  },
+  "optional_microphone_gui": {
+    "exit_code": 0,
+    "checks": [
+      "missing local Windows microphone accepted",
+      "explicit unused-device choice",
+      "mixer disabled before start and after stop",
+      "mixer enabled while running",
+      "protected pairing restart"
+    ]
+  },
+  "wasapi_recovery": {
+    "exit_code": 0,
+    "checks": [
+      "initial real silent output",
+      "injected event timeout sets running false",
+      "successful reopen",
+      "normal stop event"
+    ],
+    "environment": "Wine WASAPI to macOS CoreAudio; no real Windows device removal performed"
+  },
+  "final_revalidation": {
+    "recorded_utc": "2026-11-17T18:29:55.872839+00:00",
+    "windows_runtime_scenarios": 16,
+    "mixed_platform_runtime_scenarios": 13,
+    "native_mixed_peer": "work/build-release13/runtime_fake",
+    "gui_omitted_microphone": "passed",
+    "wasapi_event_timeout_recovery": "passed",
+    "production_sources_frozen": true,
+    "logs": [
+      "runtime-windows-python-final.log",
+      "mixed-final.log",
+      "gui-pairing-no-mic-final.log",
+      "wasapi-recovery-final.log"
+    ]
+  }
+}

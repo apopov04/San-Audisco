@@ -2,6 +2,10 @@
 # POSIX native/cross dependency build. Usage: bootstrap-deps.sh PREFIX [BUILD_DIR]
 # Cross builds: CC=... AR=... RANLIB=... HOST=x86_64-w64-mingw32 ./bootstrap-deps.sh ...
 set -eu
+if [ "$(uname -s)" = Darwin ] && [ -z "${HOST:-}" ]; then
+ MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET:-13.0}
+ export MACOSX_DEPLOYMENT_TARGET
+fi
 prefix=${1:?Pass an absolute install prefix}
 case "$prefix" in /*) ;; *) echo 'Install prefix must be absolute' >&2; exit 2;; esac
 build=${2:-"$prefix/../dependency-build"}

@@ -37,7 +37,7 @@ std::vector<AudioDevice> enumerate_audio_devices(){
     }return result;
 }
 struct AudioStream::Impl {
-    std::string device;bool input{};AudioCallback callback;std::atomic<bool> active{false};HANDLE stop_event{};std::thread worker;
+    std::atomic<std::size_t> callback_hint{0};std::string device;bool input{};AudioCallback callback;std::atomic<bool> active{false};HANDLE stop_event{};std::thread worker;
     void run(std::promise<void> ready)noexcept{
         bool signaled=false;
         try{
@@ -49,6 +49,7 @@ struct AudioStream::Impl {
             struct Event{HANDLE value=CreateEventW(nullptr,FALSE,FALSE,nullptr);~Event(){if(value)CloseHandle(value);}} audio_event;
             if(!audio_event.value)throw std::runtime_error("Create audio event failed");check(client->SetEventHandle(audio_event.value),"Set audio event");
             UINT32 buffer_frames=0;check(client->GetBufferSize(&buffer_frames),"Get audio buffer size");
+            callback_hint=buffer_frames;
             std::vector<float> samples(static_cast<std::size_t>(buffer_frames)*2);
             Com<IAudioCaptureClient> capture;Com<IAudioRenderClient> render;
             if(input)check(client->GetService(__uuidof(IAudioCaptureClient),reinterpret_cast<void**>(capture.out())),"Get capture service");
@@ -60,7 +61,7 @@ struct AudioStream::Impl {
             HANDLE events[]{stop_event,audio_event.value};
             for(;;){
                 DWORD wake=WaitForMultipleObjects(2,events,FALSE,2000);if(wake==WAIT_OBJECT_0)break;
-                if(wake==WAIT_TIMEOUT)continue;if(wake!=WAIT_OBJECT_0+1)throw std::runtime_error("Audio event wait failed");
+                if(wake==WAIT_TIMEOUT)throw std::runtime_error("Audio device stopped signaling for two seconds; reopen required");if(wake!=WAIT_OBJECT_0+1)throw std::runtime_error("Audio event wait failed");
                 if(input){
                     UINT32 packet=0;check(capture->GetNextPacketSize(&packet),"Query capture packet");
                     while(packet){
@@ -84,5 +85,6 @@ void AudioStream::open(const std::string& id,bool input,AudioCallback cb){close(
 void AudioStream::start(){auto& s=*impl_;if(!s.callback)throw std::runtime_error("Audio stream not open");if(s.worker.joinable())throw std::runtime_error("Audio stream already started");s.stop_event=CreateEventW(nullptr,TRUE,FALSE,nullptr);if(!s.stop_event)throw std::runtime_error("Create audio stop event failed");std::promise<void> p;auto f=p.get_future();s.worker=std::thread([&s,p=std::move(p)]()mutable{s.run(std::move(p));});try{f.get();}catch(...){stop();throw;}}
 void AudioStream::stop()noexcept{auto& s=*impl_;if(s.stop_event)SetEvent(s.stop_event);if(s.worker.joinable())s.worker.join();if(s.stop_event){CloseHandle(s.stop_event);s.stop_event=nullptr;}s.active=false;}
 void AudioStream::close()noexcept{stop();impl_->callback={};impl_->device.clear();}
+std::size_t AudioStream::callback_frames_hint()const noexcept{return impl_->callback_hint.load();}
 bool AudioStream::running()const noexcept{return impl_->active.load();}
 }
