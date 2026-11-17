@@ -1,0 +1,3 @@
+Virtual capture: BlackHole 2ch; virtual render: BlackHole 2ch
+frames=97792 left400=0.0496437 left600=3.76237e-05 right400=3.0761e-05 right600=0.0397225
+PASS virtual stereo loopback through production audio backend; synthetic tones only

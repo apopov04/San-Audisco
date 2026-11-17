@@ -1,0 +1,90 @@
+
+Id                      DisplayName                                                  BaseUtcOffset
+--                      -----------                                                  -------------
+W. Europe Standard Time (UTC+01:00) Amsterdam, Berlin, Bern, Rome, Stockholm, Vienna 01:00:00
+                                                                                     
+    Description            : Killer Wireless-n/a/ac 1535 Wireless Network Adapter
+    State                  : connected
+    Radio type             : 802.11ac
+    Channel                : 100
+    Receive rate (Mbps)    : 866.7
+    Transmit rate (Mbps)   : 866.7
+    Signal                 : 58% 
+Filter local start: 2026-11-17 19:57:00 +01:00
+Filter local end: 2026-11-17 20:00:00 +01:00
+                                                                                     
+
+
+TimeUTC                Id LevelDisplayName TaskDisplayName OpcodeDisplayName
+-------                -- ---------------- --------------- -----------------
+2026-11-17 18:58:50  8001 Information      AcmConnection   Success
+2026-11-17 18:58:50 11005 Information      MsmSecurity     Success
+2026-11-17 18:58:50 11010 Information      MsmSecurity     Start
+2026-11-17 18:58:50 11001 Information      MsmAssociation  Success
+2026-11-17 18:58:50 11000 Information      MsmAssociation  Start
+2026-11-17 18:58:50  8000 Information      AcmConnection   Start
+2026-11-17 18:58:47  8003 Information      AcmConnection   Disconnect
+2026-11-17 18:58:37 11004 Information      MsmSecurity     Stop
+2026-11-17 18:58:18 11005 Information      MsmSecurity     Success
+2026-11-17 18:58:18 11010 Information      MsmSecurity     Start
+2026-11-17 18:58:17 11004 Information      MsmSecurity     Stop
+
+WLAN events in window: 11
+
+
+UTC     : 2026-11-17 18:58:17.130
+Id      : 11004
+Details : 
+
+UTC     : 2026-11-17 18:58:18.938
+Id      : 11010
+Details : 
+
+UTC     : 2026-11-17 18:58:18.968
+Id      : 11005
+Details : 
+
+UTC     : 2026-11-17 18:58:37.606
+Id      : 11004
+Details : 
+
+UTC     : 2026-11-17 18:58:47.610
+Id      : 8003
+Details : ConnectionMode=Automatic connection with a profile; Reason=The network is disconnected by the driver.; 
+          ReasonCode=0
+
+UTC     : 2026-11-17 18:58:50.723
+Id      : 8000
+Details : ConnectionMode=Automatic connection with a profile
+
+UTC     : 2026-11-17 18:58:50.756
+Id      : 11000
+Details : 
+
+UTC     : 2026-11-17 18:58:50.804
+Id      : 11001
+Details : 
+
+UTC     : 2026-11-17 18:58:50.804
+Id      : 11010
+Details : 
+
+UTC     : 2026-11-17 18:58:50.861
+Id      : 11005
+Details : 
+
+UTC     : 2026-11-17 18:58:50.866
+Id      : 8001
+Details : ConnectionMode=Automatic connection with a profile; PHYType=802.11ac; AuthenticationAlgorithm=WPA2-Personal
+
+
+InterfaceDescription : Killer Wireless-n/a/ac 1535 Wireless Network Adapter
+Status               : Up
+LinkSpeed            : 866.7 Mbps
+
+
+IsEnabled     : True
+RecordCount   : 1346
+LastWriteTime : 11/17/2026 7:59:18 PM
+
+2026-11-17 18:58:19.494

@@ -1,0 +1,4 @@
+PASS unused Windows physical microphone and Mac headphones may be omitted
+PASS selecting absent microphone stays silent with diagnostic
+PASS selecting absent headphones stays silent with diagnostic
+PASS configured source and primary recover after unavailable-role selection

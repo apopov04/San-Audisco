@@ -1,0 +1,2349 @@
+{
+  "role": "windows",
+  "scope": "Cross-host diagnostic-copy CLI/codec/crypto/control with synthetic audio backend and metadata-only transport tracing; excludes physical devices, drivers, Bluetooth and game",
+  "started_at": 1794942351.7756503,
+  "ended_at": 1794942434.0324671,
+  "results": [
+    {
+      "phase": "initial_mixed_playback_and_muted_voice",
+      "passed": true,
+      "observed_at": 1794942352.8219604,
+      "completed_at": 1794942356.8398623,
+      "checks": 41,
+      "peer_ack": 0.99,
+      "failures": [],
+      "last_state": {
+        "connected": true,
+        "synchronized": true,
+        "primary": 0,
+        "mic_source": 1,
+        "muted": true,
+        "deafen": false,
+        "balance": 0,
+        "master": 0.99,
+        "win_mute": false,
+        "win_deafen": false,
+        "win_volume": 1,
+        "win_silence": false,
+        "mac_mute": false,
+        "mac_deafen": false,
+        "mac_volume": 1,
+        "mac_silence": false,
+        "buffer_frames": 1536,
+        "listening_buffer_frames": 480,
+        "playback_ready": true,
+        "mic_sink_ready": true,
+        "headphones_ready": true,
+        "microphone_ready": false,
+        "rejected": 0,
+        "drops": 0,
+        "settings": "primary 0\nmic_source 1\nmute 1\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+        "_received": 1794942356.796682
+      }
+    },
+    {
+      "phase": "mac_microphone_to_both",
+      "passed": false,
+      "observed_at": 1794942357.8073006,
+      "completed_at": 1794942361.8305724,
+      "checks": 34,
+      "peer_ack": 0.99,
+      "failures": [
+        {
+          "at": 1794942358.6154053,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942359.357355,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942359.40936,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942359.4745548,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942359.5270655,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942359.5796206,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942359.6318846,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942359.684223,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942359.736465,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942359.789788,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942359.8422785,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942359.8947241,
+          "reason": "audio_threshold"
+        }
+      ],
+      "last_state": {
+        "connected": true,
+        "synchronized": true,
+        "primary": 0,
+        "mic_source": 1,
+        "muted": false,
+        "deafen": false,
+        "balance": 0,
+        "master": 0.99,
+        "win_mute": false,
+        "win_deafen": false,
+        "win_volume": 1,
+        "win_silence": false,
+        "mac_mute": false,
+        "mac_deafen": false,
+        "mac_volume": 1,
+        "mac_silence": false,
+        "buffer_frames": 1536,
+        "listening_buffer_frames": 480,
+        "playback_ready": true,
+        "mic_sink_ready": true,
+        "headphones_ready": true,
+        "microphone_ready": false,
+        "rejected": 0,
+        "drops": 0,
+        "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+        "_received": 1794942361.8021646
+      }
+    },
+    {
+      "phase": "windows_route_mute",
+      "passed": false,
+      "observed_at": 1794942362.8193157,
+      "completed_at": 1794942366.82619,
+      "checks": 40,
+      "peer_ack": 0.99,
+      "failures": [
+        {
+          "at": 1794942363.6303432,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942363.6845496,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942363.7409306,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942363.7951403,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942363.8493016,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942363.903085,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942364.7312331,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942364.7844543,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942364.8379984,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942364.8907177,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942364.9440942,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942364.998643,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942365.0529554,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942365.1070662,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942365.160815,
+          "reason": "audio_threshold"
+        }
+      ],
+      "last_state": {
+        "connected": true,
+        "synchronized": true,
+        "primary": 0,
+        "mic_source": 1,
+        "muted": false,
+        "deafen": false,
+        "balance": 0,
+        "master": 0.99,
+        "win_mute": true,
+        "win_deafen": false,
+        "win_volume": 1,
+        "win_silence": false,
+        "mac_mute": false,
+        "mac_deafen": false,
+        "mac_volume": 1,
+        "mac_silence": false,
+        "buffer_frames": 1536,
+        "listening_buffer_frames": 480,
+        "playback_ready": true,
+        "mic_sink_ready": true,
+        "headphones_ready": true,
+        "microphone_ready": false,
+        "rejected": 0,
+        "drops": 0,
+        "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 1\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+        "_received": 1794942366.808227
+      }
+    },
+    {
+      "phase": "mac_route_mute",
+      "passed": false,
+      "observed_at": 1794942367.818106,
+      "completed_at": 1794942371.8592236,
+      "checks": 40,
+      "peer_ack": 0.99,
+      "failures": [
+        {
+          "at": 1794942368.685041,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942368.7386522,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942368.7921867,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942368.8457549,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942368.9120162,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942368.9778826,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942369.032081,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942369.3709753,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942369.4259136,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942369.4820938,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942369.5423882,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942369.6512184,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942369.7059052,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942369.7611768,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942369.8178236,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942369.8714662,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942369.9255075,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942369.9793332,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942370.0339794,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942370.0875196,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942370.142498,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942371.2449412,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 1,
+            "win_silence": false,
+            "mac_mute": true,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": false,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 1\nmac_deafen 0\nmac_silence 0\n",
+            "_received": 1794942370.803494
+          }
+        },
+        {
+          "at": 1794942371.2992742,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 1,
+            "win_silence": false,
+            "mac_mute": true,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": false,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 1\nmac_deafen 0\nmac_silence 0\n",
+            "_received": 1794942370.803494
+          }
+        },
+        {
+          "at": 1794942371.353939,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 1,
+            "win_silence": false,
+            "mac_mute": true,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": false,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 1\nmac_deafen 0\nmac_silence 0\n",
+            "_received": 1794942370.803494
+          }
+        }
+      ],
+      "last_state": {
+        "connected": true,
+        "synchronized": true,
+        "primary": 0,
+        "mic_source": 1,
+        "muted": false,
+        "deafen": false,
+        "balance": 0,
+        "master": 0.99,
+        "win_mute": false,
+        "win_deafen": false,
+        "win_volume": 1,
+        "win_silence": false,
+        "mac_mute": true,
+        "mac_deafen": false,
+        "mac_volume": 1,
+        "mac_silence": false,
+        "buffer_frames": 1536,
+        "listening_buffer_frames": 480,
+        "playback_ready": true,
+        "mic_sink_ready": true,
+        "headphones_ready": true,
+        "microphone_ready": false,
+        "rejected": 0,
+        "drops": 0,
+        "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 1\nmac_deafen 0\nmac_silence 0\n",
+        "_received": 1794942371.7967474
+      }
+    },
+    {
+      "phase": "mac_route_deafen",
+      "passed": false,
+      "observed_at": 1794942372.8235633,
+      "completed_at": 1794942376.8548625,
+      "checks": 39,
+      "peer_ack": 0.99,
+      "failures": [
+        {
+          "at": 1794942373.6339834,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942373.8009524,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942373.8769577,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942373.9339142,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942373.9905832,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942374.0466623,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942374.11154,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942374.1693676,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942374.2240272,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942374.278283,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942374.3336694,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942375.0788918,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942375.1367776,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942375.1914012,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942375.2469933,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942375.5958405,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942375.6515145,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942375.7067316,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942375.7725277,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942375.8285367,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942375.885103,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 1,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": true,
+            "mac_volume": 1,
+            "mac_silence": false,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 1\nmac_silence 0\n",
+            "_received": 1794942375.801482
+          }
+        },
+        {
+          "at": 1794942375.9403493,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 1,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": true,
+            "mac_volume": 1,
+            "mac_silence": false,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 1\nmac_silence 0\n",
+            "_received": 1794942375.801482
+          }
+        }
+      ],
+      "last_state": {
+        "connected": true,
+        "synchronized": true,
+        "primary": 0,
+        "mic_source": 1,
+        "muted": false,
+        "deafen": false,
+        "balance": 0,
+        "master": 0.99,
+        "win_mute": false,
+        "win_deafen": false,
+        "win_volume": 1,
+        "win_silence": false,
+        "mac_mute": false,
+        "mac_deafen": true,
+        "mac_volume": 1,
+        "mac_silence": false,
+        "buffer_frames": 1536,
+        "listening_buffer_frames": 480,
+        "playback_ready": true,
+        "mic_sink_ready": true,
+        "headphones_ready": true,
+        "microphone_ready": false,
+        "rejected": 0,
+        "drops": 0,
+        "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 1\nmac_silence 0\n",
+        "_received": 1794942376.8071477
+      }
+    },
+    {
+      "phase": "windows_route_deafen",
+      "passed": true,
+      "observed_at": 1794942377.8204503,
+      "completed_at": 1794942381.8300903,
+      "checks": 37,
+      "peer_ack": 0.99,
+      "failures": [],
+      "last_state": {
+        "connected": true,
+        "synchronized": true,
+        "primary": 0,
+        "mic_source": 1,
+        "muted": false,
+        "deafen": false,
+        "balance": 0,
+        "master": 0.99,
+        "win_mute": false,
+        "win_deafen": true,
+        "win_volume": 1,
+        "win_silence": false,
+        "mac_mute": false,
+        "mac_deafen": false,
+        "mac_volume": 1,
+        "mac_silence": false,
+        "buffer_frames": 1536,
+        "listening_buffer_frames": 480,
+        "playback_ready": true,
+        "mic_sink_ready": true,
+        "headphones_ready": true,
+        "microphone_ready": false,
+        "rejected": 0,
+        "drops": 0,
+        "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 1\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+        "_received": 1794942381.8085918
+      }
+    },
+    {
+      "phase": "windows_volume_quarter",
+      "passed": false,
+      "observed_at": 1794942382.8385828,
+      "completed_at": 1794942386.8567107,
+      "checks": 36,
+      "peer_ack": 0.99,
+      "failures": [
+        {
+          "at": 1794942384.2888749,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942384.3463242,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942384.407202,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942384.4726744,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942384.5287743,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942384.601651,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942384.6607428,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942384.7266786,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942384.7838788,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942384.840796,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942384.898417,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942384.966859,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942385.025665,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942385.0823407,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942385.1402154,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942385.7506824,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942385.8169403,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942385.8947775,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 0.25,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": false,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 0.25\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+            "_received": 1794942385.8341148
+          }
+        },
+        {
+          "at": 1794942385.9530308,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 0.25,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": false,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 0.25\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+            "_received": 1794942385.8341148
+          }
+        },
+        {
+          "at": 1794942386.0167708,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 0.25,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": false,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 0.25\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+            "_received": 1794942385.8341148
+          }
+        },
+        {
+          "at": 1794942386.0789542,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 0.25,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": false,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 0.25\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+            "_received": 1794942385.8341148
+          }
+        },
+        {
+          "at": 1794942386.138327,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 0.25,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": false,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 0.25\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+            "_received": 1794942385.8341148
+          }
+        },
+        {
+          "at": 1794942386.1956487,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 0.25,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": false,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 0.25\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+            "_received": 1794942385.8341148
+          }
+        },
+        {
+          "at": 1794942386.2543807,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 0.25,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": false,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 0.25\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+            "_received": 1794942385.8341148
+          }
+        },
+        {
+          "at": 1794942386.3128653,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 0.25,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": false,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 0.25\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+            "_received": 1794942385.8341148
+          }
+        },
+        {
+          "at": 1794942386.3832886,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 0.25,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": false,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 0.25\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+            "_received": 1794942385.8341148
+          }
+        },
+        {
+          "at": 1794942386.4417412,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 0.25,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": false,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 0.25\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+            "_received": 1794942385.8341148
+          }
+        },
+        {
+          "at": 1794942386.5071366,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 0.25,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": false,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 0.25\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+            "_received": 1794942385.8341148
+          }
+        }
+      ],
+      "last_state": {
+        "connected": true,
+        "synchronized": true,
+        "primary": 0,
+        "mic_source": 1,
+        "muted": false,
+        "deafen": false,
+        "balance": 0,
+        "master": 0.99,
+        "win_mute": false,
+        "win_deafen": false,
+        "win_volume": 0.25,
+        "win_silence": false,
+        "mac_mute": false,
+        "mac_deafen": false,
+        "mac_volume": 1,
+        "mac_silence": false,
+        "buffer_frames": 1536,
+        "listening_buffer_frames": 480,
+        "playback_ready": true,
+        "mic_sink_ready": true,
+        "headphones_ready": true,
+        "microphone_ready": false,
+        "rejected": 0,
+        "drops": 0,
+        "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 0.25\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+        "_received": 1794942386.8236895
+      }
+    },
+    {
+      "phase": "balance_windows_only",
+      "passed": false,
+      "observed_at": 1794942387.8480573,
+      "completed_at": 1794942391.910039,
+      "checks": 37,
+      "peer_ack": 0.99,
+      "failures": [
+        {
+          "at": 1794942388.8976562,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942388.9571025,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942389.0183983,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942389.075762,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942389.1348305,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942389.1929533,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942389.25475,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942389.8141932,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942389.8742652,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942389.9335415,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942390.1803021,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942390.23735,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942390.2963877,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942390.3582368,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942390.4167547,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942390.4749377,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942390.5347729,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942390.5919442,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942390.65276,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942390.7203507,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942390.781552,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942390.8405807,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942391.7169042,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": -1,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 1,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": false,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance -1\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+            "_received": 1794942390.8299584
+          }
+        },
+        {
+          "at": 1794942391.79379,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": -1,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 1,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": false,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance -1\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+            "_received": 1794942390.8299584
+          }
+        },
+        {
+          "at": 1794942391.8598154,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": -1,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 1,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": false,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance -1\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+            "_received": 1794942391.8242698
+          }
+        }
+      ],
+      "last_state": {
+        "connected": true,
+        "synchronized": true,
+        "primary": 0,
+        "mic_source": 1,
+        "muted": false,
+        "deafen": false,
+        "balance": -1,
+        "master": 0.99,
+        "win_mute": false,
+        "win_deafen": false,
+        "win_volume": 1,
+        "win_silence": false,
+        "mac_mute": false,
+        "mac_deafen": false,
+        "mac_volume": 1,
+        "mac_silence": false,
+        "buffer_frames": 1536,
+        "listening_buffer_frames": 480,
+        "playback_ready": true,
+        "mic_sink_ready": true,
+        "headphones_ready": true,
+        "microphone_ready": false,
+        "rejected": 0,
+        "drops": 0,
+        "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance -1\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+        "_received": 1794942391.8242698
+      }
+    },
+    {
+      "phase": "mac_listening_silence",
+      "passed": false,
+      "observed_at": 1794942392.8550863,
+      "completed_at": 1794942396.8795495,
+      "checks": 36,
+      "peer_ack": 0.99,
+      "failures": [
+        {
+          "at": 1794942393.6809185,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942393.7414331,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942393.8068142,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942393.8712468,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942393.930685,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942394.1844783,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942394.244305,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942394.3035955,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942394.3630917,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942394.4239225,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942395.6020434,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942395.6705973,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942395.7315216,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942395.9779756,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 1,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": true,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 1\n",
+            "_received": 1794942395.8224332
+          }
+        },
+        {
+          "at": 1794942396.0371985,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 1,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": true,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 1\n",
+            "_received": 1794942395.8224332
+          }
+        },
+        {
+          "at": 1794942396.0964234,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 1,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": true,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 1\n",
+            "_received": 1794942395.8224332
+          }
+        },
+        {
+          "at": 1794942396.1564233,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 1,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": true,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 1\n",
+            "_received": 1794942395.8224332
+          }
+        },
+        {
+          "at": 1794942396.2164302,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 1,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": true,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 1\n",
+            "_received": 1794942395.8224332
+          }
+        },
+        {
+          "at": 1794942396.2757976,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 1,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": true,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 1\n",
+            "_received": 1794942395.8224332
+          }
+        },
+        {
+          "at": 1794942396.3353271,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 1,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": true,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 1\n",
+            "_received": 1794942395.8224332
+          }
+        },
+        {
+          "at": 1794942396.3952022,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 1,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": true,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 1\n",
+            "_received": 1794942395.8224332
+          }
+        },
+        {
+          "at": 1794942396.4556968,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 1,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": true,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 1\n",
+            "_received": 1794942395.8224332
+          }
+        },
+        {
+          "at": 1794942396.5195236,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 1,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": true,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 1\n",
+            "_received": 1794942395.8224332
+          }
+        },
+        {
+          "at": 1794942396.5811822,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 1,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": true,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 1\n",
+            "_received": 1794942395.8224332
+          }
+        },
+        {
+          "at": 1794942396.6421154,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 1,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": true,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 1\n",
+            "_received": 1794942395.8224332
+          }
+        },
+        {
+          "at": 1794942396.7029824,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 1,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": true,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 1\n",
+            "_received": 1794942395.8224332
+          }
+        },
+        {
+          "at": 1794942396.7691753,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 1,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": true,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 1\n",
+            "_received": 1794942395.8224332
+          }
+        },
+        {
+          "at": 1794942396.8292584,
+          "reason": "held_phase_health_failure",
+          "state": {
+            "connected": true,
+            "synchronized": true,
+            "primary": 0,
+            "mic_source": 1,
+            "muted": false,
+            "deafen": false,
+            "balance": 0,
+            "master": 0.99,
+            "win_mute": false,
+            "win_deafen": false,
+            "win_volume": 1,
+            "win_silence": false,
+            "mac_mute": false,
+            "mac_deafen": false,
+            "mac_volume": 1,
+            "mac_silence": true,
+            "buffer_frames": 1536,
+            "listening_buffer_frames": 480,
+            "playback_ready": true,
+            "mic_sink_ready": true,
+            "headphones_ready": true,
+            "microphone_ready": false,
+            "rejected": 0,
+            "drops": 0,
+            "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 1\n",
+            "_received": 1794942395.8224332
+          }
+        }
+      ],
+      "last_state": {
+        "connected": true,
+        "synchronized": true,
+        "primary": 0,
+        "mic_source": 1,
+        "muted": false,
+        "deafen": false,
+        "balance": 0,
+        "master": 0.99,
+        "win_mute": false,
+        "win_deafen": false,
+        "win_volume": 1,
+        "win_silence": false,
+        "mac_mute": false,
+        "mac_deafen": false,
+        "mac_volume": 1,
+        "mac_silence": true,
+        "buffer_frames": 1536,
+        "listening_buffer_frames": 480,
+        "playback_ready": true,
+        "mic_sink_ready": true,
+        "headphones_ready": true,
+        "microphone_ready": false,
+        "rejected": 0,
+        "drops": 0,
+        "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 1\n",
+        "_received": 1794942396.8300738
+      }
+    },
+    {
+      "phase": "primary_mac_handover_muted",
+      "passed": true,
+      "observed_at": 1794942397.9259515,
+      "completed_at": 1794942401.9501758,
+      "checks": 38,
+      "peer_ack": 0.99,
+      "failures": [],
+      "last_state": {
+        "connected": true,
+        "synchronized": true,
+        "primary": 1,
+        "mic_source": 1,
+        "muted": true,
+        "deafen": false,
+        "balance": 0,
+        "master": 0.99,
+        "win_mute": false,
+        "win_deafen": false,
+        "win_volume": 1,
+        "win_silence": false,
+        "mac_mute": false,
+        "mac_deafen": false,
+        "mac_volume": 1,
+        "mac_silence": false,
+        "buffer_frames": 1536,
+        "listening_buffer_frames": 480,
+        "playback_ready": true,
+        "mic_sink_ready": true,
+        "headphones_ready": false,
+        "microphone_ready": false,
+        "rejected": 0,
+        "drops": 0,
+        "settings": "primary 1\nmic_source 1\nmute 1\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+        "_received": 1794942401.9132144
+      }
+    },
+    {
+      "phase": "voice_resumes_after_handover",
+      "passed": false,
+      "observed_at": 1794942402.9440513,
+      "completed_at": 1794942406.9942255,
+      "checks": 37,
+      "peer_ack": 0.99,
+      "failures": [
+        {
+          "at": 1794942404.3146133,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942404.3867362,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942404.4564562,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942404.5124028,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942404.572901,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942404.6295733,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942405.7012575,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942405.7572718,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942405.813769,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942405.8684294,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942405.9247572,
+          "reason": "audio_threshold"
+        },
+        {
+          "at": 1794942405.980639,
+          "reason": "audio_while_waiting_ack"
+        },
+        {
+          "at": 1794942406.0471272,
+          "reason": "audio_while_waiting_ack"
+        },
+        {
+          "at": 1794942406.10469,
+          "reason": "audio_while_waiting_ack"
+        },
+        {
+          "at": 1794942406.1622348,
+          "reason": "audio_while_waiting_ack"
+        },
+        {
+          "at": 1794942406.226364,
+          "reason": "audio_while_waiting_ack"
+        },
+        {
+          "at": 1794942406.2821548,
+          "reason": "audio_while_waiting_ack"
+        },
+        {
+          "at": 1794942406.3420715,
+          "reason": "audio_while_waiting_ack"
+        },
+        {
+          "at": 1794942406.396857,
+          "reason": "audio_while_waiting_ack"
+        },
+        {
+          "at": 1794942406.458805,
+          "reason": "audio_while_waiting_ack"
+        }
+      ],
+      "last_state": {
+        "connected": true,
+        "synchronized": true,
+        "primary": 1,
+        "mic_source": 1,
+        "muted": false,
+        "deafen": false,
+        "balance": 0,
+        "master": 0.99,
+        "win_mute": false,
+        "win_deafen": false,
+        "win_volume": 1,
+        "win_silence": false,
+        "mac_mute": false,
+        "mac_deafen": false,
+        "mac_volume": 1,
+        "mac_silence": false,
+        "buffer_frames": 1536,
+        "listening_buffer_frames": 480,
+        "playback_ready": true,
+        "mic_sink_ready": true,
+        "headphones_ready": false,
+        "microphone_ready": false,
+        "rejected": 0,
+        "drops": 0,
+        "settings": "primary 1\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+        "_received": 1794942406.9276266
+      }
+    },
+    {
+      "phase": "windows_microphone_handover_muted",
+      "passed": true,
+      "observed_at": 1794942407.935675,
+      "completed_at": 1794942411.9807749,
+      "checks": 38,
+      "peer_ack": 0.99,
+      "failures": [],
+      "last_state": {
+        "connected": true,
+        "synchronized": true,
+        "primary": 1,
+        "mic_source": 0,
+        "muted": true,
+        "deafen": false,
+        "balance": 0,
+        "master": 0.99,
+        "win_mute": false,
+        "win_deafen": false,
+        "win_volume": 1,
+        "win_silence": false,
+        "mac_mute": false,
+        "mac_deafen": false,
+        "mac_volume": 1,
+        "mac_silence": false,
+        "buffer_frames": 1536,
+        "listening_buffer_frames": 480,
+        "playback_ready": true,
+        "mic_sink_ready": true,
+        "headphones_ready": false,
+        "microphone_ready": true,
+        "rejected": 0,
+        "drops": 0,
+        "settings": "primary 1\nmic_source 0\nmute 1\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+        "_received": 1794942411.9184833
+      }
+    },
+    {
+      "phase": "windows_microphone_to_both",
+      "passed": true,
+      "observed_at": 1794942412.9468882,
+      "completed_at": 1794942416.9808714,
+      "checks": 37,
+      "peer_ack": 0.99,
+      "failures": [],
+      "last_state": {
+        "connected": true,
+        "synchronized": true,
+        "primary": 1,
+        "mic_source": 0,
+        "muted": false,
+        "deafen": false,
+        "balance": 0,
+        "master": 0.99,
+        "win_mute": false,
+        "win_deafen": false,
+        "win_volume": 1,
+        "win_silence": false,
+        "mac_mute": false,
+        "mac_deafen": false,
+        "mac_volume": 1,
+        "mac_silence": false,
+        "buffer_frames": 1536,
+        "listening_buffer_frames": 480,
+        "playback_ready": true,
+        "mic_sink_ready": true,
+        "headphones_ready": false,
+        "microphone_ready": true,
+        "rejected": 0,
+        "drops": 0,
+        "settings": "primary 1\nmic_source 0\nmute 0\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+        "_received": 1794942416.9143777
+      }
+    },
+    {
+      "phase": "global_deafen",
+      "passed": true,
+      "observed_at": 1794942417.9466548,
+      "completed_at": 1794942421.9762995,
+      "checks": 37,
+      "peer_ack": 0.99,
+      "failures": [],
+      "last_state": {
+        "connected": true,
+        "synchronized": true,
+        "primary": 1,
+        "mic_source": 0,
+        "muted": false,
+        "deafen": true,
+        "balance": 0,
+        "master": 0.99,
+        "win_mute": false,
+        "win_deafen": false,
+        "win_volume": 1,
+        "win_silence": false,
+        "mac_mute": false,
+        "mac_deafen": false,
+        "mac_volume": 1,
+        "mac_silence": false,
+        "buffer_frames": 1536,
+        "listening_buffer_frames": 480,
+        "playback_ready": true,
+        "mic_sink_ready": true,
+        "headphones_ready": false,
+        "microphone_ready": true,
+        "rejected": 0,
+        "drops": 0,
+        "settings": "primary 1\nmic_source 0\nmute 0\ndeafen 1\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+        "_received": 1794942421.9267147
+      }
+    },
+    {
+      "phase": "global_undeafen",
+      "passed": false,
+      "observed_at": 1794942422.972203,
+      "completed_at": 1794942426.9816837,
+      "checks": 37,
+      "peer_ack": 0.98,
+      "failures": [
+        {
+          "at": 1794942426.981677,
+          "reason": "mac_reported_phase_failure"
+        }
+      ],
+      "last_state": {
+        "connected": true,
+        "synchronized": true,
+        "primary": 1,
+        "mic_source": 0,
+        "muted": false,
+        "deafen": false,
+        "balance": 0,
+        "master": 0.98,
+        "win_mute": false,
+        "win_deafen": false,
+        "win_volume": 1,
+        "win_silence": false,
+        "mac_mute": false,
+        "mac_deafen": false,
+        "mac_volume": 1,
+        "mac_silence": false,
+        "buffer_frames": 1536,
+        "listening_buffer_frames": 480,
+        "playback_ready": true,
+        "mic_sink_ready": true,
+        "headphones_ready": false,
+        "microphone_ready": true,
+        "rejected": 0,
+        "drops": 0,
+        "settings": "primary 1\nmic_source 0\nmute 0\ndeafen 0\nbalance 0\nmaster 0.98\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+        "_received": 1794942426.9566958
+      }
+    },
+    {
+      "phase": "global_mute",
+      "passed": true,
+      "observed_at": 1794942427.9742353,
+      "completed_at": 1794942432.008672,
+      "checks": 37,
+      "peer_ack": 0.99,
+      "failures": [],
+      "last_state": {
+        "connected": true,
+        "synchronized": true,
+        "primary": 1,
+        "mic_source": 0,
+        "muted": true,
+        "deafen": false,
+        "balance": 0,
+        "master": 0.99,
+        "win_mute": false,
+        "win_deafen": false,
+        "win_volume": 1,
+        "win_silence": false,
+        "mac_mute": false,
+        "mac_deafen": false,
+        "mac_volume": 1,
+        "mac_silence": false,
+        "buffer_frames": 1536,
+        "listening_buffer_frames": 480,
+        "playback_ready": true,
+        "mic_sink_ready": true,
+        "headphones_ready": false,
+        "microphone_ready": true,
+        "rejected": 0,
+        "drops": 0,
+        "settings": "primary 1\nmic_source 0\nmute 1\ndeafen 0\nbalance 0\nmaster 0.99\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+        "_received": 1794942431.9623587
+      }
+    }
+  ],
+  "failure": null,
+  "stderr": [
+    "TRACE {\"event\":\"stats\",\"wall\":1794942351.794836,\"elapsed_ms\":1.597,\"generation\":0,\"connected\":false,\"accepted_rx_age_ms\":-1.000,\"raw_rx_age_ms\":-1.000,\"send_age_ms\":-1.000,\"max_poll_gap_ms\":0.000,\"tx_by_kind\":[0,0,0,0,0],\"rx_by_kind\":[0,0,0,0,0],\"raw_rx_count\":0,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"ack_connected\",\"wall\":1794942351.804157,\"elapsed_ms\":10.906,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":0.000,\"raw_rx_age_ms\":0.000,\"send_age_ms\":8.439,\"max_poll_gap_ms\":9.309,\"tx_by_kind\":[1,0,0,0,0],\"rx_by_kind\":[0,1,0,0,0],\"raw_rx_count\":1,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"hello_accepted\",\"wall\":1794942351.913185,\"elapsed_ms\":119.932,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":109.026,\"raw_rx_age_ms\":0.000,\"send_age_ms\":15.677,\"max_poll_gap_ms\":15.950,\"tx_by_kind\":[1,0,0,1,1],\"rx_by_kind\":[1,1,0,0,0],\"raw_rx_count\":2,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942352.922417,\"elapsed_ms\":1129.177,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.607,\"raw_rx_age_ms\":15.607,\"send_age_ms\":15.444,\"max_poll_gap_ms\":15.963,\"tx_by_kind\":[1,1,0,11,5],\"rx_by_kind\":[1,1,396,9,4],\"raw_rx_count\":411,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942353.930429,\"elapsed_ms\":2137.190,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":14.757,\"raw_rx_age_ms\":14.757,\"send_age_ms\":14.903,\"max_poll_gap_ms\":15.985,\"tx_by_kind\":[1,1,0,21,9],\"rx_by_kind\":[1,1,800,19,8],\"raw_rx_count\":829,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942354.939698,\"elapsed_ms\":3146.458,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.240,\"raw_rx_age_ms\":15.240,\"send_age_ms\":31.003,\"max_poll_gap_ms\":15.909,\"tx_by_kind\":[1,1,0,31,12],\"rx_by_kind\":[1,1,1202,29,12],\"raw_rx_count\":1245,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942355.945371,\"elapsed_ms\":4152.131,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.667,\"raw_rx_age_ms\":15.667,\"send_age_ms\":45.663,\"max_poll_gap_ms\":16.098,\"tx_by_kind\":[1,1,0,41,16],\"rx_by_kind\":[1,1,1605,39,16],\"raw_rx_count\":1662,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942356.952004,\"elapsed_ms\":5158.764,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.810,\"raw_rx_age_ms\":15.810,\"send_age_ms\":46.652,\"max_poll_gap_ms\":16.007,\"tx_by_kind\":[1,1,0,51,20],\"rx_by_kind\":[1,1,2008,50,20],\"raw_rx_count\":2080,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942357.957937,\"elapsed_ms\":6164.697,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":61.756,\"raw_rx_age_ms\":61.756,\"send_age_ms\":61.394,\"max_poll_gap_ms\":15.980,\"tx_by_kind\":[1,1,0,61,24],\"rx_by_kind\":[1,1,2392,60,24],\"raw_rx_count\":2478,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942358.966377,\"elapsed_ms\":7173.137,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.777,\"raw_rx_age_ms\":15.777,\"send_age_ms\":45.595,\"max_poll_gap_ms\":15.899,\"tx_by_kind\":[1,1,0,71,28],\"rx_by_kind\":[1,1,2813,70,28],\"raw_rx_count\":2913,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942359.971632,\"elapsed_ms\":8178.392,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.114,\"raw_rx_age_ms\":15.114,\"send_age_ms\":60.947,\"max_poll_gap_ms\":16.039,\"tx_by_kind\":[1,1,0,81,31],\"rx_by_kind\":[1,1,3216,80,32],\"raw_rx_count\":3330,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942360.979736,\"elapsed_ms\":9186.497,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.207,\"raw_rx_age_ms\":15.207,\"send_age_ms\":75.650,\"max_poll_gap_ms\":15.963,\"tx_by_kind\":[1,1,0,91,35],\"rx_by_kind\":[1,1,3612,91,36],\"raw_rx_count\":3741,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942361.988485,\"elapsed_ms\":10195.246,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.852,\"raw_rx_age_ms\":15.852,\"send_age_ms\":93.247,\"max_poll_gap_ms\":16.085,\"tx_by_kind\":[1,1,0,101,39],\"rx_by_kind\":[1,1,4022,102,40],\"raw_rx_count\":4166,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942362.995429,\"elapsed_ms\":11202.189,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.817,\"raw_rx_age_ms\":15.817,\"send_age_ms\":93.015,\"max_poll_gap_ms\":15.889,\"tx_by_kind\":[1,1,0,111,43],\"rx_by_kind\":[1,1,4425,112,44],\"raw_rx_count\":4583,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942363.998729,\"elapsed_ms\":12205.489,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":31.394,\"raw_rx_age_ms\":31.394,\"send_age_ms\":77.437,\"max_poll_gap_ms\":15.916,\"tx_by_kind\":[1,1,0,121,47],\"rx_by_kind\":[1,1,4814,121,48],\"raw_rx_count\":4985,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942365.003962,\"elapsed_ms\":13210.722,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.682,\"raw_rx_age_ms\":15.682,\"send_age_ms\":31.228,\"max_poll_gap_ms\":16.000,\"tx_by_kind\":[1,1,0,131,51],\"rx_by_kind\":[1,1,5218,131,52],\"raw_rx_count\":5403,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942366.014288,\"elapsed_ms\":14221.049,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.621,\"raw_rx_age_ms\":15.621,\"send_age_ms\":15.224,\"max_poll_gap_ms\":15.993,\"tx_by_kind\":[1,1,0,142,54],\"rx_by_kind\":[1,1,5632,143,56],\"raw_rx_count\":5833,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942367.022244,\"elapsed_ms\":15229.004,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.122,\"raw_rx_age_ms\":15.122,\"send_age_ms\":15.024,\"max_poll_gap_ms\":16.069,\"tx_by_kind\":[1,1,0,152,58],\"rx_by_kind\":[1,1,6036,153,60],\"raw_rx_count\":6251,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942368.028716,\"elapsed_ms\":16235.476,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.137,\"raw_rx_age_ms\":15.137,\"send_age_ms\":29.765,\"max_poll_gap_ms\":15.940,\"tx_by_kind\":[1,1,0,162,62],\"rx_by_kind\":[1,1,6438,163,64],\"raw_rx_count\":6667,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942369.037216,\"elapsed_ms\":17243.977,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":62.475,\"raw_rx_age_ms\":62.475,\"send_age_ms\":30.318,\"max_poll_gap_ms\":16.074,\"tx_by_kind\":[1,1,0,172,66],\"rx_by_kind\":[1,1,6812,172,68],\"raw_rx_count\":7054,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942370.044098,\"elapsed_ms\":18250.858,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.783,\"raw_rx_age_ms\":15.783,\"send_age_ms\":45.919,\"max_poll_gap_ms\":15.900,\"tx_by_kind\":[1,1,0,182,70],\"rx_by_kind\":[1,1,7236,183,72],\"raw_rx_count\":7493,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942371.051088,\"elapsed_ms\":19257.848,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":76.911,\"raw_rx_age_ms\":76.911,\"send_age_ms\":30.942,\"max_poll_gap_ms\":15.932,\"tx_by_kind\":[1,1,0,192,74],\"rx_by_kind\":[1,1,7620,193,76],\"raw_rx_count\":7891,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942372.059133,\"elapsed_ms\":20265.893,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.507,\"raw_rx_age_ms\":15.507,\"send_age_ms\":61.371,\"max_poll_gap_ms\":15.866,\"tx_by_kind\":[1,1,0,202,77],\"rx_by_kind\":[1,1,8051,204,80],\"raw_rx_count\":8337,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942373.069842,\"elapsed_ms\":21276.602,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":14.948,\"raw_rx_age_ms\":14.948,\"send_age_ms\":62.346,\"max_poll_gap_ms\":16.075,\"tx_by_kind\":[1,1,0,212,81],\"rx_by_kind\":[1,1,8455,214,84],\"raw_rx_count\":8755,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942374.079724,\"elapsed_ms\":22286.484,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.140,\"raw_rx_age_ms\":15.140,\"send_age_ms\":76.368,\"max_poll_gap_ms\":15.970,\"tx_by_kind\":[1,1,0,222,85],\"rx_by_kind\":[1,1,8859,224,88],\"raw_rx_count\":9173,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942375.088984,\"elapsed_ms\":23295.744,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.504,\"raw_rx_age_ms\":15.504,\"send_age_ms\":93.478,\"max_poll_gap_ms\":16.109,\"tx_by_kind\":[1,1,0,232,89],\"rx_by_kind\":[1,1,9262,236,92],\"raw_rx_count\":9592,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942376.094963,\"elapsed_ms\":24301.723,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.395,\"raw_rx_age_ms\":15.395,\"send_age_ms\":92.460,\"max_poll_gap_ms\":15.954,\"tx_by_kind\":[1,1,0,242,93],\"rx_by_kind\":[1,1,9664,246,96],\"raw_rx_count\":10008,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942377.101726,\"elapsed_ms\":25308.486,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.392,\"raw_rx_age_ms\":15.392,\"send_age_ms\":46.149,\"max_poll_gap_ms\":16.098,\"tx_by_kind\":[1,1,0,252,97],\"rx_by_kind\":[1,1,10062,256,100],\"raw_rx_count\":10420,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942378.110794,\"elapsed_ms\":26317.554,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.526,\"raw_rx_age_ms\":15.526,\"send_age_ms\":15.232,\"max_poll_gap_ms\":16.029,\"tx_by_kind\":[1,1,0,263,100],\"rx_by_kind\":[1,1,10472,266,104],\"raw_rx_count\":10844,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942379.116516,\"elapsed_ms\":27323.276,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.168,\"raw_rx_age_ms\":15.168,\"send_age_ms\":14.865,\"max_poll_gap_ms\":15.865,\"tx_by_kind\":[1,1,0,273,104],\"rx_by_kind\":[1,1,10870,276,108],\"raw_rx_count\":11256,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942380.121379,\"elapsed_ms\":28328.139,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.155,\"raw_rx_age_ms\":15.155,\"send_age_ms\":15.007,\"max_poll_gap_ms\":15.933,\"tx_by_kind\":[1,1,0,283,108],\"rx_by_kind\":[1,1,11276,287,112],\"raw_rx_count\":11677,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942381.127518,\"elapsed_ms\":29334.278,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.800,\"raw_rx_age_ms\":15.800,\"send_age_ms\":30.554,\"max_poll_gap_ms\":15.905,\"tx_by_kind\":[1,1,0,293,112],\"rx_by_kind\":[1,1,11676,297,116],\"raw_rx_count\":12091,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942382.134046,\"elapsed_ms\":30340.807,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.219,\"raw_rx_age_ms\":15.219,\"send_age_ms\":78.742,\"max_poll_gap_ms\":16.042,\"tx_by_kind\":[1,1,0,302,116],\"rx_by_kind\":[1,1,12081,307,120],\"raw_rx_count\":12510,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942383.141179,\"elapsed_ms\":31347.939,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.807,\"raw_rx_age_ms\":15.807,\"send_age_ms\":15.631,\"max_poll_gap_ms\":15.823,\"tx_by_kind\":[1,1,0,313,120],\"rx_by_kind\":[1,1,12484,317,124],\"raw_rx_count\":12927,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942384.145140,\"elapsed_ms\":32351.900,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":14.906,\"raw_rx_age_ms\":14.906,\"send_age_ms\":14.684,\"max_poll_gap_ms\":15.889,\"tx_by_kind\":[1,1,0,323,123],\"rx_by_kind\":[1,1,12885,327,128],\"raw_rx_count\":13342,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942385.152698,\"elapsed_ms\":33359.458,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":16.113,\"raw_rx_age_ms\":16.113,\"send_age_ms\":31.846,\"max_poll_gap_ms\":15.929,\"tx_by_kind\":[1,1,0,333,127],\"rx_by_kind\":[1,1,13288,338,132],\"raw_rx_count\":13760,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942386.157049,\"elapsed_ms\":34363.809,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.950,\"raw_rx_age_ms\":15.950,\"send_age_ms\":30.955,\"max_poll_gap_ms\":15.923,\"tx_by_kind\":[1,1,0,343,131],\"rx_by_kind\":[1,1,13690,348,136],\"raw_rx_count\":14176,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942387.161776,\"elapsed_ms\":35368.536,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.997,\"raw_rx_age_ms\":15.997,\"send_age_ms\":30.956,\"max_poll_gap_ms\":16.032,\"tx_by_kind\":[1,1,0,353,135],\"rx_by_kind\":[1,1,14092,358,140],\"raw_rx_count\":14592,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942388.168248,\"elapsed_ms\":36375.009,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.954,\"raw_rx_age_ms\":15.954,\"send_age_ms\":46.957,\"max_poll_gap_ms\":15.947,\"tx_by_kind\":[1,1,0,363,139],\"rx_by_kind\":[1,1,14494,368,144],\"raw_rx_count\":15008,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942389.175816,\"elapsed_ms\":37382.577,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.831,\"raw_rx_age_ms\":15.831,\"send_age_ms\":30.974,\"max_poll_gap_ms\":15.937,\"tx_by_kind\":[1,1,0,373,143],\"rx_by_kind\":[1,1,14898,378,148],\"raw_rx_count\":15426,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942390.181017,\"elapsed_ms\":38387.777,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":16.055,\"raw_rx_age_ms\":16.055,\"send_age_ms\":46.909,\"max_poll_gap_ms\":15.977,\"tx_by_kind\":[1,1,0,383,146],\"rx_by_kind\":[1,1,15299,389,152],\"raw_rx_count\":15842,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942391.186401,\"elapsed_ms\":39393.161,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.238,\"raw_rx_age_ms\":15.238,\"send_age_ms\":61.247,\"max_poll_gap_ms\":15.879,\"tx_by_kind\":[1,1,0,393,150],\"rx_by_kind\":[1,1,15702,400,156],\"raw_rx_count\":16260,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942392.196241,\"elapsed_ms\":40403.001,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.906,\"raw_rx_age_ms\":15.906,\"send_age_ms\":62.275,\"max_poll_gap_ms\":15.886,\"tx_by_kind\":[1,1,0,403,154],\"rx_by_kind\":[1,1,16106,410,160],\"raw_rx_count\":16678,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942393.204303,\"elapsed_ms\":41411.063,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.424,\"raw_rx_age_ms\":15.424,\"send_age_ms\":76.822,\"max_poll_gap_ms\":15.873,\"tx_by_kind\":[1,1,0,413,158],\"rx_by_kind\":[1,1,16508,420,164],\"raw_rx_count\":17094,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942394.208216,\"elapsed_ms\":42414.976,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.183,\"raw_rx_age_ms\":15.183,\"send_age_ms\":61.479,\"max_poll_gap_ms\":16.011,\"tx_by_kind\":[1,1,0,423,162],\"rx_by_kind\":[1,1,16910,430,167],\"raw_rx_count\":17509,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942395.218142,\"elapsed_ms\":43424.902,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.196,\"raw_rx_age_ms\":15.196,\"send_age_ms\":15.213,\"max_poll_gap_ms\":16.023,\"tx_by_kind\":[1,1,0,433,166],\"rx_by_kind\":[1,1,17314,441,171],\"raw_rx_count\":17928,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942396.224770,\"elapsed_ms\":44431.530,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.004,\"raw_rx_age_ms\":15.004,\"send_age_ms\":92.660,\"max_poll_gap_ms\":15.987,\"tx_by_kind\":[1,1,0,443,169],\"rx_by_kind\":[1,1,17718,451,175],\"raw_rx_count\":18346,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942397.235908,\"elapsed_ms\":45442.667,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":19.546,\"raw_rx_age_ms\":19.546,\"send_age_ms\":19.146,\"max_poll_gap_ms\":36.187,\"tx_by_kind\":[1,1,49,453,173],\"rx_by_kind\":[1,1,18063,461,179],\"raw_rx_count\":18705,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942398.242480,\"elapsed_ms\":46449.240,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.816,\"raw_rx_age_ms\":15.816,\"send_age_ms\":14.284,\"max_poll_gap_ms\":15.752,\"tx_by_kind\":[1,1,252,463,177],\"rx_by_kind\":[1,1,18265,471,183],\"raw_rx_count\":18921,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942399.249443,\"elapsed_ms\":47456.203,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.290,\"raw_rx_age_ms\":15.290,\"send_age_ms\":14.893,\"max_poll_gap_ms\":15.889,\"tx_by_kind\":[1,1,453,473,181],\"rx_by_kind\":[1,1,18467,481,187],\"raw_rx_count\":19137,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942400.256602,\"elapsed_ms\":48463.362,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.511,\"raw_rx_age_ms\":15.511,\"send_age_ms\":15.080,\"max_poll_gap_ms\":15.810,\"tx_by_kind\":[1,1,654,483,185],\"rx_by_kind\":[1,1,18668,492,191],\"raw_rx_count\":19353,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942401.259293,\"elapsed_ms\":49466.053,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.432,\"raw_rx_age_ms\":15.432,\"send_age_ms\":15.034,\"max_poll_gap_ms\":15.764,\"tx_by_kind\":[1,1,855,493,188],\"rx_by_kind\":[1,1,18869,502,195],\"raw_rx_count\":19568,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942402.269077,\"elapsed_ms\":50475.838,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":14.956,\"raw_rx_age_ms\":14.956,\"send_age_ms\":14.646,\"max_poll_gap_ms\":15.932,\"tx_by_kind\":[1,1,1057,503,192],\"rx_by_kind\":[1,1,19071,512,199],\"raw_rx_count\":19784,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942403.275818,\"elapsed_ms\":51482.579,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.872,\"raw_rx_age_ms\":15.872,\"send_age_ms\":15.145,\"max_poll_gap_ms\":15.756,\"tx_by_kind\":[1,1,1258,513,196],\"rx_by_kind\":[1,1,19272,522,203],\"raw_rx_count\":19999,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942404.280801,\"elapsed_ms\":52487.561,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":14.968,\"raw_rx_age_ms\":14.968,\"send_age_ms\":14.314,\"max_poll_gap_ms\":15.935,\"tx_by_kind\":[1,1,1459,523,200],\"rx_by_kind\":[1,1,19473,532,207],\"raw_rx_count\":20214,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942405.286561,\"elapsed_ms\":53493.320,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.560,\"raw_rx_age_ms\":15.560,\"send_age_ms\":14.921,\"max_poll_gap_ms\":15.784,\"tx_by_kind\":[1,1,1660,533,204],\"rx_by_kind\":[1,1,19674,543,211],\"raw_rx_count\":20430,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942406.290233,\"elapsed_ms\":54496.993,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.657,\"raw_rx_age_ms\":15.657,\"send_age_ms\":15.299,\"max_poll_gap_ms\":15.755,\"tx_by_kind\":[1,1,1861,543,208],\"rx_by_kind\":[1,1,19875,554,215],\"raw_rx_count\":20646,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942407.297473,\"elapsed_ms\":55504.232,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.247,\"raw_rx_age_ms\":15.247,\"send_age_ms\":13.605,\"max_poll_gap_ms\":15.706,\"tx_by_kind\":[1,1,2122,553,211],\"rx_by_kind\":[1,1,20025,564,219],\"raw_rx_count\":20810,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942408.304296,\"elapsed_ms\":56511.055,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":30.527,\"raw_rx_age_ms\":30.527,\"send_age_ms\":13.849,\"max_poll_gap_ms\":15.601,\"tx_by_kind\":[1,1,2524,563,215],\"rx_by_kind\":[1,1,20025,574,223],\"raw_rx_count\":20824,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942409.314520,\"elapsed_ms\":57521.281,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":30.658,\"raw_rx_age_ms\":30.658,\"send_age_ms\":14.109,\"max_poll_gap_ms\":15.822,\"tx_by_kind\":[1,1,2928,573,219],\"rx_by_kind\":[1,1,20025,584,227],\"raw_rx_count\":20838,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942410.322327,\"elapsed_ms\":58529.088,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":46.430,\"raw_rx_age_ms\":46.430,\"send_age_ms\":14.382,\"max_poll_gap_ms\":15.629,\"tx_by_kind\":[1,1,3332,583,223],\"rx_by_kind\":[1,1,20025,594,231],\"raw_rx_count\":20852,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942411.328557,\"elapsed_ms\":59535.317,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":46.681,\"raw_rx_age_ms\":46.681,\"send_age_ms\":15.280,\"max_poll_gap_ms\":15.862,\"tx_by_kind\":[1,1,3734,594,227],\"rx_by_kind\":[1,1,20025,605,235],\"raw_rx_count\":20867,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942412.336868,\"elapsed_ms\":60543.628,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":62.973,\"raw_rx_age_ms\":62.973,\"send_age_ms\":12.946,\"max_poll_gap_ms\":17.295,\"tx_by_kind\":[1,1,4138,604,231],\"rx_by_kind\":[1,1,20025,615,239],\"raw_rx_count\":20881,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942413.341666,\"elapsed_ms\":61548.427,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":61.919,\"raw_rx_age_ms\":61.919,\"send_age_ms\":14.658,\"max_poll_gap_ms\":15.612,\"tx_by_kind\":[1,1,4538,614,235],\"rx_by_kind\":[1,1,20025,625,243],\"raw_rx_count\":20895,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942414.350322,\"elapsed_ms\":62557.082,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":77.326,\"raw_rx_age_ms\":77.326,\"send_age_ms\":14.416,\"max_poll_gap_ms\":15.829,\"tx_by_kind\":[1,1,4942,624,238],\"rx_by_kind\":[1,1,20025,635,247],\"raw_rx_count\":20909,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942415.358564,\"elapsed_ms\":63565.324,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":77.939,\"raw_rx_age_ms\":77.939,\"send_age_ms\":14.303,\"max_poll_gap_ms\":15.690,\"tx_by_kind\":[1,1,5346,634,242],\"rx_by_kind\":[1,1,20025,645,251],\"raw_rx_count\":20923,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942416.367954,\"elapsed_ms\":64574.714,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":92.773,\"raw_rx_age_ms\":92.773,\"send_age_ms\":14.977,\"max_poll_gap_ms\":15.750,\"tx_by_kind\":[1,1,5750,644,246],\"rx_by_kind\":[1,1,20025,656,255],\"raw_rx_count\":20938,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942417.378451,\"elapsed_ms\":65585.212,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":109.205,\"raw_rx_age_ms\":109.205,\"send_age_ms\":14.797,\"max_poll_gap_ms\":15.664,\"tx_by_kind\":[1,1,6154,654,250],\"rx_by_kind\":[1,1,20025,666,259],\"raw_rx_count\":20952,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942418.387039,\"elapsed_ms\":66593.799,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.226,\"raw_rx_age_ms\":15.226,\"send_age_ms\":14.666,\"max_poll_gap_ms\":15.682,\"tx_by_kind\":[1,1,6556,664,254],\"rx_by_kind\":[1,1,20025,677,263],\"raw_rx_count\":20967,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942419.398030,\"elapsed_ms\":67604.790,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":123.493,\"raw_rx_age_ms\":123.493,\"send_age_ms\":14.304,\"max_poll_gap_ms\":15.623,\"tx_by_kind\":[1,1,6962,674,258],\"rx_by_kind\":[1,1,20025,686,267],\"raw_rx_count\":20980,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942420.405548,\"elapsed_ms\":68612.308,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":110.936,\"raw_rx_age_ms\":110.936,\"send_age_ms\":15.093,\"max_poll_gap_ms\":15.735,\"tx_by_kind\":[1,1,7364,684,261],\"rx_by_kind\":[1,1,20025,696,271],\"raw_rx_count\":20994,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942421.413923,\"elapsed_ms\":69620.684,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":94.763,\"raw_rx_age_ms\":94.763,\"send_age_ms\":15.212,\"max_poll_gap_ms\":15.629,\"tx_by_kind\":[1,1,7768,694,265],\"rx_by_kind\":[1,1,20025,707,275],\"raw_rx_count\":21009,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942422.424131,\"elapsed_ms\":70630.886,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":155.449,\"raw_rx_age_ms\":155.449,\"send_age_ms\":13.834,\"max_poll_gap_ms\":31.627,\"tx_by_kind\":[1,1,8158,704,269],\"rx_by_kind\":[1,1,20025,717,279],\"raw_rx_count\":21023,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942423.432398,\"elapsed_ms\":71639.159,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.359,\"raw_rx_age_ms\":15.359,\"send_age_ms\":14.272,\"max_poll_gap_ms\":15.800,\"tx_by_kind\":[1,1,8560,714,273],\"rx_by_kind\":[1,1,20025,728,283],\"raw_rx_count\":21038,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942424.443199,\"elapsed_ms\":72649.959,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":155.239,\"raw_rx_age_ms\":155.239,\"send_age_ms\":15.204,\"max_poll_gap_ms\":15.684,\"tx_by_kind\":[1,1,8964,724,277],\"rx_by_kind\":[1,1,20025,737,287],\"raw_rx_count\":21051,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942425.453102,\"elapsed_ms\":73659.861,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.144,\"raw_rx_age_ms\":15.144,\"send_age_ms\":14.471,\"max_poll_gap_ms\":15.723,\"tx_by_kind\":[1,1,9368,734,281],\"rx_by_kind\":[1,1,20025,748,291],\"raw_rx_count\":21066,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942426.459143,\"elapsed_ms\":74665.903,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":47.105,\"raw_rx_age_ms\":47.105,\"send_age_ms\":14.822,\"max_poll_gap_ms\":15.992,\"tx_by_kind\":[1,1,9770,744,285],\"rx_by_kind\":[1,1,20025,759,295],\"raw_rx_count\":21081,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942427.467912,\"elapsed_ms\":75674.672,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":78.644,\"raw_rx_age_ms\":78.644,\"send_age_ms\":15.431,\"max_poll_gap_ms\":15.749,\"tx_by_kind\":[1,1,10174,755,288],\"rx_by_kind\":[1,1,20025,769,299],\"raw_rx_count\":21095,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942428.479759,\"elapsed_ms\":76686.519,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":108.413,\"raw_rx_age_ms\":108.413,\"send_age_ms\":14.978,\"max_poll_gap_ms\":15.628,\"tx_by_kind\":[1,1,10578,765,292],\"rx_by_kind\":[1,1,20025,779,303],\"raw_rx_count\":21109,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942429.490041,\"elapsed_ms\":77696.802,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.293,\"raw_rx_age_ms\":15.293,\"send_age_ms\":14.502,\"max_poll_gap_ms\":15.568,\"tx_by_kind\":[1,1,10984,775,296],\"rx_by_kind\":[1,1,20025,790,307],\"raw_rx_count\":21124,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942430.503020,\"elapsed_ms\":78709.780,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":31.440,\"raw_rx_age_ms\":31.440,\"send_age_ms\":15.312,\"max_poll_gap_ms\":15.680,\"tx_by_kind\":[1,1,11388,785,300],\"rx_by_kind\":[1,1,20025,800,311],\"raw_rx_count\":21138,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942431.511089,\"elapsed_ms\":79717.849,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":30.712,\"raw_rx_age_ms\":30.712,\"send_age_ms\":15.315,\"max_poll_gap_ms\":15.769,\"tx_by_kind\":[1,1,11792,795,304],\"rx_by_kind\":[1,1,20025,811,315],\"raw_rx_count\":21153,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942432.520245,\"elapsed_ms\":80727.004,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":15.213,\"raw_rx_age_ms\":15.213,\"send_age_ms\":14.197,\"max_poll_gap_ms\":15.713,\"tx_by_kind\":[1,1,12196,805,308],\"rx_by_kind\":[1,1,20025,821,319],\"raw_rx_count\":21167,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}",
+    "TRACE {\"event\":\"stats\",\"wall\":1794942433.531692,\"elapsed_ms\":81738.452,\"generation\":0,\"connected\":true,\"accepted_rx_age_ms\":558.354,\"raw_rx_age_ms\":558.354,\"send_age_ms\":15.006,\"max_poll_gap_ms\":15.789,\"tx_by_kind\":[1,1,12600,815,312],\"rx_by_kind\":[1,1,20025,826,321],\"raw_rx_count\":21174,\"send_errors\":0,\"recv_errors\":0,\"decode_errors\":0,\"source_errors\":0,\"last_send_error\":0,\"last_recv_error\":0,\"last_decode_reason\":\"none\"}"
+  ],
+  "exit_code": 0
+}

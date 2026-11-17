@@ -1,0 +1,179 @@
+{
+  "completed_utc": "2026-11-17T19:38:34.693240+00:00",
+  "python": "3.13.9 (tags/v3.13.9:8183fa5, Oct 14 2025, 14:09:13) [MSC v.1944 64 bit (AMD64)]",
+  "platform": "win32",
+  "binary_sha256": {
+    "adaptive_ring_test.exe": "a41b4576863046937664f0dc55c6fba9274ac94b9d78689f969e8147f238cff1",
+    "bridge_benchmark.exe": "d019c71e4b506fda3ed05442b08005aaff6351d6f38b27a09e0c46305921e873",
+    "control_test.exe": "b17cc88745655f5cf1465722f10dfc2baafa7f5fcc1d49fb17d034c4283f9702",
+    "credentials_test.exe": "d5cbe6470d395c8d0000dfaed0e9ba3081aea630860c1d7ab7690eca3fdff645",
+    "engine_test.exe": "aabc60464c1da63a2eb9d4939038eecf563109482bea9561054bab29e1ed7f48",
+    "integration_test.exe": "e8d6d9e4601e7b215d1ef2c35d73e13c2ca97bc29f86752e75f9721aec508e7a",
+    "listening_mixer_test.exe": "61465b0d7f78d00e142a986256a8a8d617005d206bc9a947029244e8f80f0b3f",
+    "runtime_fake.exe": "e88f1a990ee5f3756b238792ef357efc8cef6e4199111749f4fe8e18145d4556",
+    "transport_test.exe": "5117de9ebb2fda5ae40508e739eaaa59618b5f5fb828db2e0f9cd1cb6f495fef",
+    "windows_audio_recovery_test.exe": "bbc2712b56e0d5eb6e56eaece4d7c42def8aa50c793fe95c2c23ecdfd323b6eb",
+    "windows_audio_smoke.exe": "33b6aabfa2d85724d042a413c301f9c0ba7bc2bcc87e65301e4d7a2bbeed0112"
+  },
+  "tests": [
+    {
+      "test": "engine_test",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 0.08921929999996792,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit-v2\\AudioBridge-Windows-tests\\engine_test.exe"
+      ]
+    },
+    {
+      "test": "transport_test",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 4.658515799999805,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit-v2\\AudioBridge-Windows-tests\\transport_test.exe"
+      ]
+    },
+    {
+      "test": "integration_test",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 0.3904554000000644,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit-v2\\AudioBridge-Windows-tests\\integration_test.exe"
+      ]
+    },
+    {
+      "test": "adaptive_ring_test",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 0.2759398999987752,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit-v2\\AudioBridge-Windows-tests\\adaptive_ring_test.exe"
+      ]
+    },
+    {
+      "test": "control_test",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 0.06978949999938777,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit-v2\\AudioBridge-Windows-tests\\control_test.exe"
+      ]
+    },
+    {
+      "test": "credentials_test",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 0.06689769999866257,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit-v2\\AudioBridge-Windows-tests\\credentials_test.exe"
+      ]
+    },
+    {
+      "test": "listening_mixer_test",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 0.7494538000009925,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit-v2\\AudioBridge-Windows-tests\\listening_mixer_test.exe"
+      ]
+    },
+    {
+      "test": "credentials_store",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 0.06497850000050676,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit-v2\\AudioBridge-Windows-tests\\credentials_test.exe",
+        "--store-roundtrip"
+      ]
+    },
+    {
+      "test": "runtime_test",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 15.093716100000165,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit-v2\\AudioBridge-Windows-tests\\python\\python.exe",
+        "-X",
+        "utf8",
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit-v2\\AudioBridge-Windows-tests\\runtime_test.py",
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit-v2\\AudioBridge-Windows-tests\\runtime_fake.exe"
+      ]
+    },
+    {
+      "test": "credentials_cli_test",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 0.6033533999998326,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit-v2\\AudioBridge-Windows-tests\\python\\python.exe",
+        "-X",
+        "utf8",
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit-v2\\AudioBridge-Windows-tests\\credentials_cli_test.py",
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit-v2\\AudioBridge-Windows-tests\\runtime_fake.exe",
+        "--store-roundtrip"
+      ]
+    },
+    {
+      "test": "optional_routes_test",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 5.888871700000891,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit-v2\\AudioBridge-Windows-tests\\python\\python.exe",
+        "-X",
+        "utf8",
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit-v2\\AudioBridge-Windows-tests\\optional_routes_test.py",
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit-v2\\AudioBridge-Windows-tests\\runtime_fake.exe"
+      ]
+    },
+    {
+      "test": "windows_audio_smoke",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 0.6474708000005194,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit-v2\\AudioBridge-Windows-tests\\windows_audio_smoke.exe",
+        "{0.0.0.00000000}.{419e1f6a-ce30-4b68-a2b4-6ad4abf907f1}"
+      ]
+    },
+    {
+      "test": "windows_audio_recovery_test",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 0.813782799999899,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit-v2\\AudioBridge-Windows-tests\\windows_audio_recovery_test.exe",
+        "{0.0.0.00000000}.{419e1f6a-ce30-4b68-a2b4-6ad4abf907f1}"
+      ]
+    },
+    {
+      "test": "bridge_benchmark",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 0.7578469999989466,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit-v2\\AudioBridge-Windows-tests\\bridge_benchmark.exe"
+      ]
+    },
+    {
+      "test": "windows_runtime_benchmark",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 13.326683799999955,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit-v2\\AudioBridge-Windows-tests\\python\\python.exe",
+        "-X",
+        "utf8",
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit-v2\\AudioBridge-Windows-tests\\windows_runtime_benchmark.py",
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit-v2\\AudioBridge-Windows-tests\\runtime_fake.exe",
+        "--seconds",
+        "10",
+        "--output",
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit-v2\\AudioBridge-Windows-tests\\results\\runtime-benchmark.json"
+      ]
+    }
+  ]
+}

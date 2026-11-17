@@ -1,6 +1,6 @@
 # Windows 10 / i7-7700 / AirPods Pro 3 acceptance run
 
-Target provided by the user: Windows 10, Intel Core i7-7700, AirPods Pro 3; Discord on the MacBook Air. These exact devices have not yet been exercised. A Windows executable running under Wine does not reproduce the PC's Bluetooth or audio drivers.
+Target provided by the user: Windows 10, Intel Core i7-7700, AirPods Pro 3; Discord on the MacBook Air. Native Windows software tests and silent stereo AirPods output have now passed on this PC. Complete two-machine audio routing and game performance remain pending. A Windows executable running under Wine does not reproduce the PC's Bluetooth or audio drivers.
 
 ## First configuration
 
@@ -14,7 +14,7 @@ Apple documents non-Apple Bluetooth headset pairing for AirPods Pro 3: with the 
 
 ## Setup and routing
 
-1. Install two independent virtual cables on each computer as described in README.md. Driver packages are separate; no driver installation or license purchase is automated.
+1. Install two independent virtual cables on each computer as described in README.md. Driver packages are separate; follow their normal installers and any license/admin prompts. No driver license purchase is required for the proposed BlackHole and VB-CABLE/Hi-Fi Cable paths.
 2. Windows: Deadlock output → Cable A playback; Deadlock input → Cable B recording. AudioBridge playback input → Cable A recording; microphone output → Cable B playback; headphones → AirPods Stereo.
 3. Mac: Discord output → Cable A playback; Discord input → Cable B recording. AudioBridge playback input → Cable A recording; microphone output → Cable B playback; physical microphone → MacBook microphone.
 4. Put both computers on the same private LAN. Enter each computer's numeric IPv4 address in the other app. Default UDP port is 45670. Guest Wi-Fi isolation can block the pair.
@@ -40,4 +40,8 @@ Measure latency using a repeatable signal and correlated recordings rather than 
 
 ## Current result
 
-**Pending real hardware.** Automated routing, encrypted transport, native Mac output, Wine-translated WASAPI, protected pairing and GUI onboarding pass; no Deadlock FPS, physical AirPods latency or i7-7700 CPU result is claimed.
+**Partial hardware validation passed.** All 15 native Windows test groups passed, including protected pairing, synthetic routing, silent AirPods stereo output and injected WASAPI timeout/reopen recovery. Before the Wi-Fi buffer update, the synthetic Windows-role engine measured 1.556% of one logical core and 7.160 MiB working set on the i7-7700 over 10.043 steady seconds; this excludes native audio, Bluetooth, GUI and game load. No Deadlock FPS, audible AirPods latency or complete two-machine hardware result is claimed. See `validation/windows-native-2026-11-17.log` and VALIDATION.md.
+
+The updated synthetic pair passed all 16 continuous routing/control phases on both physical computers over Wi-Fi. An additional deterministic test covers repeated 80 ms receive gaps. Remote playback and microphone reserves are now 100 ms; local game buffering is unchanged. These passes do not replace physical latency, Discord, game or soak measurements.
+
+The production rebuild subsequently passed all 15 native Windows groups again with Deadlock left running in the background. The short CPU counters returned zero ticks and are not a valid zero-cost estimate; synthetic working sets were approximately 7.7 MiB per role. See validation/windows-native-v2/.

@@ -1,10 +1,12 @@
 #include "bridge/listening_mixer.hpp"
+#include "bridge/transport.hpp"
 #include <array>
 #include <atomic>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <thread>
+#include <vector>
 using namespace bridge;
 void check(bool yes,const char* message){if(!yes){std::fprintf(stderr,"FAIL: %s\n",message);std::exit(1);}}
 int main(){
@@ -35,7 +37,8 @@ int main(){
     // captured local audio. Settings are published from a concurrent controller.
     ListeningMixer callbackMixer(Device::Windows,768);callbackMixer.setSettings(settings);
     std::array<float,2048> constant{},rendered{};constant.fill(.2f);
-    callbackMixer.pushLocal(constant.data(),1024);callbackMixer.pushRemote(constant.data(),1024);
+    callbackMixer.pushLocal(constant.data(),1024);
+    for(int i=0;i<5;++i)callbackMixer.pushRemote(constant.data(),1024);
     callbackMixer.render(rendered.data(),513);
     check(rendered[1024]>.39f&&rendered[1025]>.39f,"callback chunks preserve stereo mix");
     settings.globalDeafen=true;callbackMixer.setSettings(settings);callbackMixer.render(rendered.data(),513);
@@ -54,10 +57,58 @@ int main(){
     check(resetMixer.pushRemote(constant.data(),240)==0,"fresh packets cannot enter pending flush");
     resetMixer.render(rendered.data(),240);
     check(!resetMixer.remoteResetPending(),"render acknowledges actual flush");
-    check(resetMixer.pushRemote(constant.data(),1024)==1024,"fresh packet accepted after acknowledgement");
+    for(int i=0;i<5;++i)check(resetMixer.pushRemote(constant.data(),1024)==1024,"fresh packet accepted after acknowledgement");
     resetMixer.render(rendered.data(),240);
     check(rendered[478]>.19f,"acknowledged reset retains fresh network audio");
-    check(resetMixer.targetFrames()==480&&resetMixer.remoteTargetFrames()==960,"network reserve does not add local latency");
+    check(resetMixer.targetFrames()==480&&resetMixer.remoteTargetFrames()==4800,"network reserve does not add local latency");
+
+    // A 5 ms sender continues while Wi-Fi delivers sixteen packets together
+    // every 80 ms. Reverse each burst to exercise reordering, and decode at most
+    // twelve packets per worker tick as the runtime does. Test actual continuous
+    // output on both remote paths and a local impulse during the receive gap.
+    ListeningMixer wifiMixer(Device::Windows,480);wifiMixer.setSettings(Settings{});
+    AdaptiveAudioRing<8192> wifiMicrophone(4800);
+    net::JitterBuffer wifiPackets(32,4);
+    std::array<float,480> localSignal{},remoteSignal{},wifiOutput{},micOutput{};
+    for(std::size_t n=0;n<240;++n)remoteSignal[n*2+1]=.2f;
+    std::vector<net::Packet> pendingPackets;
+    uint64_t expectedTime=0;std::size_t localImpulseFrame=0;
+    constexpr std::size_t localImpulseTick=105;
+    for(std::size_t tick=0;tick<300;++tick){
+        net::Packet packet;packet.kind=net::Kind::Audio;packet.sample_time=tick*240;
+        pendingPackets.push_back(std::move(packet));
+        const bool burstPeriod=tick>=100&&tick<228;
+        if(!burstPeriod||(tick-100)%16==15){
+            for(auto it=pendingPackets.rbegin();it!=pendingPackets.rend();++it)
+                check(wifiPackets.push(std::move(*it)),"Wi-Fi burst packet accepted without reanchor");
+            pendingPackets.clear();
+        }
+        for(unsigned n=0;n<12&&wifiPackets.has_next();++n){
+            auto received=wifiPackets.pop();
+            check(received&&received->sample_time==expectedTime,"burst remains in exact media order");
+            expectedTime+=240;
+            check(wifiMixer.pushRemote(remoteSignal.data(),240)==240,"remote playback burst fits reservoir");
+            check(wifiMicrophone.push(remoteSignal.data(),240)==240,"remote microphone burst fits reservoir");
+        }
+        localSignal.fill(0);
+        if(tick==localImpulseTick)localSignal[0]=.8f;
+        wifiMixer.pushLocal(localSignal.data(),240);
+        wifiMixer.render(wifiOutput.data(),240);
+        const auto micFrames=wifiMicrophone.pop(micOutput.data(),240);
+        for(std::size_t n=0;n<240;++n){
+            if(!localImpulseFrame&&wifiOutput[n*2]>.1f)localImpulseFrame=tick*240+n;
+            if(tick>=30){
+                check(std::abs(wifiOutput[n*2+1]-.2f)<1e-5,"80 ms receive bursts keep remote playback continuous");
+                check(micFrames==240&&std::abs(micOutput[n*2+1]-.2f)<1e-5,"80 ms receive bursts keep remote microphone continuous");
+            }
+        }
+    }
+    check(localImpulseFrame>=localImpulseTick*240&&localImpulseFrame<=localImpulseTick*240+720,
+        "local impulse stays within 15 ms while network audio has a 100 ms reserve");
+    check(!wifiPackets.discontinuity_count(),"sixteen-packet receive bursts never reset media timeline");
+    check(!wifiMicrophone.underrun.load()&&!wifiMicrophone.dropped.load(),"remote microphone has no underrun or overflow");
+    std::printf("80 ms receive bursts: continuous remote playback/mic; local impulse delay %.3fms\n",
+        double(localImpulseFrame-localImpulseTick*240)/48);
 
     // Exercise the auto sizing rule across108 callback/clock combinations.
     // Time is simulated in source frames; capture and render callbacks run on

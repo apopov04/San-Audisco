@@ -1,0 +1,214 @@
+{
+  "source_zip_sha256": "3309dc5bcf6d3cd1b30110ba7db5d40f52393494e1a15a68cf0bfa2e41e6c1fd",
+  "scope": "High-resolution Windows pacing diagnostic with synthetic endpoints; no production patch",
+  "streams": {
+    "rx_1": {
+      "packets": 9025,
+      "gap_histogram_bounds_ms": [
+        1,
+        5,
+        10,
+        20,
+        50,
+        100,
+        250,
+        null
+      ],
+      "gap_histogram": [
+        490,
+        4179,
+        4300,
+        30,
+        2,
+        23,
+        0,
+        0
+      ],
+      "max_gap_ms": 75.667,
+      "max_consecutive_lt1ms": 14
+    },
+    "rx_2": {
+      "packets": 11026,
+      "gap_histogram_bounds_ms": [
+        1,
+        5,
+        10,
+        20,
+        50,
+        100,
+        250,
+        null
+      ],
+      "gap_histogram": [
+        684,
+        4928,
+        5289,
+        99,
+        2,
+        23,
+        0,
+        0
+      ],
+      "max_gap_ms": 79.704,
+      "max_consecutive_lt1ms": 15
+    },
+    "tx_1": {
+      "packets": 7233,
+      "gap_histogram_bounds_ms": [
+        1,
+        5,
+        10,
+        20,
+        50,
+        100,
+        250,
+        null
+      ],
+      "gap_histogram": [
+        8,
+        3547,
+        3673,
+        4,
+        0,
+        0,
+        0,
+        0
+      ],
+      "max_gap_ms": 12.905,
+      "max_consecutive_lt1ms": 2
+    },
+    "tx_2": {
+      "packets": 5233,
+      "gap_histogram_bounds_ms": [
+        1,
+        5,
+        10,
+        20,
+        50,
+        100,
+        250,
+        null
+      ],
+      "gap_histogram": [
+        5,
+        2587,
+        2637,
+        3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "max_gap_ms": 12.914,
+      "max_consecutive_lt1ms": 2
+    }
+  },
+  "fake_clocks": {
+    "win-headphones": {
+      "sampled_intervals_seconds": 44,
+      "median_of_one_second_max_gap_ms": 5.9883,
+      "max_gap_ms": 24.433,
+      "max_callback_work_ms": 0.1525,
+      "max_entire_iteration_work_ms": 1.4437
+    },
+    "win-mic": {
+      "sampled_intervals_seconds": 25,
+      "median_of_one_second_max_gap_ms": 5.9364,
+      "max_gap_ms": 6.1396,
+      "max_callback_work_ms": 0.104,
+      "max_entire_iteration_work_ms": 0.1398
+    },
+    "win-mic-sink": {
+      "sampled_intervals_seconds": 76,
+      "median_of_one_second_max_gap_ms": 6.0431,
+      "max_gap_ms": 32.3756,
+      "max_callback_work_ms": 0.1545,
+      "max_entire_iteration_work_ms": 1.1538
+    },
+    "win-playback": {
+      "sampled_intervals_seconds": 81,
+      "median_of_one_second_max_gap_ms": 5.9927,
+      "max_gap_ms": 32.875,
+      "max_callback_work_ms": 0.115,
+      "max_entire_iteration_work_ms": 0.1914
+    }
+  },
+  "worker": {
+    "median_of_one_second_max_gap_ms": 5.93,
+    "max_gap_ms": 33.042
+  },
+  "ring_snapshot_after_initial_delivery_bursts": {
+    "wall": 1794942975.891013,
+    "primary": 0,
+    "mic_source": 1,
+    "muted": false,
+    "deafen": false,
+    "playback_capture": {
+      "available": 1394,
+      "underrun_frames": 0,
+      "discontinuities": 0,
+      "dropped_frames": 0,
+      "ratio": 1.0000229468566362
+    },
+    "mic_capture": {
+      "available": 0,
+      "underrun_frames": 0,
+      "discontinuities": 1,
+      "dropped_frames": 0,
+      "ratio": 1
+    },
+    "mic_output": {
+      "available": 1495,
+      "underrun_frames": 0,
+      "discontinuities": 2,
+      "dropped_frames": 0,
+      "ratio": 1.0005475531013945
+    },
+    "network_mic": {
+      "available": 717,
+      "underrun_frames": 5520,
+      "discontinuities": 45,
+      "dropped_frames": 0,
+      "ratio": 1.0005000000000033
+    },
+    "listening_local": {
+      "available": 480,
+      "underrun_frames": 0,
+      "discontinuities": 1,
+      "dropped_frames": 0,
+      "ratio": 1
+    },
+    "listening_remote": {
+      "available": 960,
+      "underrun_frames": 5520,
+      "discontinuities": 45,
+      "dropped_frames": 0,
+      "ratio": 1
+    },
+    "playback_jitter": {
+      "size": 0,
+      "discontinuities": 20,
+      "primed": true
+    },
+    "mic_jitter": {
+      "size": 0,
+      "discontinuities": 21,
+      "primed": true
+    }
+  },
+  "interpretation": [
+    "High resolution removes routine15.6ms batching but one shared33ms OS scheduling stall remains.",
+    "Remote arrival gaps up to80ms and14-15packet bursts exceed20ms playback/15ms mic targets and12packet jittercapacity.",
+    "Do not interpret unused listening_local ring overflow after Windows becomes secondary as an audible active-route failure.",
+    "First12seconds produced5520underrunframes per remote ring plus re-priming gaps; local capture had none.",
+    "Adjacent tone failures also require independent Opus/drift calibration; counters and actual missingenergy distinguish them."
+  ],
+  "next_experiment": {
+    "remote_reservoir_frames": 4800,
+    "remote_reservoir_ms": 100,
+    "jitter_packet_capacity": 32,
+    "local_listening_target_unchanged": true,
+    "hardware_queues_unchanged": true,
+    "reason": "Observed80ms incominggaps plus20msmargin; fixedtargetfirstisolatesmechanismbeforeadaptivepolicy"
+  }
+}

@@ -12,8 +12,9 @@ namespace bridge {
 class ListeningMixer {
 public:
     enum Reset : unsigned { Local = 1, Remote = 2, Both = 3 };
+    // 100 ms applies only to received audio; local game latency stays callback-derived.
     ListeningMixer(Device local,std::size_t targetFrames)
-        : engine_(local),local_(targetFrames),remote_(std::max(targetFrames,std::size_t(960))),requestedTarget_(targetFrames),activeTarget_(targetFrames) {}
+        : engine_(local),local_(targetFrames),remote_(std::max(targetFrames,std::size_t(4800))),requestedTarget_(targetFrames),activeTarget_(targetFrames) {}
     void setSettings(const Settings& settings){engine_.setSettings(settings);}
     // Remote reset/target requests and pushRemote share the decoding worker.
     // It must wait for remoteResetPending()==false before advancing packets.
@@ -27,7 +28,7 @@ public:
         if(requestedTarget_.exchange(frames,std::memory_order_acq_rel)!=frames)remoteResetRequested_.fetch_add(1,std::memory_order_release);
     }
     std::size_t targetFrames() const noexcept {return requestedTarget_.load(std::memory_order_acquire);}
-    std::size_t remoteTargetFrames() const noexcept {return std::max(targetFrames(),std::size_t(960));}
+    std::size_t remoteTargetFrames() const noexcept {return std::max(targetFrames(),std::size_t(4800));}
     bool remoteResetPending() const noexcept {return remoteResetRequested_.load(std::memory_order_acquire)!=remoteResetAcknowledged_.load(std::memory_order_acquire);}
     std::size_t pushLocal(const float* samples,std::size_t frames) noexcept {return local_.push(samples,frames);}
     std::size_t pushRemote(const float* samples,std::size_t frames) noexcept {return remoteResetPending()?0:remote_.push(samples,frames);}
@@ -41,7 +42,7 @@ public:
         // epoch must never leave a later target reset that would erase fresh data.
         const auto remoteReset=remoteResetRequested_.load(std::memory_order_acquire);
         const auto requested=requestedTarget_.load(std::memory_order_acquire);
-        if(requested!=activeTarget_){local_.set_target_frames(requested);remote_.set_target_frames(std::max(requested,std::size_t(960)));activeTarget_=requested;}
+        if(requested!=activeTarget_){local_.set_target_frames(requested);remote_.set_target_frames(std::max(requested,std::size_t(4800)));activeTarget_=requested;}
         const auto reset=resets_.exchange(0,std::memory_order_acq_rel);
         if(reset&Local)local_.discard();
         if(remoteReset!=remoteResetAcknowledged_.load(std::memory_order_relaxed)){

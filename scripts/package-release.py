@@ -27,7 +27,7 @@ manifest = {
     'version': '0.1.0', 'source_commit': commit, 'source_dirty': dirty,
     'packaged_at_utc': datetime.now(timezone.utc).isoformat(),
     'binary_sha256': {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in artifacts.items()},
-    'validation': 'See VALIDATION.md; physical Windows/AirPods/Deadlock acceptance is pending.',
+    'validation': 'See VALIDATION.md for native Windows/AirPods smoke results and LAN findings; full two-device audio and Deadlock acceptance is pending.',
 }
 (dist/'BUILD_INFO.json').write_text(json.dumps(manifest, indent=2)+'\n')
 with zipfile.ZipFile(dist/'AudioBridge-Windows-x64.zip','w',zipfile.ZIP_DEFLATED) as z:

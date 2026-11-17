@@ -1,0 +1,6 @@
+clock -900 ppm -> ratio -899.96 ppm, fill 481
+clock -500 ppm -> ratio -499.97 ppm, fill 481
+clock +0 ppm -> ratio +0.00 ppm, fill 480
+clock +500 ppm -> ratio +499.97 ppm, fill 479
+clock +900 ppm -> ratio +899.96 ppm, fill 479
+adaptive ring tests passed

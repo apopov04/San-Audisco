@@ -1,0 +1,1 @@
+PASS transport: encryption, tamper, wrong key, replay, session binding, reordering, bounded loss recovery, Opus audio, UDP duplex, heartbeat, timeout and reconnect

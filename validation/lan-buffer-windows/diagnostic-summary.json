@@ -1,0 +1,128 @@
+{
+  "Passed": 16,
+  "Total": 16,
+  "HarnessFailure": null,
+  "ChildExit": 0,
+  "DurationSeconds": 82.06512188911438,
+  "TimeoutEvents": 0,
+  "PacerErrors": 0,
+  "MaxPollGapMs": 20.872,
+  "FinalTransport": {
+    "event": "stats",
+    "wall": 1794943792.628695,
+    "elapsed_ms": 81252.162,
+    "generation": 0,
+    "connected": true,
+    "accepted_rx_age_ms": 174.77,
+    "raw_rx_age_ms": 174.77,
+    "send_age_ms": 4.764,
+    "max_poll_gap_ms": 5.703,
+    "tx_by_kind": [
+      1,
+      1,
+      12478,
+      812,
+      322
+    ],
+    "rx_by_kind": [
+      1,
+      1,
+      20026,
+      826,
+      321
+    ],
+    "raw_rx_count": 21175,
+    "send_errors": 0,
+    "recv_errors": 0,
+    "decode_errors": 0,
+    "source_errors": 0,
+    "last_send_error": 0,
+    "last_recv_error": 0,
+    "last_decode_reason": "none"
+  },
+  "GapSummary": [
+    {
+      "Group": "rx, 1",
+      "MaxGapMs": 28.564,
+      "IntervalsLt1Ms": 1390.0,
+      "MaxConsecutiveLt1Ms": 5.0
+    },
+    {
+      "Group": "rx, 2",
+      "MaxGapMs": 25.021,
+      "IntervalsLt1Ms": 2256.0,
+      "MaxConsecutiveLt1Ms": 5.0
+    },
+    {
+      "Group": "tx, 1",
+      "MaxGapMs": 14.923,
+      "IntervalsLt1Ms": 6.0,
+      "MaxConsecutiveLt1Ms": 2.0
+    },
+    {
+      "Group": "tx, 2",
+      "MaxGapMs": 14.949,
+      "IntervalsLt1Ms": 6.0,
+      "MaxConsecutiveLt1Ms": 2.0
+    }
+  ],
+  "FinalRings": {
+    "wall": 1794943793.3794,
+    "primary": 1,
+    "mic_source": 0,
+    "muted": true,
+    "deafen": false,
+    "playback_capture": {
+      "available": 1293,
+      "underrun_frames": 0,
+      "discontinuities": 0,
+      "dropped_frames": 0,
+      "ratio": 0.9999826803308008
+    },
+    "mic_capture": {
+      "available": 1302,
+      "underrun_frames": 0,
+      "discontinuities": 8,
+      "dropped_frames": 0,
+      "ratio": 1.0001559471851023
+    },
+    "mic_output": {
+      "available": 1490,
+      "underrun_frames": 0,
+      "discontinuities": 16,
+      "dropped_frames": 0,
+      "ratio": 1.0002624195095062
+    },
+    "network_mic": {
+      "available": 0,
+      "underrun_frames": 0,
+      "discontinuities": 16,
+      "dropped_frames": 0,
+      "ratio": 1
+    },
+    "listening_local": {
+      "available": 8192,
+      "underrun_frames": 240,
+      "discontinuities": 2,
+      "dropped_frames": 1765888,
+      "ratio": 0.9999721251324061
+    },
+    "listening_remote": {
+      "available": 4626,
+      "underrun_frames": 0,
+      "discontinuities": 2,
+      "dropped_frames": 0,
+      "ratio": 1.0000022757245026
+    },
+    "playback_jitter": {
+      "size": 0,
+      "discontinuities": 2,
+      "primed": false
+    },
+    "mic_jitter": {
+      "size": 0,
+      "discontinuities": 8,
+      "primed": false
+    }
+  }
+}

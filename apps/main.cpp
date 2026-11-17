@@ -1,3 +1,4 @@
+#include "bridge/deadline_wait.hpp"
 #include "bridge/audio.hpp"
 #include "bridge/engine.hpp"
 #include "bridge/transport.hpp"
@@ -167,13 +168,16 @@ int main(int argc,char** argv) {try {
     const auto hardwareBufferFrames=config.contains("buffer_frames")?buffer_frames(config["buffer_frames"]):1536;
     AdaptiveAudioRing<8192> playbackIn{hardwareBufferFrames},micIn{hardwareBufferFrames},micOut{hardwareBufferFrames};
     ListeningMixer listeningMixer(local,hardwareBufferFrames);
-    AdaptiveAudioRing<8192> networkMicrophone{720};
+    // Remote-only 100 ms reserve covers measured Wi-Fi receive gaps up to 80 ms.
+    // Local capture/listening and hardware callback targets remain independent.
+    AdaptiveAudioRing<8192> networkMicrophone{4800};
     std::atomic<bool> microphoneBlocked{true},listeningBlocked{true};
     AudioStream playback,microphone,listen,micSink;
     playback.open(playbackId,true,[&](float* p,size_t n){playbackIn.push(p,n);listeningMixer.pushLocal(p,n);});
     micSink.open(micOutputId,false,[&](float* p,size_t n){micOut.pop(p,n);if(microphoneBlocked.load())std::fill(p,p+n*2,0.f);});
     playback.start();micSink.start();
-    Engine engine(local);net::JitterBuffer jp,jm;net::AudioDecoder decoder;
+    // A receive burst may contain 16 packets after an 80 ms Wi-Fi pause.
+    Engine engine(local);net::JitterBuffer jp{32,4},jm{32,4};net::AudioDecoder decoder;
     std::array<float,480> lp{},lm{},rm{},localMic{},remoteMic{},txp{},txm{};
     std::array<int16_t,480> wire{};
     uint64_t tick=0,revision=0,remoteRevision=0,request=0,appliedRequest=0,generation=0,nextSampleTime=0,playbackDiscontinuities=0,microphoneDiscontinuities=0;
@@ -182,6 +186,7 @@ int main(int argc,char** argv) {try {
     Settings previous=settings;Commands commands;
     auto next=std::chrono::steady_clock::now(),retryHeadphones=next,retryMicrophone=next,retryPlayback=next,retryMicSink=next;
     const auto mediaEpoch=next;
+    DeadlineWait workerPacer;
     auto resumeMicSink=[&]{
         if(micSink.running()||std::chrono::steady_clock::now()<retryMicSink)return;
         microphoneBlocked=true;
@@ -348,7 +353,7 @@ int main(int argc,char** argv) {try {
         }
         ++tick;next+=std::chrono::milliseconds(5);
         if(next<began-std::chrono::milliseconds(20))next=began+std::chrono::milliseconds(5);
-        std::this_thread::sleep_until(next);
+        if(!workerPacer.until(next))throw std::runtime_error("Worker timer wait failed: "+std::to_string(workerPacer.last_error()));
     }
     microphoneBlocked=true;listeningBlocked=true;
     microphone.close();listen.close();playback.close();micSink.close();return 0;

@@ -1,0 +1,19 @@
+{
+  "frequencies": [
+    410,
+    730,
+    1090,
+    2390
+  ],
+  "codec": "Opus1.5.2,240frame5ms,stereo PCM,restricted-lowdelay,complexity3,CBR;playback128kbps,microphone48kbps AUTO unchanged",
+  "cases": 480,
+  "assessment": "10seconds each; after~1secondwarmup,89overlappingthree100mswindowmedians percase; existing thresholds present>=.04 absent<=.008",
+  "drift": "9fixedratios from\u22121000to+1000ppm step250ppm plus triangular10ppmper5msblock;3initialphases",
+  "contamination": "source amplitude .15 plus each other source amplitude .015 (10%), injected before Opus encoder",
+  "false_positive_windows": 0,
+  "missed_contamination_windows": 0,
+  "minimum_wanted": 0.119628689,
+  "maximum_spurious": 0.002671246,
+  "minimum_injected": 0.012668721,
+  "limits": "Codec-onlycalibration; no network,queue,loss,PLC,physicaldevices orBluetooth. Doesnotestablishnetworkcontinuity orresolve80msreceivegaps."
+}

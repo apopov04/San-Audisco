@@ -1,0 +1,18 @@
+PASS initial mixed playback and fail-closed microphone
+PASS Mac command unmutes same microphone to both applications
+PASS Windows microphone mute leaves Mac microphone audible
+PASS Mac deafen gates its playback and its microphone destination
+PASS independent volume slider attenuates Windows source
+PASS balance endpoint selects Windows audio
+PASS silence affects listening only
+PASS primary handover moves mixed playback to Mac and blocks voice
+PASS voice can resume after primary handover
+PASS microphone source handover blocks voice
+PASS Windows microphone reaches both applications
+PASS global deafen silences playback and both microphones
+PASS undeafen restores prior route state
+SKIP scheduler suspension: SIGSTOP/SIGCONT unavailable on this platform
+PASS peer crash fails microphone closed
+PASS reconnect preserves mute until explicit unmute
+PASS restarted peer command and microphone route recover
+PASS actual CLI runtime: 16 scenarios, two processes, encrypted Opus transport, fake device callbacks

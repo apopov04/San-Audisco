@@ -1,0 +1,297 @@
+{
+  "completed_utc": "2026-11-17T18:54:01.210972+00:00",
+  "python": "3.13.9 (tags/v3.13.9:8183fa5, Oct 14 2025, 14:09:13) [MSC v.1944 64 bit (AMD64)]",
+  "platform": "win32",
+  "binary_sha256": {
+    "adaptive_ring_test.exe": "5301b41d86d74684f271d948b59ddaf78810e803da0b7bf98f79fef34aef9923",
+    "bridge_benchmark.exe": "28697919dd2f1966ff34a46c41ad1832def42109fa9134659e05f0e3eb33af6c",
+    "control_test.exe": "86aac6379a59da447fcd1c0635b9b698dc7012e470ab63a8f97dd6a4595cba3e",
+    "credentials_test.exe": "0e016ce978a53a92cd1a618e8b249939eb0651560b67abc36e6ac085d4b130b3",
+    "engine_test.exe": "26c8b7efce38de6085a41bb6400d1cda395dd3db892e6f23551d312b8f12e682",
+    "integration_test.exe": "9220806e08928aa2076dd53fd625cde6d767446b8330e51078aa2d5c5715a467",
+    "listening_mixer_test.exe": "5d341ce6f08e1e30ec3b92101f63189527f17fdcea9acc8584b10231586e4010",
+    "runtime_fake.exe": "f17eed8e1174f98aa87067e81e8ac2ecfc6c21127c50ccbc63fd60450bc2d6bb",
+    "transport_test.exe": "e9969f6f2b07a5860bca49487b45f8333c9476be9f1bf3f3709c84d429882b64",
+    "windows_audio_recovery_test.exe": "1debef89b99258a78201d3b2d742d2ca50e8d3061aa4e13446dd1bbc7ba51751",
+    "windows_audio_smoke.exe": "bdd10e3f53326d4646423d2eda74080d96bdd13c9f8bc57a9b89f8b4688272a3"
+  },
+  "tests": [
+    {
+      "test": "engine_test",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 0.05805119999968156,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit\\AudioBridge-Windows-tests\\engine_test.exe"
+      ]
+    },
+    {
+      "test": "transport_test",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 4.940412799999649,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit\\AudioBridge-Windows-tests\\transport_test.exe"
+      ]
+    },
+    {
+      "test": "integration_test",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 2.5509155999998256,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit\\AudioBridge-Windows-tests\\integration_test.exe"
+      ]
+    },
+    {
+      "test": "adaptive_ring_test",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 0.1731380999999601,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit\\AudioBridge-Windows-tests\\adaptive_ring_test.exe"
+      ]
+    },
+    {
+      "test": "control_test",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 0.033077899999625515,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit\\AudioBridge-Windows-tests\\control_test.exe"
+      ]
+    },
+    {
+      "test": "credentials_test",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 0.03471770000032848,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit\\AudioBridge-Windows-tests\\credentials_test.exe"
+      ]
+    },
+    {
+      "test": "listening_mixer_test",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 0.4577422000002116,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit\\AudioBridge-Windows-tests\\listening_mixer_test.exe"
+      ]
+    },
+    {
+      "test": "credentials_store",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 0.040003500000239,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit\\AudioBridge-Windows-tests\\credentials_test.exe",
+        "--store-roundtrip"
+      ]
+    },
+    {
+      "test": "runtime_test",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 14.23786629999995,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit\\AudioBridge-Windows-tests\\python\\python.exe",
+        "-X",
+        "utf8",
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit\\AudioBridge-Windows-tests\\runtime_test.py",
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit\\AudioBridge-Windows-tests\\runtime_fake.exe"
+      ]
+    },
+    {
+      "test": "credentials_cli_test",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 0.35108820000004926,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit\\AudioBridge-Windows-tests\\python\\python.exe",
+        "-X",
+        "utf8",
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit\\AudioBridge-Windows-tests\\credentials_cli_test.py",
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit\\AudioBridge-Windows-tests\\runtime_fake.exe",
+        "--store-roundtrip"
+      ]
+    },
+    {
+      "test": "optional_routes_test",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 5.985693200000242,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit\\AudioBridge-Windows-tests\\python\\python.exe",
+        "-X",
+        "utf8",
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit\\AudioBridge-Windows-tests\\optional_routes_test.py",
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit\\AudioBridge-Windows-tests\\runtime_fake.exe"
+      ]
+    },
+    {
+      "test": "windows_audio_smoke",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 0.960024699999849,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit\\AudioBridge-Windows-tests\\windows_audio_smoke.exe",
+        "{0.0.0.00000000}.{419e1f6a-ce30-4b68-a2b4-6ad4abf907f1}"
+      ]
+    },
+    {
+      "test": "windows_audio_recovery_test",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 0.810944599999857,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit\\AudioBridge-Windows-tests\\windows_audio_recovery_test.exe",
+        "{0.0.0.00000000}.{419e1f6a-ce30-4b68-a2b4-6ad4abf907f1}"
+      ]
+    },
+    {
+      "test": "bridge_benchmark",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 0.5406112000000576,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit\\AudioBridge-Windows-tests\\bridge_benchmark.exe"
+      ]
+    },
+    {
+      "test": "windows_runtime_benchmark",
+      "status": "PASS",
+      "exit_code": 0,
+      "wall_seconds": 13.400942600000235,
+      "command": [
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit\\AudioBridge-Windows-tests\\python\\python.exe",
+        "-X",
+        "utf8",
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit\\AudioBridge-Windows-tests\\windows_runtime_benchmark.py",
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit\\AudioBridge-Windows-tests\\runtime_fake.exe",
+        "--seconds",
+        "10",
+        "--output",
+        "C:\\Users\\acesp\\Documents\\ChatGPT\\AudioBridge\\native-test-kit\\AudioBridge-Windows-tests\\results\\runtime-benchmark.json"
+      ]
+    }
+  ]
+}
+PASS initial mixed playback and fail-closed microphone
+PASS Mac command unmutes same microphone to both applications
+PASS Windows microphone mute leaves Mac microphone audible
+PASS Mac deafen gates its playback and its microphone destination
+PASS independent volume slider attenuates Windows source
+PASS balance endpoint selects Windows audio
+PASS silence affects listening only
+PASS primary handover moves mixed playback to Mac and blocks voice
+PASS voice can resume after primary handover
+PASS microphone source handover blocks voice
+PASS Windows microphone reaches both applications
+PASS global deafen silences playback and both microphones
+PASS undeafen restores prior route state
+SKIP scheduler suspension: SIGSTOP/SIGCONT unavailable on this platform
+PASS peer crash fails microphone closed
+PASS reconnect preserves mute until explicit unmute
+PASS restarted peer command and microphone route recover
+PASS actual CLI runtime: 16 scenarios, two processes, encrypted Opus transport, fake device callbacks
+PASS unused Windows physical microphone and Mac headphones may be omitted
+PASS selecting absent microphone stays silent with diagnostic
+PASS selecting absent headphones stays silent with diagnostic
+PASS configured source and primary recover after unavailable-role selection
+PASS CLI key generation, overwrite protection, invalid IDs, bounded parsing, no secret output and key_id precedence
+PASS CLI protected-store import, run with key_id, deletion, missing-key rejection; temporary credential removed
+Selected output={0.0.0.00000000}.{419e1f6a-ce30-4b68-a2b4-6ad4abf907f1} native_rate=44100 channels=2
+WASAPI silent render passed: 24514 frames at 48k stereo; device=Headphones (Raggy’s Airpods Pro - Find My Stereo)
+Selected output={0.0.0.00000000}.{419e1f6a-ce30-4b68-a2b4-6ad4abf907f1} native_rate=44100 channels=2
+PASS WASAPI silent rendering, injected event timeout, reopen recovery and stop event
+Routing engine only: 200000 blocks, 0.488443 seconds, 2.44221 us per 5ms block, 0.0488442% of one core equivalent. Excludes I/O, codec, network and GUI.
+{
+  "scope": "Two real CLI processes with synthetic audio callbacks, Opus, authenticated localhost UDP, mixing and control. Native audio drivers, Bluetooth, GUI, Discord and game excluded. Tone-analysis logging disabled.",
+  "cpu_scope": "Steady interval after pairing, unmute and 1 second settling; startup/shutdown excluded. GetProcessTimes user+kernel CPU delta divided by measured wall interval. 100% = one logical core, not whole machine.",
+  "memory_scope": "Working set at end of interval; peak working set since process startup, not private bytes.",
+  "host": [
+    10,
+    0,
+    19041
+  ],
+  "logical_processors": 8,
+  "primary": "windows",
+  "steady_wall_seconds": 10.043454299999212,
+  "processes": [
+    {
+      "role": "windows",
+      "pid": 17488,
+      "user_cpu_seconds": 0.140625,
+      "system_cpu_seconds": 0.015625,
+      "percent_of_one_logical_core": 1.5557396422863423,
+      "working_set_mib": 7.16015625,
+      "peak_working_set_mib_lifetime": 7.1640625,
+      "last_state": {
+        "connected": true,
+        "synchronized": true,
+        "primary": 0,
+        "mic_source": 1,
+        "muted": false,
+        "deafen": false,
+        "balance": 0,
+        "master": 1,
+        "win_mute": false,
+        "win_deafen": false,
+        "win_volume": 1,
+        "win_silence": false,
+        "mac_mute": false,
+        "mac_deafen": false,
+        "mac_volume": 1,
+        "mac_silence": false,
+        "buffer_frames": 1536,
+        "listening_buffer_frames": 480,
+        "playback_ready": true,
+        "mic_sink_ready": true,
+        "headphones_ready": true,
+        "microphone_ready": false,
+        "rejected": 0,
+        "drops": 0,
+        "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 1\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n"
+      },
+      "stderr": []
+    },
+    {
+      "role": "mac",
+      "pid": 2760,
+      "user_cpu_seconds": 0.25,
+      "system_cpu_seconds": 0.09375,
+      "percent_of_one_logical_core": 3.422627213029953,
+      "working_set_mib": 7.1796875,
+      "peak_working_set_mib_lifetime": 7.18359375,
+      "last_state": {
+        "connected": true,
+        "synchronized": true,
+        "primary": 0,
+        "mic_source": 1,
+        "muted": false,
+        "deafen": false,
+        "balance": 0,
+        "master": 1,
+        "win_mute": false,
+        "win_deafen": false,
+        "win_volume": 1,
+        "win_silence": false,
+        "mac_mute": false,
+        "mac_deafen": false,
+        "mac_volume": 1,
+        "mac_silence": false,
+        "buffer_frames": 1536,
+        "listening_buffer_frames": 1536,
+        "playback_ready": true,
+        "mic_sink_ready": true,
+        "headphones_ready": false,
+        "microphone_ready": true,
+        "rejected": 0,
+        "drops": 0,
+        "settings": "primary 0\nmic_source 1\nmute 0\ndeafen 0\nbalance 0\nmaster 1\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n"
+      },
+      "stderr": []
+    }
+  ]
+}

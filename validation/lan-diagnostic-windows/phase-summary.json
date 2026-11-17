@@ -1,0 +1,114 @@
+[
+  {
+    "Phase": "initial_mixed_playback_and_muted_voice",
+    "Pass": true,
+    "MacAck": 0.99,
+    "Reasons": "",
+    "FirstFailure": null
+  },
+  {
+    "Phase": "mac_microphone_to_both",
+    "Pass": false,
+    "MacAck": 0.99,
+    "Reasons": "audio_threshold:12",
+    "FirstFailure": 1794942358.6154053
+  },
+  {
+    "Phase": "windows_route_mute",
+    "Pass": false,
+    "MacAck": 0.99,
+    "Reasons": "audio_threshold:15",
+    "FirstFailure": 1794942363.6303432
+  },
+  {
+    "Phase": "mac_route_mute",
+    "Pass": false,
+    "MacAck": 0.99,
+    "Reasons": "audio_threshold:21,held_phase_health_failure:3",
+    "FirstFailure": 1794942368.685041
+  },
+  {
+    "Phase": "mac_route_deafen",
+    "Pass": false,
+    "MacAck": 0.99,
+    "Reasons": "audio_threshold:20,held_phase_health_failure:2",
+    "FirstFailure": 1794942373.6339834
+  },
+  {
+    "Phase": "windows_route_deafen",
+    "Pass": true,
+    "MacAck": 0.99,
+    "Reasons": "",
+    "FirstFailure": null
+  },
+  {
+    "Phase": "windows_volume_quarter",
+    "Pass": false,
+    "MacAck": 0.99,
+    "Reasons": "audio_threshold:17,held_phase_health_failure:11",
+    "FirstFailure": 1794942384.2888749
+  },
+  {
+    "Phase": "balance_windows_only",
+    "Pass": false,
+    "MacAck": 0.99,
+    "Reasons": "audio_threshold:22,held_phase_health_failure:3",
+    "FirstFailure": 1794942388.8976562
+  },
+  {
+    "Phase": "mac_listening_silence",
+    "Pass": false,
+    "MacAck": 0.99,
+    "Reasons": "audio_threshold:13,held_phase_health_failure:15",
+    "FirstFailure": 1794942393.6809185
+  },
+  {
+    "Phase": "primary_mac_handover_muted",
+    "Pass": true,
+    "MacAck": 0.99,
+    "Reasons": "",
+    "FirstFailure": null
+  },
+  {
+    "Phase": "voice_resumes_after_handover",
+    "Pass": false,
+    "MacAck": 0.99,
+    "Reasons": "audio_threshold:11,audio_while_waiting_ack:9",
+    "FirstFailure": 1794942404.3146133
+  },
+  {
+    "Phase": "windows_microphone_handover_muted",
+    "Pass": true,
+    "MacAck": 0.99,
+    "Reasons": "",
+    "FirstFailure": null
+  },
+  {
+    "Phase": "windows_microphone_to_both",
+    "Pass": true,
+    "MacAck": 0.99,
+    "Reasons": "",
+    "FirstFailure": null
+  },
+  {
+    "Phase": "global_deafen",
+    "Pass": true,
+    "MacAck": 0.99,
+    "Reasons": "",
+    "FirstFailure": null
+  },
+  {
+    "Phase": "global_undeafen",
+    "Pass": false,
+    "MacAck": 0.98,
+    "Reasons": "mac_reported_phase_failure:1",
+    "FirstFailure": 1794942426.981677
+  },
+  {
+    "Phase": "global_mute",
+    "Pass": true,
+    "MacAck": 0.99,
+    "Reasons": "",
+    "FirstFailure": null
+  }
+]

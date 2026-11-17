@@ -1,0 +1,7 @@
+{
+  "ObservedUTC": "2026-11-17T19:37:50.6876527Z",
+  "DeadlockRunning": true,
+  "GameProcessId": 1420,
+  "GameCPUSeconds": 1778.125,
+  "Note": "Deadlock left running. Synthetic benchmark does not measure game FPS or frame times."
+}

@@ -1,0 +1,178 @@
+[
+  {
+    "phase": "global_deafen",
+    "passed": true,
+    "observed_at": 1794941893.4649043,
+    "last_state": {
+      "connected": true,
+      "synchronized": true,
+      "primary": 1,
+      "mic_source": 0,
+      "muted": false,
+      "deafen": true,
+      "balance": 0,
+      "master": 1,
+      "win_mute": false,
+      "win_deafen": false,
+      "win_volume": 1,
+      "win_silence": false,
+      "mac_mute": false,
+      "mac_deafen": false,
+      "mac_volume": 1,
+      "mac_silence": false,
+      "buffer_frames": 1536,
+      "listening_buffer_frames": 480,
+      "playback_ready": true,
+      "mic_sink_ready": true,
+      "headphones_ready": false,
+      "microphone_ready": true,
+      "rejected": 0,
+      "drops": 262,
+      "settings": "primary 1\nmic_source 0\nmute 0\ndeafen 1\nbalance 0\nmaster 1\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+      "_received": 1794941893.44486
+    }
+  },
+  {
+    "phase": "global_undeafen",
+    "passed": true,
+    "observed_at": 1794941898.507739,
+    "last_state": {
+      "connected": true,
+      "synchronized": true,
+      "primary": 1,
+      "mic_source": 0,
+      "muted": false,
+      "deafen": false,
+      "balance": 0,
+      "master": 1,
+      "win_mute": false,
+      "win_deafen": false,
+      "win_volume": 1,
+      "win_silence": false,
+      "mac_mute": false,
+      "mac_deafen": false,
+      "mac_volume": 1,
+      "mac_silence": false,
+      "buffer_frames": 1536,
+      "listening_buffer_frames": 480,
+      "playback_ready": true,
+      "mic_sink_ready": true,
+      "headphones_ready": false,
+      "microphone_ready": true,
+      "rejected": 0,
+      "drops": 262,
+      "settings": "primary 1\nmic_source 0\nmute 0\ndeafen 0\nbalance 0\nmaster 1\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+      "_received": 1794941898.4862816
+    }
+  },
+  {
+    "phase": "global_mute",
+    "passed": true,
+    "observed_at": 1794941902.507982,
+    "last_state": {
+      "connected": true,
+      "synchronized": true,
+      "primary": 1,
+      "mic_source": 0,
+      "muted": true,
+      "deafen": false,
+      "balance": 0,
+      "master": 1,
+      "win_mute": false,
+      "win_deafen": false,
+      "win_volume": 1,
+      "win_silence": false,
+      "mac_mute": false,
+      "mac_deafen": false,
+      "mac_volume": 1,
+      "mac_silence": false,
+      "buffer_frames": 1536,
+      "listening_buffer_frames": 480,
+      "playback_ready": true,
+      "mic_sink_ready": true,
+      "headphones_ready": false,
+      "microphone_ready": true,
+      "rejected": 30,
+      "drops": 262,
+      "settings": "primary 1\nmic_source 0\nmute 1\ndeafen 0\nbalance 0\nmaster 1\nwin_volume 1\nwin_mute 0\nwin_deafen 0\nwin_silence 0\nmac_volume 1\nmac_mute 0\nmac_deafen 0\nmac_silence 0\n",
+      "_received": 1794941902.4995909
+    }
+  }
+]
+{"time":1794941906.1059999,"sink":"win-mic-sink","rms":0,"tones":[0,0,0,0]}
+{"time":1794941906.2149999,"sink":"win-mic-sink","rms":0,"tones":[0,0,0,0]}
+{"time":1794941906.3080001,"sink":"win-mic-sink","rms":0,"tones":[0,0,0,0]}
+{"time":1794941906.4159999,"sink":"win-mic-sink","rms":0,"tones":[0,0,0,0]}
+{"time":1794941906.5090001,"sink":"win-mic-sink","rms":0,"tones":[0,0,0,0]}
+26:    std::atomic<std::uint64_t> dropped{0}, underrun{0}, discontinuities{0};
+36:        if(n<frames) { dropped.fetch_add(frames-n,std::memory_order_relaxed); generation_.fetch_add(1,std::memory_order_release); }
+
+[
+  {
+    "time": 1794941898.906,
+    "sink": "win-mic-sink",
+    "rms": 0.10578235756287369,
+    "tones": [
+      9.499854611002405E-05,
+      0.00012498049129330976,
+      0.14942297314667635,
+      0.0001840760600288947
+    ]
+  },
+  {
+    "time": 1794941899.014,
+    "sink": "win-mic-sink",
+    "rms": 0.10576573385037459,
+    "tones": [
+      9.225504671133119E-05,
+      0.00012211582646185667,
+      0.14940009169716903,
+      0.00018616834256076468
+    ]
+  },
+  {
+    "time": 1794941899.214,
+    "sink": "win-mic-sink",
+    "rms": 0,
+    "tones": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "time": 1794941899.307,
+    "sink": "win-mic-sink",
+    "rms": 0,
+    "tones": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "time": 1794941899.416,
+    "sink": "win-mic-sink",
+    "rms": 0,
+    "tones": [
+      0,
+      0,
+      0,
+      0
+    ]
+  }
+]
+
+         time drops rejected deafen muted primary
+         ---- ----- -------- ------ ----- -------
+1794941829.25     0        0  False  True       0
+1794941888.45   262        0  False False       1
+1794941899.49   262        6  False  True       1
+1794941900.49   262       20  False  True       1
+1794941901.50   262       30  False  True       1
+
+{"Role":"windows","Failure":null,"Exit":0,"Stderr":[],"Phases":[{"phase":"initial_mixed_playback_and_muted_voice","passed":true,"observed_at":1794941830.2835171},{"phase":"mac_microphone_to_both","passed":true,"observed_at":1794941835.2769883},{"phase":"windows_route_mute","passed":true,"observed_at":1794941839.328955},{"phase":"mac_route_mute","passed":true,"observed_at":1794941844.3248425},{"phase":"mac_route_deafen","passed":true,"observed_at":1794941849.3412826},{"phase":"windows_route_deafen","passed":true,"observed_at":1794941854.3391564},{"phase":"windows_volume_quarter","passed":true,"observed_at":1794941859.3337307},{"phase":"balance_windows_only","passed":true,"observed_at":1794941864.3359928},{"phase":"mac_listening_silence","passed":true,"observed_at":1794941869.330493},{"phase":"primary_mac_handover_muted","passed":true,"observed_at":1794941874.3624141},{"phase":"voice_resumes_after_handover","passed":true,"observed_at":1794941879.3799486},{"phase":"windows_microphone_handover_muted","passed":true,"observed_at":1794941884.3704963},{"phase":"windows_microphone_to_both","passed":true,"observed_at":1794941888.4726446},{"phase":"global_deafen","passed":true,"observed_at":1794941893.4649043},{"phase":"global_undeafen","passed":true,"observed_at":1794941898.507739},{"phase":"global_mute","passed":true,"observed_at":1794941902.507982}]}
+
+[{"_received":1794941897.4476893,"connected":true,"synchronized":true,"primary":1,"mic_source":0,"muted":false,"deafen":true,"rejected":0,"drops":262},{"_received":1794941898.4862816,"connected":true,"synchronized":true,"primary":1,"mic_source":0,"muted":false,"deafen":false,"rejected":0,"drops":262},{"_received":1794941899.493856,"connected":false,"synchronized":false,"primary":1,"mic_source":0,"muted":true,"deafen":false,"rejected":6,"drops":262},{"_received":1794941900.485614,"connected":false,"synchronized":false,"primary":1,"mic_source":0,"muted":true,"deafen":false,"rejected":20,"drops":262},{"_received":1794941901.4956791,"connected":true,"synchronized":true,"primary":1,"mic_source":0,"muted":true,"deafen":false,"rejected":30,"drops":262},{"_received":1794941902.4995909,"connected":true,"synchronized":true,"primary":1,"mic_source":0,"muted":true,"deafen":false,"rejected":30,"drops":262},{"_received":1794941903.4898827,"connected":true,"synchronized":true,"primary":1,"mic_source":0,"muted":true,"deafen":false,"rejected":30,"drops":262}]

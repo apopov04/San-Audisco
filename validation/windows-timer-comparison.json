@@ -1,0 +1,204 @@
+{
+  "scope": "Sequential native Windows scheduler A/B: std sleep_until versus high-resolution one-shot waitable timer; 5ms absolute deadlines and production20ms catchup reanchor. No audio, network, priority, registry, power-plan or timer-resolution changes.",
+  "cpu_scope": "GetProcessTimes user+kernel delta during each loop;100percent is one logical core. Windows CPU accounting is quantized.",
+  "logical_processors": 8,
+  "period_ms": 5,
+  "measurements": [
+    {
+      "mode": "std_sleep_until",
+      "samples": 2000,
+      "wall_seconds": 10.0089265,
+      "kernel_cpu_seconds": 0,
+      "user_cpu_seconds": 0,
+      "percent_of_one_logical_core": 0,
+      "already_due_waits": 1354,
+      "schedule_reanchors": 0,
+      "callback_interval": {
+        "mean_ms": 5.00446325,
+        "p50_ms": 0.0016,
+        "p95_ms": 15.9111,
+        "p99_ms": 16.0874,
+        "max_ms": 18.7358,
+        "histogram": [
+          {
+            "lower_ms": null,
+            "upper_ms": 0.25,
+            "count": 1353
+          },
+          {
+            "lower_ms": 0.25,
+            "upper_ms": 1,
+            "count": 1
+          },
+          {
+            "lower_ms": 1,
+            "upper_ms": 4,
+            "count": 0
+          },
+          {
+            "lower_ms": 4,
+            "upper_ms": 6,
+            "count": 0
+          },
+          {
+            "lower_ms": 6,
+            "upper_ms": 10,
+            "count": 0
+          },
+          {
+            "lower_ms": 10,
+            "upper_ms": 20,
+            "count": 646
+          },
+          {
+            "lower_ms": 20,
+            "upper_ms": null,
+            "count": 0
+          }
+        ]
+      },
+      "deadline_lateness": {
+        "mean_ms": 7.779854,
+        "p50_ms": 7.8123,
+        "p95_ms": 14.6788,
+        "p99_ms": 15.4895,
+        "max_ms": 16.0746,
+        "histogram": [
+          {
+            "lower_ms": null,
+            "upper_ms": 0.1,
+            "count": 13
+          },
+          {
+            "lower_ms": 0.1,
+            "upper_ms": 0.5,
+            "count": 47
+          },
+          {
+            "lower_ms": 0.5,
+            "upper_ms": 1,
+            "count": 57
+          },
+          {
+            "lower_ms": 1,
+            "upper_ms": 2,
+            "count": 143
+          },
+          {
+            "lower_ms": 2,
+            "upper_ms": 5,
+            "count": 385
+          },
+          {
+            "lower_ms": 5,
+            "upper_ms": 10,
+            "count": 646
+          },
+          {
+            "lower_ms": 10,
+            "upper_ms": null,
+            "count": 709
+          }
+        ]
+      }
+    },
+    {
+      "mode": "high_resolution_waitable_timer",
+      "samples": 2000,
+      "wall_seconds": 10.0004558,
+      "kernel_cpu_seconds": 0,
+      "user_cpu_seconds": 0,
+      "percent_of_one_logical_core": 0,
+      "already_due_waits": 0,
+      "schedule_reanchors": 0,
+      "callback_interval": {
+        "mean_ms": 5.00022775,
+        "p50_ms": 5.001,
+        "p95_ms": 5.6666,
+        "p99_ms": 5.8879,
+        "max_ms": 6.0006,
+        "histogram": [
+          {
+            "lower_ms": null,
+            "upper_ms": 0.25,
+            "count": 0
+          },
+          {
+            "lower_ms": 0.25,
+            "upper_ms": 1,
+            "count": 0
+          },
+          {
+            "lower_ms": 1,
+            "upper_ms": 4,
+            "count": 1
+          },
+          {
+            "lower_ms": 4,
+            "upper_ms": 6,
+            "count": 1998
+          },
+          {
+            "lower_ms": 6,
+            "upper_ms": 10,
+            "count": 1
+          },
+          {
+            "lower_ms": 10,
+            "upper_ms": 20,
+            "count": 0
+          },
+          {
+            "lower_ms": 20,
+            "upper_ms": null,
+            "count": 0
+          }
+        ]
+      },
+      "deadline_lateness": {
+        "mean_ms": 0.31981015,
+        "p50_ms": 0.1686,
+        "p95_ms": 0.9506,
+        "p99_ms": 1.0753,
+        "max_ms": 1.157,
+        "histogram": [
+          {
+            "lower_ms": null,
+            "upper_ms": 0.1,
+            "count": 87
+          },
+          {
+            "lower_ms": 0.1,
+            "upper_ms": 0.5,
+            "count": 1488
+          },
+          {
+            "lower_ms": 0.5,
+            "upper_ms": 1,
+            "count": 365
+          },
+          {
+            "lower_ms": 1,
+            "upper_ms": 2,
+            "count": 60
+          },
+          {
+            "lower_ms": 2,
+            "upper_ms": 5,
+            "count": 0
+          },
+          {
+            "lower_ms": 5,
+            "upper_ms": 10,
+            "count": 0
+          },
+          {
+            "lower_ms": 10,
+            "upper_ms": null,
+            "count": 0
+          }
+        ]
+      }
+    }
+  ]
+}

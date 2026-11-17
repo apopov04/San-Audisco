@@ -1,0 +1,147 @@
+{
+  "Passed": 7,
+  "Total": 16,
+  "TimeoutEvents": 0,
+  "PacerErrors": 0,
+  "MaxPollGapMs": 33.042,
+  "FinalTransport": {
+    "event": "stats",
+    "wall": 1794943045.137476,
+    "elapsed_ms": 81249.298,
+    "generation": 0,
+    "connected": true,
+    "accepted_rx_age_ms": 570.4,
+    "raw_rx_age_ms": 570.4,
+    "send_age_ms": 5.109,
+    "max_poll_gap_ms": 5.613,
+    "tx_by_kind": [
+      1,
+      1,
+      12466,
+      811,
+      322
+    ],
+    "rx_by_kind": [
+      1,
+      1,
+      20051,
+      821,
+      319
+    ],
+    "raw_rx_count": 21193,
+    "send_errors": 0,
+    "recv_errors": 0,
+    "decode_errors": 0,
+    "source_errors": 0,
+    "last_send_error": 0,
+    "last_recv_error": 0,
+    "last_decode_reason": "none"
+  },
+  "GapSummary": [
+    {
+      "Group": "rx, 1",
+      "MaxGapMs": 75.667,
+      "IntervalsLt1Ms": 490.0,
+      "MaxConsecutiveLt1Ms": 14.0
+    },
+    {
+      "Group": "rx, 2",
+      "MaxGapMs": 79.704,
+      "IntervalsLt1Ms": 684.0,
+      "MaxConsecutiveLt1Ms": 15.0
+    },
+    {
+      "Group": "tx, 1",
+      "MaxGapMs": 12.905,
+      "IntervalsLt1Ms": 8.0,
+      "MaxConsecutiveLt1Ms": 2.0
+    },
+    {
+      "Group": "tx, 2",
+      "MaxGapMs": 12.914,
+      "IntervalsLt1Ms": 5.0,
+      "MaxConsecutiveLt1Ms": 2.0
+    }
+  ],
+  "FakeClockSummary": [
+    {
+      "Id": "win-headphones",
+      "MaxGapMs": 24.433,
+      "CatchupLt1Ms": 15.0
+    },
+    {
+      "Id": "win-mic",
+      "MaxGapMs": 6.1396,
+      "CatchupLt1Ms": 0.0
+    },
+    {
+      "Id": "win-mic-sink",
+      "MaxGapMs": 32.3756,
+      "CatchupLt1Ms": 17.0
+    },
+    {
+      "Id": "win-playback",
+      "MaxGapMs": 32.875,
+      "CatchupLt1Ms": 17.0
+    }
+  ],
+  "FinalRings": {
+    "wall": 1794943045.947893,
+    "primary": 1,
+    "mic_source": 0,
+    "muted": true,
+    "deafen": false,
+    "playback_capture": {
+      "available": 1083,
+      "underrun_frames": 0,
+      "discontinuities": 0,
+      "dropped_frames": 0,
+      "ratio": 1.0004117419460528
+    },
+    "mic_capture": {
+      "available": 1288,
+      "underrun_frames": 0,
+      "discontinuities": 8,
+      "dropped_frames": 0,
+      "ratio": 1.0001925855397125
+    },
+    "mic_output": {
+      "available": 1528,
+      "underrun_frames": 240,
+      "discontinuities": 17,
+      "dropped_frames": 0,
+      "ratio": 1.0001923807062416
+    },
+    "network_mic": {
+      "available": 0,
+      "underrun_frames": 6000,
+      "discontinuities": 61,
+      "dropped_frames": 0,
+      "ratio": 1
+    },
+    "listening_local": {
+      "available": 8192,
+      "underrun_frames": 480,
+      "discontinuities": 3,
+      "dropped_frames": 1767045,
+      "ratio": 1.0007830335867591
+    },
+    "listening_remote": {
+      "available": 547,
+      "underrun_frames": 6000,
+      "discontinuities": 47,
+      "dropped_frames": 0,
+      "ratio": 0.9998826213924984
+    },
+    "playback_jitter": {
+      "size": 0,
+      "discontinuities": 23,
+      "primed": false
+    },
+    "mic_jitter": {
+      "size": 0,
+      "discontinuities": 28,
+      "primed": false
+    }
+  }
+}

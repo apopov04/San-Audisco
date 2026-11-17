@@ -1,0 +1,114 @@
+[
+  {
+    "phase": "initial_mixed_playback_and_muted_voice",
+    "passed": true,
+    "peer_ack": 0.99,
+    "observed_at": 1794943712.3816926,
+    "completed_at": 1794943716.396117
+  },
+  {
+    "phase": "mac_microphone_to_both",
+    "passed": true,
+    "peer_ack": 0.99,
+    "observed_at": 1794943717.3921914,
+    "completed_at": 1794943721.4403038
+  },
+  {
+    "phase": "windows_route_mute",
+    "passed": true,
+    "peer_ack": 0.99,
+    "observed_at": 1794943722.3857908,
+    "completed_at": 1794943726.4158187
+  },
+  {
+    "phase": "mac_route_mute",
+    "passed": true,
+    "peer_ack": 0.99,
+    "observed_at": 1794943727.386311,
+    "completed_at": 1794943731.3972569
+  },
+  {
+    "phase": "mac_route_deafen",
+    "passed": true,
+    "peer_ack": 0.99,
+    "observed_at": 1794943732.397269,
+    "completed_at": 1794943736.4080713
+  },
+  {
+    "phase": "windows_route_deafen",
+    "passed": true,
+    "peer_ack": 0.99,
+    "observed_at": 1794943737.4051344,
+    "completed_at": 1794943741.4544706
+  },
+  {
+    "phase": "windows_volume_quarter",
+    "passed": true,
+    "peer_ack": 0.99,
+    "observed_at": 1794943742.4040453,
+    "completed_at": 1794943746.421464
+  },
+  {
+    "phase": "balance_windows_only",
+    "passed": true,
+    "peer_ack": 0.99,
+    "observed_at": 1794943747.396978,
+    "completed_at": 1794943751.4058557
+  },
+  {
+    "phase": "mac_listening_silence",
+    "passed": true,
+    "peer_ack": 0.99,
+    "observed_at": 1794943752.4044707,
+    "completed_at": 1794943756.4270651
+  },
+  {
+    "phase": "primary_mac_handover_muted",
+    "passed": true,
+    "peer_ack": 0.99,
+    "observed_at": 1794943757.4000103,
+    "completed_at": 1794943761.426671
+  },
+  {
+    "phase": "voice_resumes_after_handover",
+    "passed": true,
+    "peer_ack": 0.99,
+    "observed_at": 1794943762.3988633,
+    "completed_at": 1794943766.435725
+  },
+  {
+    "phase": "windows_microphone_handover_muted",
+    "passed": true,
+    "peer_ack": 0.99,
+    "observed_at": 1794943767.3856537,
+    "completed_at": 1794943771.431413
+  },
+  {
+    "phase": "windows_microphone_to_both",
+    "passed": true,
+    "peer_ack": 0.99,
+    "observed_at": 1794943772.403888,
+    "completed_at": 1794943776.4137602
+  },
+  {
+    "phase": "global_deafen",
+    "passed": true,
+    "peer_ack": 0.99,
+    "observed_at": 1794943777.38407,
+    "completed_at": 1794943781.4304693
+  },
+  {
+    "phase": "global_undeafen",
+    "passed": true,
+    "peer_ack": 0.99,
+    "observed_at": 1794943782.4046433,
+    "completed_at": 1794943786.4470634
+  },
+  {
+    "phase": "global_mute",
+    "passed": true,
+    "peer_ack": 0.99,
+    "observed_at": 1794943787.3967414,
+    "completed_at": 1794943791.4477496
+  }
+]
