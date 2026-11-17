@@ -1,0 +1,6 @@
+/build*/
+/dist/
+/deps/
+*.key
+*.conf
+.DS_Store
