@@ -15,7 +15,7 @@ The apps are development signed on Mac and unsigned on Windows; no trusted distr
 
 ## Required audio devices
 
-Install two independent virtual cables on each computer. On Mac, use BlackHole 2ch and BlackHole 16ch as separate paths; the 2ch path has passed a native loopback test. On Windows, the official VB-CABLE and Hi-Fi Cable provide separate paths (https://vb-audio.com/Cable/); their installation and loopback validation are still pending. Hi-Fi Cable requires matching input/output sample rates; use 48 kHz. Separately licensed VB-CABLE A+B is another option. No driver installers are bundled.
+Install two independent virtual cables on each computer. On Mac, use BlackHole 2ch and BlackHole 16ch as separate paths; both paths have passed native stereo loopback tests. On Windows, the official VB-CABLE and Hi-Fi Cable provide separate paths (https://vb-audio.com/Cable/); their installation and loopback validation are still pending. Hi-Fi Cable requires matching input/output sample rates; use 48 kHz. Separately licensed VB-CABLE A+B is another option. No driver installers are bundled.
 
 The two cables must be separate:
 

@@ -1,0 +1,4 @@
+Native Core Audio, BlackHole 16ch 0.7.1, 48 kHz, first stereo pair. Synthetic tones only; no physical microphone/speaker opened.
+Virtual capture: BlackHole 16ch; virtual render: BlackHole 16ch
+frames=97280 left400=0.0499905 left600=3.78866e-05 right400=3.09759e-05 right600=0.04
+PASS virtual stereo loopback through production audio backend; synthetic tones only

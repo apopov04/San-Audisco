@@ -1,0 +1,2 @@
+READY virtual-only BlackHole2ch injection 730Hz amplitude0.15; BlackHole16ch stereo capture
+STOP captured_stereo_frames=451584 injected_stereo_frames=450050

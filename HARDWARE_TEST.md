@@ -45,3 +45,5 @@ Measure latency using a repeatable signal and correlated recordings rather than 
 The updated synthetic pair passed all 16 continuous routing/control phases on both physical computers over Wi-Fi. An additional deterministic test covers repeated 80 ms receive gaps. Remote playback and microphone reserves are now 100 ms; local game buffering is unchanged. These passes do not replace physical latency, Discord, game or soak measurements.
 
 The production rebuild subsequently passed all 15 native Windows groups again with Deadlock left running in the background. The short CPU counters returned zero ticks and are not a valid zero-cost estimate; synthetic working sets were approximately 7.7 MiB per role. See validation/windows-native-v2/.
+
+Mac setup now has BlackHole 2ch and BlackHole 16ch 0.7.1 active at 48 kHz; both passed stereo loopback through the production Core Audio backend. Use BlackHole 2ch for Discord output/bridge playback capture, and BlackHole 16ch for bridge microphone output/Discord input (first stereo pair). Windows virtual cable installation remains pending while the game is running.

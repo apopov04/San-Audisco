@@ -1,0 +1,44 @@
+{
+  "Scope": "Independent Get-Process snapshots sampled approximately once per second. Tick unit is 100ns. Snapshot spans include startup/settling; benchmark CPU interval excludes them.",
+  "BackgroundDeadlockRunning": true,
+  "BackgroundDeadlockPID": 1420,
+  "ConnectionEvidence": "Both processes alive in all 32 snapshots and benchmark monitored liveness. Both final states connected/synchronized, rejected=0,drops=0. Full per-second connection telemetry was not retained by this benchmark.",
+  "Processes": [
+    {
+      "Role": "windows",
+      "PID": 1360,
+      "Samples": 32,
+      "FirstUTC": "2026-11-17T19:39:36.3182645Z",
+      "LastUTC": "2026-11-17T19:40:07.8757101Z",
+      "UserTicksBefore": 0,
+      "UserTicksAfter": 0,
+      "KernelTicksBefore": 781250,
+      "KernelTicksAfter": 937500,
+      "UserDeltaTicks": 0,
+      "KernelDeltaTicks": 156250,
+      "BenchmarkUserSeconds": 0.0,
+      "BenchmarkKernelSeconds": 0.015625,
+      "PercentOneLogicalCore": 0.05197986844479082,
+      "WorkingSetMiB": 7.64453125,
+      "PeakWorkingSetMiB": 7.6796875
+    },
+    {
+      "Role": "mac",
+      "PID": 9256,
+      "Samples": 32,
+      "FirstUTC": "2026-11-17T19:39:36.3182645Z",
+      "LastUTC": "2026-11-17T19:40:07.8757101Z",
+      "UserTicksBefore": 156250,
+      "UserTicksAfter": 156250,
+      "KernelTicksBefore": 468750,
+      "KernelTicksAfter": 937500,
+      "UserDeltaTicks": 0,
+      "KernelDeltaTicks": 468750,
+      "BenchmarkUserSeconds": 0.0,
+      "BenchmarkKernelSeconds": 0.046875,
+      "PercentOneLogicalCore": 0.15593960533437246,
+      "WorkingSetMiB": 7.6953125,
+      "PeakWorkingSetMiB": 7.72265625
+    }
+  ]
+}

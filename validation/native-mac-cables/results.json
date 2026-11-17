@@ -1,0 +1,559 @@
+{
+  "scope": "Native Mac CoreAudio and BlackHole virtual cables, real CLI, encrypted localhost UDP with native macOS runtime_fake acting as Windows role. No physical input/output devices.",
+  "hashes": {
+    "mac_cli": "aabd556faedf0a3c9f3bd4648d44c57cc86a421d65faac1f6a36ec9d0d61a74b",
+    "fake_windows_cli": "cffac8145f278a30480efb7bf756d0bc43681f41e214f49b120b341b4ac85792",
+    "helper": "7f83601f11c852b3a0d8ef45c8258d8f9632c5a2c7338f3e40addc7ef949cade",
+    "production_mac_backend": "2b532932a26df8d643f0e5e737be63e5c8813e3af67fdfce73bfc1ff99d43869"
+  },
+  "checks": [
+    {
+      "name": "Native 730Hz playback plus fake Windows410Hz mixed; both microphone destinations initially silent",
+      "status": "PASS",
+      "time": 1794944761.773389,
+      "wait_seconds": 0.6297906249999998,
+      "metrics": {
+        "win-headphones": {
+          "rms": 0.14986031769611366,
+          "tones": [
+            0.1496851834137291,
+            0.14960468643992114,
+            0.00013635086356777182,
+            1.7473421798440187e-05
+          ]
+        },
+        "win-mic-sink": {
+          "rms": 0,
+          "tones": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "mac-mic-left": {
+          "rms": 0,
+          "tones": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "mac-mic-right": {
+          "rms": 0,
+          "tones": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    {
+      "name": "Windows1090Hz voice reaches both apps; native virtual sink stereo excludes all playback",
+      "status": "PASS",
+      "time": 1794944762.8548968,
+      "wait_seconds": 0.6487201250000001,
+      "metrics": {
+        "win-headphones": {
+          "rms": 0.14547810918675658,
+          "tones": [
+            0.14999999983357828,
+            0.13431522544746907,
+            0.000980390177937797,
+            2.920767921711456e-05
+          ]
+        },
+        "win-mic-sink": {
+          "rms": 0.10572331276656449,
+          "tones": [
+            0.000139457624573177,
+            0.00021799334930317383,
+            0.14902434283357555,
+            3.370354877597266e-05
+          ]
+        },
+        "mac-mic-left": {
+          "rms": 0.0868552326142154,
+          "tones": [
+            8.18417156406609e-05,
+            0.00021526952665484517,
+            0.12101779963195115,
+            3.680512120574708e-05
+          ]
+        },
+        "mac-mic-right": {
+          "rms": 0.0868552326142154,
+          "tones": [
+            8.18417156406609e-05,
+            0.00021526952665484517,
+            0.12101779963195115,
+            3.680512120574708e-05
+          ]
+        }
+      }
+    },
+    {
+      "name": "Mac destination mute silences native virtual cable only",
+      "status": "PASS",
+      "time": 1794944763.508458,
+      "wait_seconds": 0.6534904999999998,
+      "metrics": {
+        "win-headphones": {
+          "rms": 0.1484104238802263,
+          "tones": [
+            0.1426773169252686,
+            0.14898066899499604,
+            0.0008797585247647318,
+            0.00010363291504699769
+          ]
+        },
+        "win-mic-sink": {
+          "rms": 0.10570544328503308,
+          "tones": [
+            0.0001509643133342801,
+            0.00026520268490927787,
+            0.14850271434442125,
+            7.801022017857425e-05
+          ]
+        },
+        "mac-mic-left": {
+          "rms": 0,
+          "tones": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "mac-mic-right": {
+          "rms": 0,
+          "tones": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    {
+      "name": "Windows destination mute retains voice through native Mac cable",
+      "status": "PASS",
+      "time": 1794944764.124518,
+      "wait_seconds": 0.6159809169999999,
+      "metrics": {
+        "win-headphones": {
+          "rms": 0.15021451904316485,
+          "tones": [
+            0.15008575658698006,
+            0.15002804368461123,
+            0.0003904441327562309,
+            4.024212365586511e-05
+          ]
+        },
+        "win-mic-sink": {
+          "rms": 0,
+          "tones": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "mac-mic-left": {
+          "rms": 0.09854765349491112,
+          "tones": [
+            7.146473538827415e-05,
+            0.0008435260848055144,
+            0.1368716932068692,
+            6.437469215153599e-05
+          ]
+        },
+        "mac-mic-right": {
+          "rms": 0.09854765349491112,
+          "tones": [
+            7.146473538827415e-05,
+            0.0008435260848055144,
+            0.1368716932068692,
+            6.437469215153599e-05
+          ]
+        }
+      }
+    },
+    {
+      "name": "Mac deafen removes native730Hz playback and native microphone destination",
+      "status": "PASS",
+      "time": 1794944764.757823,
+      "wait_seconds": 0.6332380829999993,
+      "metrics": {
+        "win-headphones": {
+          "rms": 0.10606601706030429,
+          "tones": [
+            0.14999999983357823,
+            2.780589256031226e-11,
+            1.1777116974016648e-10,
+            3.049907155782941e-12
+          ]
+        },
+        "win-mic-sink": {
+          "rms": 0.10571639611014427,
+          "tones": [
+            0.00013867917117270465,
+            0.0002171104427029197,
+            0.1490140434658933,
+            3.3998718700773416e-05
+          ]
+        },
+        "mac-mic-left": {
+          "rms": 0,
+          "tones": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "mac-mic-right": {
+          "rms": 0,
+          "tones": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    {
+      "name": "Windows deafen retains native730Hz playback and native microphone destination",
+      "status": "PASS",
+      "time": 1794944765.382263,
+      "wait_seconds": 0.6243757910000003,
+      "metrics": {
+        "win-headphones": {
+          "rms": 0.10575867649139227,
+          "tones": [
+            8.473150554756902e-05,
+            0.14945376215185122,
+            0.00019220347302005507,
+            7.3629046841634315e-06
+          ]
+        },
+        "win-mic-sink": {
+          "rms": 0,
+          "tones": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "mac-mic-left": {
+          "rms": 0.10885601212552468,
+          "tones": [
+            0.00012297667643333763,
+            0.0011141383419939264,
+            0.15047447647326054,
+            9.630744143369751e-05
+          ]
+        },
+        "mac-mic-right": {
+          "rms": 0.10885601212552468,
+          "tones": [
+            0.00012297667643333763,
+            0.0011141383419939264,
+            0.15047447647326054,
+            9.630744143369751e-05
+          ]
+        }
+      }
+    },
+    {
+      "name": "Native Mac playback volume quarter preserves voice",
+      "status": "PASS",
+      "time": 1794944766.019638,
+      "wait_seconds": 0.637295291,
+      "metrics": {
+        "win-headphones": {
+          "rms": 0.10935606948959008,
+          "tones": [
+            0.15004337576135093,
+            0.03724547595328444,
+            0.00011605820219501325,
+            2.2290153052641167e-05
+          ]
+        },
+        "win-mic-sink": {
+          "rms": 0.10572331276656449,
+          "tones": [
+            0.000139457624573177,
+            0.00021799334930317383,
+            0.14902434283357555,
+            3.370354877597266e-05
+          ]
+        },
+        "mac-mic-left": {
+          "rms": 0.10363206911136931,
+          "tones": [
+            0.00014683126839679051,
+            0.0006154429943742607,
+            0.1437977544221819,
+            0.0001281882919927355
+          ]
+        },
+        "mac-mic-right": {
+          "rms": 0.10363206911136931,
+          "tones": [
+            0.00014683126839679051,
+            0.0006154429943742607,
+            0.1437977544221819,
+            0.0001281882919927355
+          ]
+        }
+      }
+    },
+    {
+      "name": "Master halves both listening sources without changing native microphone",
+      "status": "PASS",
+      "time": 1794944766.654571,
+      "wait_seconds": 0.634863792,
+      "metrics": {
+        "win-headphones": {
+          "rms": 0.07489419800049976,
+          "tones": [
+            0.07489379702466858,
+            0.0742986759579827,
+            0.00024330022853363665,
+            3.8665119030282365e-05
+          ]
+        },
+        "win-mic-sink": {
+          "rms": 0.1056960754642631,
+          "tones": [
+            0.0001263365356345719,
+            0.0002445880791094706,
+            0.14850079450577167,
+            8.551923779768507e-05
+          ]
+        },
+        "mac-mic-left": {
+          "rms": 0.09712490951492006,
+          "tones": [
+            0.00020860828075908646,
+            0.0005033199969526453,
+            0.1324272493190505,
+            0.00012703193441930384
+          ]
+        },
+        "mac-mic-right": {
+          "rms": 0.09712490951492006,
+          "tones": [
+            0.00020860828075908646,
+            0.0005033199969526453,
+            0.1324272493190505,
+            0.00012703193441930384
+          ]
+        }
+      }
+    },
+    {
+      "name": "Mac listening silence removes730Hz but preserves virtual microphone",
+      "status": "PASS",
+      "time": 1794944767.258038,
+      "wait_seconds": 0.60340375,
+      "metrics": {
+        "win-headphones": {
+          "rms": 0.10333919646801586,
+          "tones": [
+            0.14238659575675716,
+            0.001654025671998693,
+            0.0009035354451000253,
+            7.472655522302714e-05
+          ]
+        },
+        "win-mic-sink": {
+          "rms": 0.10568255954447928,
+          "tones": [
+            8.982046663977676e-05,
+            0.00022266413638645106,
+            0.14841026877392444,
+            0.00010033457318358818
+          ]
+        },
+        "mac-mic-left": {
+          "rms": 0.09994698161558009,
+          "tones": [
+            0.0001823765489665057,
+            0.0005325134287612834,
+            0.1362565136855327,
+            0.00010876467593837087
+          ]
+        },
+        "mac-mic-right": {
+          "rms": 0.09994698161558009,
+          "tones": [
+            0.0001823765489665057,
+            0.0005325134287612834,
+            0.1362565136855327,
+            0.00010876467593837087
+          ]
+        }
+      }
+    },
+    {
+      "name": "Global mute silences both microphone destinations while mixed playback remains",
+      "status": "PASS",
+      "time": 1794944767.864599,
+      "wait_seconds": 0.6065032079999995,
+      "metrics": {
+        "win-headphones": {
+          "rms": 0.148075335084482,
+          "tones": [
+            0.14262172077949503,
+            0.14872657933383565,
+            0.00029037803823670557,
+            7.08738705813161e-05
+          ]
+        },
+        "win-mic-sink": {
+          "rms": 0,
+          "tones": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "mac-mic-left": {
+          "rms": 0,
+          "tones": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "mac-mic-right": {
+          "rms": 0,
+          "tones": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    {
+      "name": "Global deafen silences playback and both microphone destinations",
+      "status": "PASS",
+      "time": 1794944768.476489,
+      "wait_seconds": 0.6118365420000007,
+      "metrics": {
+        "win-headphones": {
+          "rms": 0,
+          "tones": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "win-mic-sink": {
+          "rms": 0,
+          "tones": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "mac-mic-left": {
+          "rms": 0,
+          "tones": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "mac-mic-right": {
+          "rms": 0,
+          "tones": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    {
+      "name": "Undeafen restores mixed playback and stereo native1090Hz voice without leakage",
+      "status": "PASS",
+      "time": 1794944769.135472,
+      "wait_seconds": 0.658913458999999,
+      "metrics": {
+        "win-headphones": {
+          "rms": 0.14728045887965066,
+          "tones": [
+            0.1497837694325397,
+            0.14757043349507462,
+            0.00042958902067681705,
+            5.319348377344477e-05
+          ]
+        },
+        "win-mic-sink": {
+          "rms": 0.10571924317645219,
+          "tones": [
+            0.0001602273069185175,
+            0.00025006827911160556,
+            0.14888253814819719,
+            3.731606220288572e-05
+          ]
+        },
+        "mac-mic-left": {
+          "rms": 0.10292091243901999,
+          "tones": [
+            0.00014891588237055307,
+            0.0007414801691728364,
+            0.14163860091009423,
+            5.325205131996007e-05
+          ]
+        },
+        "mac-mic-right": {
+          "rms": 0.10292091243901999,
+          "tones": [
+            0.00014891588237055307,
+            0.0007414801691728364,
+            0.14163860091009423,
+            5.325205131996007e-05
+          ]
+        }
+      }
+    }
+  ],
+  "success": true,
+  "started": 1794944759.529653,
+  "configs_redacted": [
+    "device=windows\nkey_file=<disposable key, deleted>\npeer=127.0.0.1\nport=51866\npeer_port=62309\nplayback_input=win-playback\nphysical_microphone=win-mic\nheadphones_output=win-headphones\nmicrophone_output=win-mic-sink\n",
+    "device=mac\nkey_file=<disposable key, deleted>\npeer=127.0.0.1\nport=62309\npeer_port=51866\nplayback_input=BlackHole2ch_UID\nmicrophone_output=BlackHole16ch_UID\n"
+  ],
+  "peer_exits": [
+    0,
+    0
+  ],
+  "stderr": {
+    "win": [],
+    "mac": [
+      "Microphone unavailable: No physical_microphone configured on the selected microphone source",
+      "Microphone unavailable: No physical_microphone configured on the selected microphone source"
+    ]
+  },
+  "helper_exit": 0,
+  "disposable_key_removed": true,
+  "finished": 1794944769.410194
+}

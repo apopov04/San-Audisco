@@ -1,0 +1,12 @@
+PASS Native 730Hz playback plus fake Windows410Hz mixed; both microphone destinations initially silent
+PASS Windows1090Hz voice reaches both apps; native virtual sink stereo excludes all playback
+PASS Mac destination mute silences native virtual cable only
+PASS Windows destination mute retains voice through native Mac cable
+PASS Mac deafen removes native730Hz playback and native microphone destination
+PASS Windows deafen retains native730Hz playback and native microphone destination
+PASS Native Mac playback volume quarter preserves voice
+PASS Master halves both listening sources without changing native microphone
+PASS Mac listening silence removes730Hz but preserves virtual microphone
+PASS Global mute silences both microphone destinations while mixed playback remains
+PASS Global deafen silences playback and both microphone destinations
+PASS Undeafen restores mixed playback and stereo native1090Hz voice without leakage
