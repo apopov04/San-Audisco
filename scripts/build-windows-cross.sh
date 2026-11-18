@@ -28,9 +28,10 @@ mkdir -p "$output_dir"
     "$project_root/src/transport.cpp" -L"$dependency_prefix/lib" \
     -lsodium -lopus -lws2_32 -lole32 -luuid -lavrt -lpropsys -lshell32 -lcrypt32 \
     -o "$output_dir/audiobridge.exe"
+"$1/bin/x86_64-w64-mingw32-windres" -I"$project_root/apps/windows" "$project_root/apps/windows/app.rc" -O coff -o "$output_dir/app.res"
 "$compiler" -std=c++20 -O2 -Wall -Wextra -Werror -static -municode -mwindows \
     -I"$project_root/third_party/json/include" \
-    "$project_root/apps/windows/main.cpp" -lcomctl32 -lcomdlg32 -luser32 -lgdi32 -ladvapi32 -lshell32 \
+    "$project_root/apps/windows/main.cpp" "$output_dir/app.res" -lcomctl32 -lcomdlg32 -luser32 -lgdi32 -ladvapi32 -lshell32 \
     -o "$output_dir/AudioBridgeApp.exe"
 "$compiler" -std=c++20 -O2 -static -DSODIUM_STATIC \
     -I"$project_root/include" -I"$dependency_prefix/include" \

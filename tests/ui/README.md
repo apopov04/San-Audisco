@@ -6,7 +6,7 @@ These tests exercise the production GUI/model against an explicitly test-only ag
 
 Run `python3 tests/ui/mac_room_model_test.py` on an Apple Silicon Mac with Xcode command-line tools. It compiles the production `BridgeModel` and tests its JSON state mapping and bounded subprocess IPC with a fixture. Temporary artifacts are removed afterward.
 
-The native SwiftUI candidate was additionally opened in an isolated `local.audiobridge.room-uitest` app bundle. Create/join, invitation display, device cards, and mixer layout were inspected via accessibility and screenshots. Quit stopped that fixture app; the installed AudioBridge app was not replaced.
+The native SwiftUI candidate was additionally opened in an isolated `local.audiobridge.room-uitest` app bundle. The v0.2.1 device overview, connected/offline graphics, physical-only picker contents, direct Hub selection and room settings sheet were inspected via accessibility and screenshots. Model tests also cover stale peer inventory versus actual connectivity and invitation cancellation. Quit stopped that fixture app; the installed AudioBridge app was not replaced.
 
 ## Windows
 
@@ -16,6 +16,8 @@ Build `tests/ui/agent_fixture.cpp` as `bridge-agent.exe` with the vendored nlohm
 python tests/ui/windows_room_ui_test.py path/to/AudioBridgeApp.exe
 ```
 
-The test refuses to run if another room UI window exists. It uses standard Win32 messages to exercise the actual native interface: invite creation, nearby room selection, invalid and formatted codes, acknowledged pairing/start, remote configuration, Hub selection, readiness display, local/remote signal meters, explicit test-sound routing, cancellation while waiting to restart, agent reconnection, close-to-tray, and explicit Quit.
+The v0.2.1 build embeds the Windows common-controls v6 manifest and scales native controls and graphics together for system DPI. Native 150% hardware rendering still requires acceptance.
+
+The test refuses to run if another room UI window exists. It uses standard Win32 messages to exercise the actual native interface: main device-column bounds, offline/online colors and labels, physical-only endpoint lists, direct remote route choices, invite creation, nearby room selection, invalid and formatted codes, acknowledged pairing/start, remote configuration, Hub selection, readiness display, local/remote signal meters, explicit test-sound routing, cancellation while waiting to restart, agent reconnection, close-to-tray, and explicit Quit.
 
 Running under Wine is compatibility validation only, not native Windows validation. The fixture writes only `ui-fixture-state.json` and `ui-fixture-requests.jsonl` beside its own executable. Do not distribute the fixture renamed as `bridge-agent.exe` in a real release.

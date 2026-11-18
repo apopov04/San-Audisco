@@ -11,6 +11,9 @@ u.SetWindowTextW.argtypes=[w.HWND,w.LPCWSTR]
 u.IsWindowVisible.argtypes=[w.HWND];u.IsWindowVisible.restype=w.BOOL
 u.IsWindowEnabled.argtypes=[w.HWND];u.IsWindowEnabled.restype=w.BOOL
 u.ShowWindow.argtypes=[w.HWND,ctypes.c_int]
+u.GetWindowRect.argtypes=[w.HWND,ctypes.POINTER(w.RECT)]
+u.GetClientRect.argtypes=[w.HWND,ctypes.POINTER(w.RECT)]
+u.MapWindowPoints.argtypes=[w.HWND,w.HWND,ctypes.POINTER(w.POINT),w.UINT]
 def wait(fn,message):
  until=time.monotonic()+12
  while time.monotonic()<until:
@@ -29,11 +32,23 @@ try:
  wait(lambda:u.FindWindowW('AudioBridgeRoomWindow',None),'GUI did not open')
  hwnd=u.FindWindowW('AudioBridgeRoomWindow',None);get=lambda i:u.GetDlgItem(hwnd,i)
  click=lambda i:u.SendMessageW(get(i),0xF5,0,0)
+ class Header(ctypes.Structure):_fields_=[('hwndFrom',w.HWND),('idFrom',ctypes.c_size_t),('code',w.UINT)]
+ def page(index):
+  tab=get(180);u.SendMessageW(tab,0x130C,index,0);header=Header(tab,180,(-551)&0xffffffff);u.SendMessageW(hwnd,0x4E,180,ctypes.addressof(header))
  def seen(command):
   if not events.exists():return []
   return [r for line in events.read_text().splitlines() if (r:=json.loads(line)).get('command')==command]
  wait(lambda:value(get(201))=='Test Windows','Initial state did not populate')
- assert not u.IsWindowEnabled(get(401)),'Unpaired mixer should be disabled'
+ assert not u.IsWindowEnabled(get(702)),'Unpaired Hub control should be disabled'
+ client=w.RECT();assert u.GetClientRect(hwnd,ctypes.byref(client))
+ for control_id in [700,703,705,720,723,725,410,420,440,441,431,601,602,760]:
+  rect=w.RECT();assert u.GetWindowRect(get(control_id),ctypes.byref(rect));points=(w.POINT*2)(w.POINT(rect.left,rect.top),w.POINT(rect.right,rect.bottom));u.MapWindowPoints(None,hwnd,points,2)
+  assert points[0].x>=0 and points[0].y>=0 and points[1].x<=client.right and (points[0].y+24 if control_id in [703,705,723,725] else points[1].y)<=client.bottom,f'Control {control_id} outside client area'
+ assert u.IsWindowVisible(get(703)) and u.IsWindowVisible(get(723)),'Both computer controls must be on the main screen'
+ assert u.SendMessageW(get(703),0x146,0,0)==2,'Physical headphones list must exclude virtual cable'
+ assert u.SendMessageW(get(705),0x146,0,0)==2,'Physical microphone list must exclude virtual cable'
+ assert 'Offline' in value(get(721)),'Peer should be offline before room connection'
+ page(1)
  click(203);wait(lambda:seen('create'),'Create request missing')
  click(207);wait(lambda:u.SendMessageW(get(206),0x146,0,0)==1,'Discovery results missing')
  u.SendMessageW(get(206),0x14E,0,0);u.SendMessageW(hwnd,0x111,206|(1<<16),get(206))
@@ -43,17 +58,20 @@ try:
  wait(lambda:seen('join'),'Join request missing')
  assert seen('join')[-1]['code']=='K7MP4X9R','Code normalization failed'
  assert seen('join')[-1]['room_id']=='fixture-room','Selected discovery room missing'
- wait(lambda:u.IsWindowEnabled(get(401)),'Acknowledged paired mixer disabled')
+ wait(lambda:u.IsWindowEnabled(get(722)),'Acknowledged peer Hub control disabled')
+ page(0)
+ assert 'Online' in value(get(721)),'Connected peer must be shown online'
  click(601);wait(lambda:value(get(601))=='Stop audio','Start not reflected')
- # Select the remote computer and apply a different physical microphone.
- u.SendMessageW(get(301),0x14E,1,0);u.SendMessageW(hwnd,0x111,301|(1<<16),get(301))
- u.SendMessageW(get(303),0x14E,0,0);u.SendMessageW(hwnd,0x111,303|(1<<16),get(303));click(307)
+ # Configure the remote computer directly below its icon.
+ u.SendMessageW(get(725),0x14E,0,0);u.SendMessageW(hwnd,0x111,725|(1<<16),get(725))
  wait(lambda:seen('configure'),'Remote configure request missing')
  assert seen('configure')[-1]['device_id']=='mac-fixture'
  assert seen('configure')[-1]['physical_microphone']==''
- u.SendMessageW(get(401),0x14E,1,0);u.SendMessageW(hwnd,0x111,401|(1<<16),get(401))
- wait(lambda:seen('control'),'Hub request missing')
+ click(722);wait(lambda:seen('control'),'Hub request missing')
  assert seen('control')[-1]['key']=='primary' and seen('control')[-1]['value']==1
+ click(704);wait(lambda:seen('control')[-1]['key']=='mic_source','Per-device mic source request missing')
+ assert seen('control')[-1]['value']==0
+ page(3)
  click(501);wait(lambda:'Fixture check complete' in value(get(502)),'Readiness checks not rendered')
  assert u.SendMessageW(get(510),0x408,0,0)>0,'Local signal meter missing'
  assert u.SendMessageW(get(513),0x408,0,0)>0,'Remote signal meter missing'
@@ -66,10 +84,22 @@ try:
  assert value(get(601))=='Stop audio','Pending restart intent must remain cancellable'
  click(601);wait(lambda:seen('stop'),'Stop while waiting to retry was not sent')
  click(503);time.sleep(.3);assert value(get(601))=='Start audio','Explicit reconnect did not refresh stopped state'
+ healthy_state=state.read_bytes();state.write_text('{')
+ try:wait(lambda:not u.IsWindowEnabled(get(703)) and not u.IsWindowEnabled(get(440)),'Failed status envelope kept cached controls enabled')
+ finally:state.write_bytes(healthy_state)
+ wait(lambda:u.IsWindowEnabled(get(703)) and u.IsWindowEnabled(get(440)),'Status recovery did not restore controls')
+ fixture=exe.parent/'bridge-agent.exe';unavailable=exe.parent/'bridge-agent-unavailable.exe'
+ wait(lambda:not unavailable.exists(),'Unexpected unavailable fixture file')
+ fixture.rename(unavailable)
+ try:
+  wait(lambda:not u.IsWindowEnabled(get(703)) and not u.IsWindowEnabled(get(440)),'Transport failure kept cached controls enabled')
+  assert 'unavailable' in value(get(701)) and 'unavailable' in value(get(721)),'Transport failure kept online device state'
+ finally:unavailable.rename(fixture)
+ wait(lambda:u.IsWindowEnabled(get(703)) and u.IsWindowEnabled(get(440)),'Successful status did not restore controls')
  u.SendMessageW(hwnd,0x10,0,0);wait(lambda:not u.IsWindowVisible(hwnd),'Close did not hide to tray')
  assert p.poll() is None and not seen('quit'),'Close stopped background app'
  u.ShowWindow(hwnd,9);click(602);p.wait(timeout=12)
  assert p.returncode==0 and seen('quit'),'Explicit quit did not stop agent and exit'
- print(json.dumps({'passed':True,'scope':'real Win32 GUI + fixture IPC; no audio or real credentials','checks':['startup state','disabled unpaired mixer','create invite','discovery selection','code validation and normalization','join acknowledgement','start acknowledgement','remote device configuration','Hub selection','readiness diagnostics','local and remote signal meters','explicit remote test sound','cancel pending restart','explicit agent reconnect','close keeps running','explicit quit']}))
+ print(json.dumps({'passed':True,'scope':'real Win32 GUI + fixture IPC; no audio or real credentials','checks':['startup state','two-device main screen','main control bounds','physical selector filtering','peer connection state','disabled unpaired roles','create invite','discovery selection','code validation and normalization','join acknowledgement','start acknowledgement','remote device configuration','Hub and microphone source selection','readiness diagnostics','local and remote signal meters','explicit remote test sound','cancel pending restart','explicit agent reconnect','failed status and transport recovery','close keeps running','explicit quit']}))
 finally:
  if p.poll() is None:p.kill();p.wait()

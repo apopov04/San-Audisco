@@ -6,6 +6,7 @@ import Darwin
 
 struct AudioEndpoint: Identifiable {
  let id: String; let name: String; let inputs: Int; let outputs: Int
+ var isVirtual:Bool {let n=name.lowercased();return n.contains("blackhole") || n.contains("cable") || n.contains("streaming")}
  init(_ value: [String: Any]) {
   id=value["id"] as? String ?? ""; name=value["name"] as? String ?? id
   inputs=(value["inputs"] as? NSNumber)?.intValue ?? 0
@@ -163,6 +164,7 @@ final class BridgeModel: ObservableObject {
  func role(_ key:String)->Binding<Int> {Binding(get:{Int(self.number(key))},set:{self.control(key,Double($0))})}
  var formattedInvite:String {invite.count==8 ? String(invite.prefix(4))+"-"+String(invite.suffix(4)) : invite}
  func setLogin(_ enabled:Bool) {do{if enabled{try SMAppService.mainApp.register()}else{try SMAppService.mainApp.unregister()};startAtLogin=SMAppService.mainApp.status == .enabled;if enabled && !startAtLogin{error="Approve AudioBridge in System Settings → General → Login Items."}}catch{self.error=error.localizedDescription;startAtLogin=SMAppService.mainApp.status == .enabled}}
+ func isOnline(_ device:RoomDevice)->Bool {available && device.online && (device.id==localID || connected)}
  func level(_ device:RoomDevice,_ key:String)->Double {let source=device.id==localID ? diagnostics : device.diagnostics;let value=(source[key] as? NSNumber)?.doubleValue ?? 0;return value.isFinite ? min(1,max(0,value)):0}
  func create(){send(["command":"create","name":deviceName])}
  func join(){let code=joinCode.uppercased().filter{$0 != "-" && !$0.isWhitespace};guard code.count==8 else{error="Enter the eight letters and numbers shown on the other computer.";return};let address=joinAddress.trimmingCharacters(in:.whitespacesAndNewlines);var request:[String:Any]=["command":"join","code":code,"address":address];if !selectedRoomID.isEmpty && address==selectedRoomAddress{request["room_id"]=selectedRoomID};send(request)}
@@ -186,97 +188,137 @@ final class BridgeModel: ObservableObject {
 struct DeviceRouteView:View {
  @ObservedObject var model:BridgeModel
  let device:RoomDevice
- @State private var headphones=""
- @State private var microphone=""
- @State private var playback=""
- @State private var micOutput=""
- @State private var dirty=false
- private func select(_ title:String,_ value:Binding<String>,input:Bool)->some View {
-  Picker(title,selection:value){Text("Not selected").tag("");ForEach(device.audio.filter{input ? $0.inputs>0 : $0.outputs>0}){Text($0.name).tag($0.id)}}
+ private var online:Bool {model.isOnline(device)}
+ private var controlsDisabled:Bool {!online || model.busy}
+ private var prefix:String {device.roleValue==0 ? "win":"mac"}
+ private var isHub:Bool {device.roleValue==Int(model.number("primary"))}
+ private var isMic:Bool {device.roleValue==Int(model.number("mic_source"))}
+ private func route(_ key:String,_ current:String)->Binding<String> {Binding(get:{current},set:{model.send(["command":"configure","device_id":device.id,key:$0])})}
+ private func select(_ title:String,key:String,current:String,input:Bool,virtual:Bool=false)->some View {
+  VStack(alignment:.leading,spacing:5){
+   Text(title).font(.subheadline).foregroundColor(.secondary)
+   Picker(title,selection:route(key,current)){
+    Text("Choose \(title.lowercased())…").tag("")
+    if !current.isEmpty && !device.audio.contains(where:{$0.id==current}) {Text("Saved device · unavailable").tag(current)}
+    ForEach(device.audio.filter{(input ? $0.inputs>0 : $0.outputs>0) && $0.isVirtual==virtual}){Text($0.name).tag($0.id)}
+   }.labelsHidden().frame(maxWidth:.infinity).disabled(controlsDisabled)
+  }
  }
- private func edit(_ value:Binding<String>)->Binding<String>{Binding(get:{value.wrappedValue},set:{value.wrappedValue=$0;dirty=true})}
- private func load(){headphones=device.headphones;microphone=device.microphone;playback=device.playback;micOutput=device.micOutput}
- var body:some View {GroupBox{
-  VStack(alignment:.leading,spacing:10){
-   HStack{Text(device.name).font(.headline);Text(device.id==model.localID ? "This Mac" : device.platform).foregroundColor(.secondary);Spacer();Text(device.online ? "Online" : "Offline").foregroundColor(device.online ? .green : .secondary)}
-   Text(device.setup).font(.caption)
-   select("Headphones",edit($headphones),input:false)
-   select("Physical microphone",edit($microphone),input:true)
-   DisclosureGroup("Advanced audio routes"){
-    select("Playback cable capture",edit($playback),input:true)
-    select("Shared microphone output",edit($micOutput),input:false)
+ var body:some View {VStack(alignment:.leading,spacing:14){
+  select("Headphones",key:"headphones_output",current:device.headphones,input:false)
+  HStack{Image(systemName:isHub ? "headphones":"arrow.right").foregroundColor(.secondary);if isHub{Text("Hub · listen here").font(.callout)}else{Button("Use as Hub"){model.control("primary",Double(device.roleValue))}.disabled(controlsDisabled || !model.connected || !device.audio.contains(where:{$0.id==device.headphones && $0.outputs>0 && !$0.isVirtual}))}}.frame(height:28,alignment:.leading)
+  select("Microphone",key:"physical_microphone",current:device.microphone,input:true)
+  HStack{Image(systemName:isMic ? "mic.fill":"mic").foregroundColor(.secondary);if isMic{Text("Microphone source for both computers").font(.callout)}else{Button("Use this microphone"){model.control("mic_source",Double(device.roleValue))}.disabled(controlsDisabled || !model.connected || !device.audio.contains(where:{$0.id==device.microphone && $0.inputs>0 && !$0.isVirtual}))}}.frame(height:28,alignment:.leading)
+  Divider()
+  VStack(alignment:.leading,spacing:6){HStack{Text("Audio from this computer");Spacer();Text("\(Int(model.number(prefix+"_volume",default:1)*100))%").monospacedDigit()};Slider(value:model.scalar(prefix+"_volume",default:1),in:0...1).accessibilityLabel("\(device.name) listening volume")}.disabled(controlsDisabled || !model.connected)
+  HStack{Toggle("Mute mic here",isOn:model.toggle(prefix+"_mute")).help("Stop your voice reaching apps on \(device.name).");Spacer();Toggle("Deafen",isOn:model.toggle(prefix+"_deafen")).help("Stop this computer’s audio and microphone delivery.")}.disabled(controlsDisabled || !model.connected)
+  if online && device.setup != "Ready" {Text(device.setup).font(.caption).foregroundColor(.secondary).fixedSize(horizontal:false,vertical:true)}
+  DisclosureGroup("Advanced audio routes") {VStack(alignment:.leading,spacing:12){select("App audio cable",key:"playback_input",current:device.playback,input:true,virtual:true);select("Microphone delivery cable",key:"microphone_output",current:device.micOutput,input:false,virtual:true)}.padding(.top,8)}.font(.caption)
+ }.frame(maxWidth:.infinity,alignment:.topLeading)}
+}
+
+struct RoomSettingsView:View {
+ @ObservedObject var m:BridgeModel
+ @Environment(\.dismiss) private var dismiss
+ @State private var forget=false
+ var body:some View {VStack(alignment:.leading,spacing:20){
+  HStack{Text(m.paired ? "Room settings":"Connect your computers").font(.title2).bold();Spacer();Button("Done"){dismiss()}}
+  ScrollView{VStack(alignment:.leading,spacing:20){
+   HStack{TextField("This computer’s name",text:$m.deviceName);Button("Save name"){m.send(["command":"configure","device_id":m.localID,"name":m.deviceName])}.disabled(m.busy || m.localID.isEmpty)}
+   if !m.paired {
+    Text("Open AudioBridge on both computers using the same Wi-Fi or local network.").foregroundColor(.secondary)
+    if m.invite.isEmpty {Button("Create a room"){m.create()}.disabled(m.busy || !m.available)}else{
+     Text("Enter this code on your other computer").font(.headline)
+     HStack{Text(m.formattedInvite).font(.system(size:32,weight:.semibold,design:.monospaced)).textSelection(.enabled);Button("Copy"){NSPasteboard.general.clearContents();NSPasteboard.general.setString(m.formattedInvite,forType:.string)}}
+     HStack{Text("Expires in \(m.expires) seconds").font(.caption).foregroundColor(.secondary);Spacer();Button("Cancel invitation"){m.send(["command":"cancel_invite"])}}
+    }
+    Divider();Text("Already have a code?").font(.headline)
+    HStack{TextField("Room code",text:$m.joinCode);Button("Join room"){m.join()}.disabled(m.busy || !m.available)}
+    DisclosureGroup("Connection options") {VStack(alignment:.leading,spacing:10){HStack{TextField("Other computer’s address (optional)",text:$m.joinAddress);Button("Find rooms"){m.send(["command":"discover"])}};ForEach(m.nearby){room in Button(room.name){m.joinAddress=room.address;m.selectedRoomID=room.id;m.selectedRoomAddress=room.address}.buttonStyle(.link)}}.padding(.top,10)}
+   }else{
+    ForEach(m.devices){d in HStack{Image(systemName:d.roleValue==0 ? "desktopcomputer":"laptopcomputer");Text(d.name);Spacer();Text(d.id==m.localID ? "This computer":(m.connected ? "Connected":"Offline")).foregroundColor(.secondary)}}
+    Text("Pairing is remembered. Both apps control the same room.").foregroundColor(.secondary)
+    DisclosureGroup("Mix balance") {VStack(alignment:.leading,spacing:8){HStack{Text("Windows");Slider(value:m.scalar("balance"),in:-1...1).accessibilityLabel("Windows to Mac audio balance");Text("Mac")};Button("Center balance"){m.control("balance",0)}}.padding(.top,8)}.disabled(m.busy || !m.connected)
+    Button("Forget this pairing…",role:.destructive){forget=true}
    }
-   HStack{Text(device.roleValue==Int(model.number("primary")) ? "Hub · headphones connected here" : "Satellite · sends audio to Hub").font(.caption).foregroundColor(.secondary);Spacer();Button("Apply devices"){model.send(["command":"configure","device_id":device.id,"headphones_output":headphones,"physical_microphone":microphone,"playback_input":playback,"microphone_output":micOutput]);dirty=false}.disabled(!dirty || !device.online || model.busy)}
-  }.padding(8)
- }.onAppear{load()}.onChange(of:device.headphones+device.microphone+device.playback+device.micOutput){_ in if !dirty{load()}}}
+   Divider();Toggle("Start AudioBridge at login",isOn:Binding(get:{m.startAtLogin},set:{m.setLogin($0)})).disabled(m.busy || !m.available)
+   Text("Closing the window keeps audio running. Quit AudioBridge from its menu-bar icon to stop this computer.").font(.caption).foregroundColor(.secondary)
+   if !m.error.isEmpty{Text(m.error).foregroundColor(.red).textSelection(.enabled)}
+  }}
+ }.padding(24).frame(width:540,height:520).alert("Forget this pairing?",isPresented:$forget){Button("Cancel",role:.cancel){};Button("Forget",role:.destructive){m.send(["command":"forget"])}}message:{Text("Audio will stop on this computer. Forget the pairing on the other computer as well before creating a new room.")}}
+}
+
+struct AudioChecksView:View {
+ @ObservedObject var m:BridgeModel
+ @Environment(\.dismiss) private var dismiss
+ var body:some View {VStack(alignment:.leading,spacing:18){
+  HStack{Text("Audio checks").font(.title2).bold();Spacer();Button("Done"){dismiss()}}
+  ScrollView{VStack(alignment:.leading,spacing:18){
+   HStack{Button("Refresh devices"){m.send(["command":"diagnose"])};Button("Reconnect agent"){m.reconnectAgent()}}.disabled(m.busy)
+   if !m.running && AVCaptureDevice.authorizationStatus(for:.audio) != .authorized {Button("Allow microphone access and start audio"){m.start()}.disabled(m.busy || !m.connected)}
+   ForEach(m.devices){d in GroupBox(d.name){VStack(alignment:.leading,spacing:10){
+    Text(d.setup).font(.caption)
+    ForEach(["playback_level","microphone_level","microphone_delivery_level"],id:\.self){key in
+     let level=m.level(d,key)
+     HStack{Text(["playback_level":"App audio","microphone_level":"Microphone","microphone_delivery_level":"Voice sent to apps"][key] ?? key).frame(width:150,alignment:.leading);ProgressView(value:level>0 ? min(1,max(0,(20*log10(level)+60)/60)):0);Text(level>0 ? String(format:"%.0f dB",20*log10(level)):"Silent").monospacedDigit().frame(width:65,alignment:.trailing)}
+    }
+    Button("Play test sound from \(d.name)"){m.send(["command":"test_tone","device_id":d.id])}.disabled(m.busy || !m.running || !d.online)
+   }.padding(8)}}
+   Text("Test sounds play for two seconds through the Hub headphones.").font(.caption).foregroundColor(.secondary)
+   if !m.diagnosticMessage.isEmpty {Text(m.diagnosticMessage).textSelection(.enabled)}
+   Divider();Text("App audio settings").font(.headline)
+   Text("Discord on Mac\nSpeaker: BlackHole 2ch · Microphone: BlackHole 16ch")
+   Text("Deadlock on Windows\nOutput: CABLE Input · Microphone: Hi-Fi Cable Output")
+   if !m.error.isEmpty{Text(m.error).foregroundColor(.red).textSelection(.enabled)}
+  }}
+ }.padding(24).frame(width:620,height:560)}
 }
 
 struct ContentView:View {
  @EnvironmentObject var m:BridgeModel
- @State private var page=0
- @State private var forget=false
- private var controlsDisabled:Bool {!m.connected || m.busy}
- private func mixRow(_ label:String,prefix:String)->some View {
-  HStack{Text(label).frame(width:140,alignment:.leading);Slider(value:m.scalar(prefix+"_volume",default:1),in:0...1);Text("\(Int(m.number(prefix+"_volume",default:1)*100))%").monospacedDigit().frame(width:42);Toggle("Mute mic",isOn:m.toggle(prefix+"_mute"));Toggle("Deafen",isOn:m.toggle(prefix+"_deafen"))}
+ @State private var showRoom=false
+ @State private var showChecks=false
+ private func device(_ role:Int)->RoomDevice? {m.devices.first{$0.roleValue==role}}
+ private func online(_ d:RoomDevice?)->Bool {guard let d=d else{return false};return m.isOnline(d)}
+ private var linkLabel:String {!m.available ? "App unavailable":m.connected ? "Connected":m.paired ? "Reconnecting…":"Not connected"}
+ private var micBlocked:Bool {m.number("mute",default:1) != 0 || m.number("deafen") != 0 || (m.diagnostics["muted"] as? Bool == true)}
+ @ViewBuilder private func computer(_ role:Int)->some View {
+  let d=device(role);let ready=online(d)
+  VStack(spacing:9){
+   Image(systemName:role==0 ? "desktopcomputer":"laptopcomputer").font(.system(size:68,weight:.light)).foregroundColor(ready ? .blue:.secondary).frame(height:84).accessibilityHidden(true)
+   Text(d?.name ?? (role==0 ? "Windows PC":"MacBook")).font(.title3).fontWeight(.semibold).lineLimit(2)
+   HStack(spacing:5){Circle().fill(ready ? Color.blue:Color.secondary).frame(width:6,height:6);Text(ready ? ((d?.id==m.localID) ? "This computer · available":"Connected"):(m.paired ? "Offline":"Not connected"))}.font(.caption).foregroundColor(.secondary)
+  }.frame(maxWidth:.infinity)
  }
- private func platformName(_ prefix:String)->String {m.devices.first{$0.roleValue==(prefix=="win" ? 0:1)}?.name ?? (prefix=="win" ? "Windows":"Mac")}
- var body:some View {VStack(alignment:.leading,spacing:16){
-  HStack{Text("AudioBridge").font(.largeTitle).bold();Spacer();Circle().fill(m.connected ? Color.green:Color.gray).frame(width:9,height:9);Text(m.connected ? "Connected":(m.paired ? "Reconnecting":"Not paired"))}
-  Picker("View",selection:$page){Text("Room").tag(0);Text("Devices").tag(1);Text("Mixer").tag(2);Text("Checks").tag(3)}.pickerStyle(.segmented)
-  ScrollView{VStack(alignment:.leading,spacing:16){
-   if page==0 {
-    GroupBox("This computer") {HStack{TextField("Device name",text:$m.deviceName);Button("Save name"){m.send(["command":"configure","device_id":m.localID,"name":m.deviceName])}.disabled(m.busy || m.localID.isEmpty)}.padding(8)}
-    if !m.paired {
-     GroupBox("Connect your two computers") {VStack(alignment:.leading,spacing:12){
-      Text("Use the same local network. Create a room here, or enter the code from your other computer.")
-      Button("Create room"){m.create()}.disabled(m.busy || !m.available)
-      if !m.invite.isEmpty {HStack{Text(m.formattedInvite).font(.system(size:30,weight:.semibold,design:.monospaced)).textSelection(.enabled);Button("Copy code"){NSPasteboard.general.clearContents();NSPasteboard.general.setString(m.formattedInvite,forType:.string)}};Text("Invitation expires in \(m.expires) seconds. It can pair one computer.").font(.caption);Button("Cancel invitation"){m.send(["command":"forget"])}.disabled(m.busy)}
-      Divider()
-      HStack{TextField("Room code, e.g. K7MP-4X9R",text:$m.joinCode);Button("Join room"){m.join()}.disabled(m.busy || !m.available)}
-      DisclosureGroup("Nearby rooms and manual connection"){
-       HStack{TextField("Other computer’s address (optional)",text:$m.joinAddress);Button("Find rooms"){m.send(["command":"discover"])}}
-       ForEach(m.nearby){room in Button("\(room.name) · \(room.address)"){m.joinAddress=room.address;m.selectedRoomID=room.id;m.selectedRoomAddress=room.address}.buttonStyle(.link)}
-       Text("Discovery does not share the invitation code. If your network blocks discovery, enter the other computer’s address.").font(.caption).foregroundColor(.secondary)
-      }
-     }.padding(8)}
-    } else {
-     GroupBox("Your room"){VStack(alignment:.leading,spacing:10){ForEach(m.devices){device in HStack{Text(device.name);Spacer();Text(device.roleValue==Int(m.number("primary")) ? "Hub":"Satellite");Text(device.online ? "Online":"Offline").foregroundColor(.secondary)}};Text("Both apps control this room. Your pairing is remembered.").font(.caption);Button("Forget this pairing…",role:.destructive){forget=true}.disabled(m.busy)}.padding(8)}
-    }
-    Toggle("Start AudioBridge at login",isOn:Binding(get:{m.startAtLogin},set:{m.setLogin($0)})).disabled(m.busy || !m.available)
-    Text("Closing this window keeps audio running. Use Quit AudioBridge to stop the background agent.").font(.caption).foregroundColor(.secondary)
-   } else if page==1 {
-    HStack{Text("Choose devices on either computer from here.");Spacer();Button("Refresh devices"){m.send(["command":"diagnose"])}}
-    ForEach(m.devices){DeviceRouteView(model:m,device:$0)}
-    Text("Connect AirPods to the Hub in Bluetooth settings. Changing the Hub here does not move their Bluetooth connection.").font(.caption).foregroundColor(.secondary)
-   } else if page==2 {
-    HStack{Picker("Hub",selection:m.role("primary")){Text(platformName("win")).tag(0);Text(platformName("mac")).tag(1)};Picker("Mic source",selection:m.role("mic_source")){Text(platformName("win")).tag(0);Text(platformName("mac")).tag(1)}}.disabled(controlsDisabled)
-    GroupBox("Mix") {VStack(spacing:16){mixRow(platformName("win"),prefix:"win");mixRow(platformName("mac"),prefix:"mac");HStack{Text(platformName("win"));Slider(value:m.scalar("balance"),in:-1...1);Text(platformName("mac"))};HStack{Text("Overall volume");Slider(value:m.scalar("master",default:1),in:0...1)}}.padding(8)}.disabled(controlsDisabled)
-    HStack{Toggle("Mute microphone everywhere",isOn:m.toggle("mute"));Spacer();Toggle("Deafen both",isOn:m.toggle("deafen"))}.disabled(controlsDisabled)
-    if m.number("mute",default:1) == 0 && (m.diagnostics["muted"] as? Bool == true) {Text("Microphone is blocked by audio readiness. Open Checks and resolve the inactive route before speaking.").foregroundColor(.orange)}
-    if m.number("mute",default:1) != 0 {Text(m.muteReason.isEmpty ? "Microphone is muted. Unmute when you are ready to speak.":m.muteReason).foregroundColor(.orange);Button("Unmute microphone"){m.control("mute",0)}.disabled(controlsDisabled)}
-   } else {
-    HStack{Button("Check setup"){m.send(["command":"diagnose"])};Button("Reconnect background agent"){m.reconnectAgent()}}.disabled(m.busy)
-    if !m.running && AVCaptureDevice.authorizationStatus(for:.audio) != .authorized {Button("Allow microphone access and start audio"){m.start()}.disabled(m.busy || !m.connected)}
-    ForEach(m.devices){d in GroupBox(d.name){VStack(alignment:.leading,spacing:10){
-     Text(d.setup)
-     ForEach(["playback_level","microphone_level","microphone_delivery_level"],id:\.self){key in
-      let level=m.level(d,key)
-      HStack{Text(["playback_level":"Application audio","microphone_level":"Physical microphone","microphone_delivery_level":"Shared microphone"][key] ?? key).frame(width:160,alignment:.leading);ProgressView(value:level>0 ? min(1,max(0,(20*log10(level)+60)/60)):0).frame(minWidth:100);Text(level>0 ? String(format:"%.0f dB",20*log10(level)):"Silent").monospacedDigit().frame(width:65,alignment:.trailing)}
-     }
-     Button("Play test sound from \(d.name)"){m.send(["command":"test_tone","device_id":d.id])}.disabled(m.busy || !m.running || !d.online)
-    }.padding(8)}}
-    Text("Test sounds play for two seconds through the Hub’s headphones. Signal meters show activity; confirm that you can actually hear the sound.").font(.caption).foregroundColor(.secondary)
-    if !m.diagnosticMessage.isEmpty {Text(m.diagnosticMessage).textSelection(.enabled)}
-    ForEach(["playback_ready","mic_sink_ready","headphones_ready","microphone_ready"],id:\.self){key in if let ready=m.diagnostics[key] as? Bool {HStack{Image(systemName:ready ? "checkmark.circle.fill":"circle").foregroundColor(ready ? .green:.secondary);Text(["playback_ready":"Local playback capture","mic_sink_ready":"Shared microphone output","headphones_ready":"Headphone output","microphone_ready":"Physical microphone"][key] ?? key);Spacer();Text(ready ? "Ready":"Not active").foregroundColor(.secondary)}}}
-    Divider();Text("Discord on Mac").font(.headline);Text("Speaker: BlackHole 2ch\nMicrophone: BlackHole 16ch")
-    Text("Deadlock on Windows").font(.headline);Text("Output: CABLE Input (VB-Audio Virtual Cable)\nMicrophone: Hi-Fi Cable Output (VB-Audio Hi-Fi Cable)")
-    Text("An inactive device may be expected when the other computer owns that role. No microphone recordings are saved by these checks.").font(.caption).foregroundColor(.secondary)
+ @ViewBuilder private func routes(_ role:Int)->some View {
+  if let d=device(role){DeviceRouteView(model:m,device:d)}else{
+   VStack(alignment:.leading,spacing:16){Text("Connect this computer to choose its headphones and microphone.").foregroundColor(.secondary);Button("Connect a computer"){showRoom=true}.disabled(!m.available)}.frame(maxWidth:.infinity,alignment:.leading)
+  }
+ }
+ var body:some View {VStack(alignment:.leading,spacing:0){
+  HStack{Text("AudioBridge").font(.title2).fontWeight(.semibold);Spacer();Button(m.paired ? "Room settings":"Connect computers"){showRoom=true};Button{showChecks=true}label:{Label("Audio checks",systemImage:"waveform.path.ecg")}}.padding(.bottom,22)
+  ScrollView{VStack(spacing:18){
+   HStack(alignment:.center,spacing:20){computer(0);VStack(spacing:8){HStack(spacing:6){Rectangle().fill(m.connected && m.available ? Color.blue:Color.secondary.opacity(0.4)).frame(height:2);Image(systemName:m.connected && m.available ? "link":"xmark").foregroundColor(m.connected && m.available ? .blue:.secondary);Rectangle().fill(m.connected && m.available ? Color.blue:Color.secondary.opacity(0.4)).frame(height:2)};Text(linkLabel).font(.caption).foregroundColor(.secondary)}.frame(width:120);computer(1)}
+   HStack(alignment:.top,spacing:32){routes(0);Divider();routes(1)}
+   Text("Connect your headphones to the Hub in Bluetooth settings. Your selected microphone can serve both computers.").font(.caption).foregroundColor(.secondary).frame(maxWidth:.infinity,alignment:.leading)
+  }.padding(.vertical,6)}
+  Divider().padding(.vertical,16)
+  VStack(alignment:.leading,spacing:12){
+   if !m.error.isEmpty {HStack(alignment:.top){Image(systemName:"exclamationmark.triangle");Text(m.error).textSelection(.enabled);Spacer();Button("Check setup"){showChecks=true}}.foregroundColor(.red)}
+   if m.running && micBlocked {HStack(alignment:.top){Image(systemName:"mic.slash");Text(m.number("deafen") != 0 ? "Both computers are deafened. Listening and microphone delivery are off.":(m.muteReason.isEmpty ? "Microphone is blocked. Check audio readiness before speaking.":m.muteReason)).font(.callout);Spacer()}.foregroundColor(.orange)}
+   HStack(spacing:16){
+    Button{m.control("mute",m.number("mute",default:1)==0 ? 1:0)}label:{Label(m.number("mute",default:1)==0 ? "Mute microphone":"Unmute microphone",systemImage:m.number("mute",default:1)==0 ? "mic":"mic.slash")}.disabled(!m.connected || m.busy)
+    Toggle("Deafen both",isOn:m.toggle("deafen")).disabled(!m.connected || m.busy)
+    Spacer()
+    HStack(spacing:8){Text("Volume").font(.caption).foregroundColor(.secondary);Slider(value:m.scalar("master",default:1),in:0...1).accessibilityLabel("Overall listening volume").frame(width:110)}.disabled(!m.connected || m.busy)
+    if m.busy{ProgressView().controlSize(.small)}
+    Button(m.permissionPending ? "Cancel start":((m.running || m.wantedRunning) ? "Stop audio":"Start audio")){if m.permissionPending{m.cancelPermission()}else if m.running || m.wantedRunning{m.send(["command":"stop"])}else{m.start()}}.disabled(m.busy || (!m.connected && !m.running && !m.wantedRunning)).keyboardShortcut(.defaultAction)
    }
-  }.padding(.vertical,8)}
-  Divider()
-  if !m.error.isEmpty {Text(m.error).font(.callout).foregroundColor(.red).textSelection(.enabled)}
-  HStack{VStack(alignment:.leading){Text(m.permissionPending ? "Waiting for microphone permission…":m.status).font(.caption);if !m.muteReason.isEmpty{Text(m.muteReason).font(.caption).foregroundColor(.orange)}};Spacer();if m.busy{ProgressView().controlSize(.small)};Button(m.permissionPending ? "Cancel start":((m.running || m.wantedRunning) ? "Stop audio":"Start audio")){if m.permissionPending{m.cancelPermission()}else if m.running || m.wantedRunning{m.send(["command":"stop"])}else{m.start()}}.disabled(m.busy || (!m.paired && !m.running)).keyboardShortcut(.defaultAction)}
- }.padding(24).frame(minWidth:820,minHeight:650).onAppear{m.open()}.alert("Forget this pairing?",isPresented:$forget){Button("Cancel",role:.cancel){};Button("Forget",role:.destructive){m.send(["command":"forget"])}}message:{Text("Audio will stop. You will need a new room code to connect these computers again.")}}
+   Text(!m.available ? "AudioBridge is unavailable. Open Audio checks to reconnect.":(m.permissionPending ? "Waiting for microphone permission…":m.status)).font(.caption).foregroundColor(.secondary).fixedSize(horizontal:false,vertical:true)
+  }
+ }.padding(28).frame(minWidth:840,minHeight:720).onAppear{m.open()}
+ .sheet(isPresented:$showRoom){RoomSettingsView(m:m)}.sheet(isPresented:$showChecks){AudioChecksView(m:m)}
+ }
 }
 final class AppDelegate:NSObject,NSApplicationDelegate {
  func applicationDidFinishLaunching(_ notification:Notification){

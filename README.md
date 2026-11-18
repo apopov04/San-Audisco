@@ -1,4 +1,4 @@
-# AudioBridge v0.2
+# AudioBridge v0.2.1
 
 AudioBridge mixes audio from a Windows PC and a Mac into headphones connected to
 one computer, and sends a selected physical microphone to voice apps on both.
@@ -48,8 +48,16 @@ Selecting a new Hub does not automatically move their Bluetooth connection.
 
 ## Controls and background operation
 
-Both interfaces display the same acknowledged room settings. Choose the Hub,
-microphone source, each device's listening volume, balance, and master volume.
+Both interfaces open with a two-computer overview. Blue indicates an available
+computer; gray indicates offline or unavailable, with matching text labels. The
+line between them shows room connectivity, separately from whether audio is running.
+
+Choose Headphones and Microphone directly beneath each computer. **Use as Hub**
+chooses where you listen; **Use this microphone** chooses the shared voice source.
+Physical selectors exclude virtual cables. Each computer has its own volume,
+microphone mute and deafen controls. Overall volume and global mute/deafen stay
+within reach. Room pairing, audio checks and advanced cables are secondary controls.
+Balance is available in Room settings on Mac and Advanced on Windows.
 
 - **Mute** stops microphone delivery. It is available globally and per destination.
 - Set a device's volume to **0%** to remove it from the headphone mix without

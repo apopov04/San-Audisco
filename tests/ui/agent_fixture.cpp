@@ -17,6 +17,7 @@ int main(int argc,char**argv){try{
  std::string line;std::getline(std::cin,line);auto request=json::parse(line);auto command=request.at("command").get<std::string>();
  std::ofstream(directory/"ui-fixture-requests.jsonl",std::ios::app)<<request.dump()<<'\n';
  if(command=="create"){state["invite_code"]="K7MP4X9R";state["status"]="Invitation created";}
+ else if(command=="cancel_invite"){state["invite_code"]="";state["status"]="Invitation cancelled";}
  else if(command=="join"){if(request.value("code","")!="K7MP4X9R"){std::cout<<json{{"ok",false},{"error","Wrong invitation code"},{"state",state}}.dump()<<'\n';return 0;}state["paired"]=true;state["connected"]=true;state["invite_code"]="";state["room_id"]="fixture-room";state["status"]="Room connected";}
  else if(command=="discover")state["discovered"]=json::array({{{"id","fixture-room"},{"name","Test room"},{"address","127.0.0.1:45671"}}});
  else if(command=="configure"){for(auto& d:state["devices"])if(d["id"]==request["device_id"])for(auto& [key,value]:request.items())if(key!="command"&&key!="device_id")d[key]=value;}
