@@ -17,7 +17,7 @@ int wmain(){
    RECT area{0,0,830,95};FillRect(dc,&area,GetSysColorBrush(COLOR_WINDOW));SetViewportOrgEx(dc,-60,-140,nullptr);draw_computers(dc);GdiFlush();
    std::vector<DWORD> pixels(static_cast<DWORD*>(raw),static_cast<DWORD*>(raw)+830*95);SelectObject(dc,previous);DeleteObject(bitmap);DeleteDC(dc);return pixels;
   };
-  auto dashes=[](const auto& pixels){return std::count_if(pixels.begin(),pixels.end(),[](DWORD v){return (v&0xffffff)==0xffa661;});};
+  auto dashes=[](const auto& pixels){return std::count_if(pixels.begin(),pixels.end(),[](DWORD v){switch(v&0xffffff){case 0x46cdeb:case 0x66e0a9:case 0xf9d358:case 0xb99af7:case 0x6ca3ff:case 0xe9f0f7:return true;default:return false;}});};
   agent_available=true;connected=false;auto a=frame();Sleep(180);require(a==frame(),"Disconnected bridge changed");require(dashes(a)==0,"Disconnected bridge has traffic");
   connected=true;BOOL effects=TRUE;SystemParametersInfoW(SPI_GETCLIENTAREAANIMATION,0,&effects,0);a=frame();Sleep(180);auto b=frame();require(dashes(a)>0&&dashes(b)>0,"Connected dashes missing");require((a!=b)==bool(effects),"Motion does not follow OS animation setting");
   ShowWindow(window,SW_SHOW);sync_bridge_animation();require(bridge_timer_running==bool(effects),"Visible connected timer state incorrect");

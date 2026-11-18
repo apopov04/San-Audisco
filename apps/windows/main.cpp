@@ -185,11 +185,17 @@ void draw_computers(HDC dc){if(TabCtrl_GetCurSel(tabs)!=0)return;
  SelectObject(dc,old);DeleteObject(pen);
  if(connected&&agent_available){
   BOOL effects=TRUE;SystemParametersInfoW(SPI_GETCLIENTAREAANIMATION,0,&effects,0);
-  double phase=effects?(GetTickCount64()%6000)/6000.0:0;
-  auto ink=CreateSolidBrush(RGB(255,166,97));auto previousBrush=SelectObject(dc,ink),previousPen=SelectObject(dc,GetStockObject(NULL_PEN));
+  double travel=effects?GetTickCount64()/6000.0:0;
+  constexpr COLORREF colors[]{RGB(70,205,235),RGB(102,224,169),RGB(249,211,88),RGB(185,154,247),RGB(108,163,255),RGB(233,240,247)};
+  auto previousBrush=SelectObject(dc,GetStockObject(DC_BRUSH)),previousPen=SelectObject(dc,GetStockObject(DC_PEN));
+  auto oldBrushColor=SetDCBrushColor(dc,colors[0]),oldPenColor=SetDCPenColor(dc,RGB(31,46,61));
   int saved=SaveDC(dc);IntersectClipRect(dc,358,202,592,209);
-  for(int lane=0;lane<2;++lane)for(int dot=0;dot<3;++dot){double progress=std::fmod(phase+dot/3.0,1.0);int x=2+static_cast<int>(156*(lane==0?progress:1-progress));auto a=point(x-3,59+lane*4),b=point(x+4,61+lane*4);RoundRect(dc,a.x,a.y,b.x,b.y,2,2);}
-  RestoreDC(dc,saved);SelectObject(dc,previousBrush);SelectObject(dc,previousPen);DeleteObject(ink);
+  for(int lane=0;lane<2;++lane)for(int dot=0;dot<3;++dot){
+   double journey=travel+dot/3.0,progress=std::fmod(journey,1.0);
+   SetDCBrushColor(dc,colors[(lane*3+dot+static_cast<unsigned long long>(journey))%6]);
+   int x=2+static_cast<int>(156*(lane==0?progress:1-progress));auto a=point(x-3,59+lane*4),b=point(x+4,62+lane*4);RoundRect(dc,a.x,a.y,b.x,b.y,2,2);
+  }
+  RestoreDC(dc,saved);SetDCBrushColor(dc,oldBrushColor);SetDCPenColor(dc,oldPenColor);SelectObject(dc,previousBrush);SelectObject(dc,previousPen);
  }
  for(int slot=0;slot<2;++slot){auto d=platform_device(slot);bool online=agent_available&&!d.empty()&&boolean(d,"online")&&(string_value(d,"id")==string_value(state,"device_id")||connected);int x=slot?655:185;auto outline=CreatePen(PS_SOLID,3,online?blue:gray);auto fill=CreateSolidBrush(online?RGB(232,242,255):RGB(240,242,245));auto previousPen=SelectObject(dc,outline),previousBrush=SelectObject(dc,fill);RoundRect(dc,x,148,x+110,214,9,9);if(slot==0){MoveToEx(dc,x+55,214,nullptr);LineTo(dc,x+55,227);MoveToEx(dc,x+30,227,nullptr);LineTo(dc,x+80,227);}else{POINT base[]{{x,214},{x+110,214},{x+124,224},{x+116,228},{x-6,228},{x-14,224}};Polygon(dc,base,6);MoveToEx(dc,x+43,219,nullptr);LineTo(dc,x+67,219);}SelectObject(dc,previousPen);SelectObject(dc,previousBrush);DeleteObject(outline);DeleteObject(fill);}
 }

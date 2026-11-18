@@ -129,3 +129,13 @@ confirmed moving connected frames, no disconnected dashes, OS animation preferen
 and timer suspension. The Win32 GUI regression suite passed, including a check
 that repeated animation ticks do not trigger IPC polling. Both production builds
 passed; physical Windows performance/listening was not retested for this UI change.
+
+## v0.2.8 traffic colors
+
+Bridge traffic uses a fixed cyan, mint, gold, lavender, blue and off-white palette.
+Each dash keeps its color during a crossing and advances to another palette color
+when it wraps around. Thin dark outlines keep pale colors visible on light themes.
+Reduced motion uses fixed colors and positions. No traffic colors are red.
+Both native apps build; the Windows render test verifies colored traffic, movement
+and disconnected/timer behavior under Wine. Mac screenshot sequences verify the
+palette visually. Audio behavior and existing hover descriptions are unchanged.

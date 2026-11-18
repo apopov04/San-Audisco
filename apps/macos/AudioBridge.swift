@@ -357,6 +357,11 @@ struct GoldenGateBridge:Shape {
 }
 
 struct BridgeConnectionView:View {
+ private static let trafficColors:[Color]=[
+  Color(red:70/255,green:205/255,blue:235/255),Color(red:102/255,green:224/255,blue:169/255),
+  Color(red:249/255,green:211/255,blue:88/255),Color(red:185/255,green:154/255,blue:247/255),
+  Color(red:108/255,green:163/255,blue:255/255),Color(red:233/255,green:240/255,blue:247/255)
+ ]
  let connected:Bool
  @Environment(\.accessibilityReduceMotion) private var reduceMotion
  @Environment(\.scenePhase) private var scenePhase
@@ -366,13 +371,17 @@ struct BridgeConnectionView:View {
    if connected {
     TimelineView(.animation(minimumInterval:1.0/30,paused:reduceMotion || scenePhase != .active)){timeline in
      Canvas{context,size in
-      let phase=reduceMotion ? 0:timeline.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy:6)/6
+      let travel=reduceMotion ? 0:timeline.date.timeIntervalSinceReferenceDate/6
       for lane in 0..<2 {for dot in 0..<3 {
-       let progress=(phase+Double(dot)/3).truncatingRemainder(dividingBy:1)
+       let journey=travel+Double(dot)/3
+       let progress=journey.truncatingRemainder(dividingBy:1)
+       let color=Self.trafficColors[(lane*3+dot+Int(journey))%Self.trafficColors.count]
        let x=2+156*(lane==0 ? progress:1-progress)
-       let rect=CGRect(x:(x-3.5)*size.width/160,y:CGFloat(59+lane*4)*size.height/80,width:7*size.width/160,height:2*size.height/80)
+       let rect=CGRect(x:(x-3.5)*size.width/160,y:(58.75+CGFloat(lane)*4)*size.height/80,width:7*size.width/160,height:2.5*size.height/80)
        var stroke=context;stroke.opacity=min(1,min((x-2)/10,(158-x)/10))
-       stroke.fill(Path(roundedRect:rect,cornerRadius:size.height/80),with:.color(Color(red:1,green:0.65,blue:0.38)))
+       let dash=Path(roundedRect:rect,cornerRadius:size.height/80)
+       stroke.fill(dash,with:.color(color))
+       stroke.stroke(dash,with:.color(Color(red:0.12,green:0.18,blue:0.24)),lineWidth:0.35)
       }}
      }
     }
