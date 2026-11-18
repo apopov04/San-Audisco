@@ -20,9 +20,11 @@ with tempfile.TemporaryDirectory(prefix='san-audisco-restore-') as directory:
   assert all(json.loads((root/(name+'-restore.json')).read_text())['entries']==[] for name in ('input','output'))
   assert quit().returncode==0,'Repeated quit must be safe'
   # No credentials are accessed and no arbitrary replacement is selected when
-  # the selected headphones are unavailable. The failure must be visible.
+  # the selected headphones are unavailable. The warning must remain visible without vetoing Quit.
   state['routes']['headphones_output']='disconnected-headphones';(root/'state.json').write_text(json.dumps(state))
   defaults.write_text(json.dumps({'output':{'0':playback},'input':{'0':prefix+'-mic'}}))
-  result=quit();assert result.returncode!=0 and 'physical Output' in result.stdout,result.stdout
+  result=quit();assert result.returncode==0 and 'physical Output' in json.loads(result.stdout)['state']['quit_warning'],result.stdout
+  assert not json.loads((root/'state.json').read_text())['wanted_running']
+  assert json.loads((root/'state.json').read_text())['last_quit_warning']
   assert json.loads(defaults.read_text())['output']['0']==playback
-  print('PASS',platform,'legacy cable recovery, physical selections, manual override, idempotent quit, unavailable-output failure')
+  print('PASS',platform,'legacy cable recovery, physical selections, manual override, idempotent quit, nonblocking unavailable-output warning')

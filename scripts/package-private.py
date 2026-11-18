@@ -56,7 +56,7 @@ def build_mac(args, lock, scratch):
     rows = [{'path':p.relative_to(resources).as_posix(), 'sha256':hashlib.sha256(p.read_bytes()).hexdigest()} for p in files_under(resources)]
     write_manifest(resources / 'manifest.json', {'schema':1, 'private_only':True, 'files':rows})
     with (contents / 'Info.plist').open('wb') as f:
-        plistlib.dump({'CFBundleIdentifier':'local.audiobridge.setup', 'CFBundleExecutable':'SanAudiscoSetup', 'CFBundleName':'San Audisco Setup', 'CFBundleIconFile':'SanAudisco', 'CFBundleVersion':'15', 'CFBundleShortVersionString':'0.3.2', 'LSMinimumSystemVersion':'13.0', 'NSHighResolutionCapable':True}, f)
+        plistlib.dump({'CFBundleIdentifier':'local.audiobridge.setup', 'CFBundleExecutable':'SanAudiscoSetup', 'CFBundleName':'San Audisco Setup', 'CFBundleIconFile':'SanAudisco', 'CFBundleVersion':'16', 'CFBundleShortVersionString':'0.3.3', 'LSMinimumSystemVersion':'13.0', 'NSHighResolutionCapable':True}, f)
     run(['clang++', '-target', 'arm64-apple-macos13.0', '-std=c++20', '-O2', '-c', ROOT/'installer/setup_policy.cpp', '-o',scratch/'setup_policy.o'])
     run(['swiftc', '-target', 'arm64-apple-macos13.0', '-O', '-parse-as-library', ROOT / 'installer/macos/Setup.swift', scratch/'setup_policy.o', '-o', contents / 'MacOS/SanAudiscoSetup', '-framework', 'SwiftUI', '-framework', 'AppKit', '-framework', 'CoreAudio', '-framework', 'CryptoKit'])
     spec = importlib.util.spec_from_file_location('sign_mac', ROOT/'scripts/sign-mac.py')
@@ -99,8 +99,8 @@ def build_windows(args, lock, scratch):
     header = ['#pragma once', 'struct Payload {int id; const wchar_t* group; const wchar_t* path; const char* sha256;};', 'inline const Payload payload[] = {']
     shutil.copy2(ROOT/'assets/SanAudisco.ico', scratch/'SanAudisco.ico')
     rc = ['#include <windows.h>', '1 RT_MANIFEST "setup.manifest"', '101 ICON "SanAudisco.ico"', '''1 VERSIONINFO
-FILEVERSION 0,3,2,0
-PRODUCTVERSION 0,3,2,0
+FILEVERSION 0,3,3,0
+PRODUCTVERSION 0,3,3,0
 FILEOS VOS_NT_WINDOWS32
 FILETYPE VFT_APP
 BEGIN
@@ -110,8 +110,8 @@ BEGIN
   BEGIN
    VALUE "FileDescription", "San Audisco Setup\\0"
    VALUE "ProductName", "San Audisco\\0"
-   VALUE "FileVersion", "0.3.2\\0"
-   VALUE "ProductVersion", "0.3.2\\0"
+   VALUE "FileVersion", "0.3.3\\0"
+   VALUE "ProductVersion", "0.3.3\\0"
   END
  END
  BLOCK "VarFileInfo"

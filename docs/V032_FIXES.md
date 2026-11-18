@@ -1,5 +1,8 @@
 # 0.3.2 — resize and Quit restoration
 
+The Quit-blocking behavior described here was corrected in
+[0.3.3](V033_QUIT.md): restoration warnings no longer prevent exit.
+
 ## Changes
 
 Windows artwork now scales uniformly with DPI. Resizing moves the device and

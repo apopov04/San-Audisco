@@ -1,4 +1,4 @@
-# San Audisco v0.3.2
+# San Audisco v0.3.3
 
 San Audisco (formerly AudioBridge) mixes audio from two Windows or Mac computers into headphones connected to
 one computer, and sends a selected physical microphone to voice apps on both.
@@ -29,6 +29,12 @@ peer's acknowledgement, and leaves the other app open with audio stopped. When
 an old cable selection has no restore record, recovery uses the explicitly
 selected physical device. Unavailable devices produce an actionable error.
 See [quit and resize validation](docs/V032_FIXES.md).
+
+Version 0.3.3 fixes Quit being blocked by an unavailable output on either
+computer. Audio stops and the local app exits even if a device cannot yet be
+restored. Warnings and recovery records remain available; the other open app
+continues retrying restoration. Reopening stays paired with audio stopped.
+See [Quit regression validation](docs/V033_QUIT.md).
 
 ## Start using a room
 

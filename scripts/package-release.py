@@ -29,10 +29,10 @@ try:
 except (subprocess.CalledProcessError, FileNotFoundError):
     commit, dirty = None, None
 manifest = {
-    'version': '0.3.2', 'source_commit': commit, 'source_dirty': dirty,
+    'version': '0.3.3', 'source_commit': commit, 'source_dirty': dirty,
     'packaged_at_utc': datetime.now(timezone.utc).isoformat(),
     'binary_sha256': {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in artifacts.items()},
-    'validation': 'See docs/V032_FIXES.md for resize and audio restoration checks, including legacy cable defaults and acknowledged room-wide Quit. Physical AirPods listening acceptance is deferred at the user request.',
+    'validation': 'See docs/V033_QUIT.md for repeat-Quit and unavailable-output checks. Restoration warnings no longer veto shutdown. Pairing and recovery records remain intact.',
 }
 (dist/'BUILD_INFO.json').write_text(json.dumps(manifest, indent=2)+'\n')
 with zipfile.ZipFile(dist/'San Audisco-Windows-x64.zip','w',zipfile.ZIP_DEFLATED) as z:
