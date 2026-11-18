@@ -1,10 +1,14 @@
-# San Audisco private setup (v0.2)
+# San Audisco private setup (v0.3)
 
 These installers are assembled for the owner's private machines. They contain
 third-party packages, are not public release artifacts, and must not be uploaded
 to GitHub Releases or included in the source archive. Personal use is not a grant
 of public redistribution rights. Vendor installers, signatures, copyright notices,
 and licensing screens are preserved unchanged.
+
+## Guided setup
+
+The branded Welcome screen leads to a background check, component readiness cards, and a single next action. Setup installs or updates the app, opens only missing component installers, and offers Open San Audisco once the verified components are ready. Details keeps vendor information, repair guidance and technical state accessible. Existing components are retained. In the app, Room settings and Audio checks guide pairing, hub choices, Autoconfigure and signal tests.
 
 ## What setup does
 

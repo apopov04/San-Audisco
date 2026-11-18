@@ -41,7 +41,7 @@ def main():
             malformed.write_bytes(content)
             invoke('key-import', 'test-malformed', malformed, ok=False)
         config = root / 'run.conf'
-        base = f'device=windows\npeer=127.0.0.1\nport=0\npeer_port=45670\nplayback_input=win-playback\nphysical_microphone=win-mic\nheadphones_output=win-headphones\nmicrophone_output=win-mic-sink\n'
+        base = f'slot=0\npeer=127.0.0.1\nport=0\npeer_port=45670\nplayback_input=win-playback\nphysical_microphone=win-mic\nheadphones_output=win-headphones\nmicrophone_output=win-mic-sink\n'
         config.write_text(base + f'key_file={key}\nkey_id=../invalid\n')
         result = invoke('run', config, ok=False, data='quit\n')
         assert 'Credential ID' in result.stderr, 'key_id did not take precedence over legacy key_file'

@@ -24,9 +24,9 @@ struct Harness {
 };
 }
 int main() {
-    for (auto local : {Device::Windows,Device::Mac}) {
-        for (auto primary : {Device::Windows,Device::Mac}) {
-            for (auto source : {Device::Windows,Device::Mac}) {
+    for (auto local : {Device::A,Device::B}) {
+        for (auto primary : {Device::A,Device::B}) {
+            for (auto source : {Device::A,Device::B}) {
                 Harness h(local); h.settings.primary=primary; h.settings.microphoneSource=source; h.run();
                 check(near(h.listen[0],local==primary?.4f:0),"primary selection and sum");
                 check(near(h.listen[1],local==primary?.6f:0),"stereo preserved");
@@ -49,7 +49,7 @@ int main() {
             }
         }
     }
-    Harness h(Device::Windows); h.settings.microphoneSource=Device::Windows;
+    Harness h(Device::A); h.settings.microphoneSource=Device::A;
     h.settings.routes[0].micMuted=true; h.settings.routes[0].deafened=true; h.run();
     h.settings.routes[0].deafened=false; h.run();
     check(h.localMic[0]==0 && near(h.sendMic[0],.7f),"undeafen preserves explicit mute and remote continues");
@@ -77,7 +77,7 @@ int main() {
     check(ring.pop(output.data(),1)==0&&output[0]==0,"discard stale audio");
 
     // Control updates must not race the RT callback or create mixed settings.
-    Engine concurrent(Device::Windows, 0); std::atomic<bool> done=false;
+    Engine concurrent(Device::A, 0); std::atomic<bool> done=false;
     std::thread writer([&]{for(int i=0;i<100000;++i){Settings s; s.routes[0].volume=(i&1)?0:1; s.routes[1].volume=(i&1)?1:0; concurrent.setSettings(s);}done=true;});
     std::array<float,2> ones{.25f,.25f}, mixed{};
     while(!done.load()) { concurrent.process({ones.data(),ones.data(),nullptr,nullptr},{mixed.data()},1);check(near(mixed[0],.25f)||near(mixed[0],.5f),"settings snapshot coherent"); }
@@ -86,7 +86,7 @@ int main() {
     std::thread producer([&]{for(int i=0;i<total;){float frame[2]{float(i),float(-i)};if(concurrentRing.push(frame,1))++i;}});
     for(int i=0;i<total;){float frame[2];if(concurrentRing.pop(frame,1)){check(frame[0]==float(i)&&frame[1]==float(-i),"SPSC threaded order");++i;}}
     producer.join();
-    Engine ramped(Device::Windows, 4);
+    Engine ramped(Device::A, 4);
     Settings rampSettings; ramped.setSettings(rampSettings);
     std::array<float,8> signal{.5,.5,.5,.5,.5,.5,.5,.5}, fade{};
     ramped.process({signal.data()}, {fade.data()}, 4);

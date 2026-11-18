@@ -11,8 +11,8 @@ using namespace bridge;
 void check(bool yes,const char* message){if(!yes){std::fprintf(stderr,"FAIL: %s\n",message);std::exit(1);}}
 int main(){
     constexpr std::size_t target=1536,block=240,impulseTick=100;
-    ListeningMixer direct(Device::Windows,target);Settings settings;direct.setSettings(settings);
-    AdaptiveAudioRing<8192> oldCapture(target),oldRender(target);Engine oldEngine(Device::Windows);
+    ListeningMixer direct(Device::A,target);Settings settings;direct.setSettings(settings);
+    AdaptiveAudioRing<8192> oldCapture(target),oldRender(target);Engine oldEngine(Device::A);
     oldEngine.setSettings(settings);
     std::array<float,block*2> input{},capture{},mixed{},oldOutput{},newOutput{};
     std::size_t directImpulse=0,oldImpulse=0;
@@ -35,7 +35,7 @@ int main(){
 
     // Arbitrary callback sizes remain safe and no worker tick is needed to hear
     // captured local audio. Settings are published from a concurrent controller.
-    ListeningMixer callbackMixer(Device::Windows,768);callbackMixer.setSettings(settings);
+    ListeningMixer callbackMixer(Device::A,768);callbackMixer.setSettings(settings);
     std::array<float,2048> constant{},rendered{};constant.fill(.2f);
     callbackMixer.pushLocal(constant.data(),1024);
     for(int i=0;i<5;++i)callbackMixer.pushRemote(constant.data(),1024);
@@ -50,7 +50,7 @@ int main(){
     // Network decoding must wait for the actual consumer flush. Otherwise a
     // worker can advance its packet timeline, enqueue fresh audio, and have the
     // next headphone callback throw that fresh audio away with the old queue.
-    ListeningMixer resetMixer(Device::Windows,480);Settings resetSettings;
+    ListeningMixer resetMixer(Device::A,480);Settings resetSettings;
     resetMixer.setSettings(resetSettings);resetMixer.pushRemote(constant.data(),1024);
     resetMixer.requestReset(ListeningMixer::Remote);
     check(resetMixer.remoteResetPending(),"remote reset requires consumer acknowledgement");
@@ -66,7 +66,7 @@ int main(){
     // every 80 ms. Reverse each burst to exercise reordering, and decode at most
     // twelve packets per worker tick as the runtime does. Test actual continuous
     // output on both remote paths and a local impulse during the receive gap.
-    ListeningMixer wifiMixer(Device::Windows,480);wifiMixer.setSettings(Settings{});
+    ListeningMixer wifiMixer(Device::A,480);wifiMixer.setSettings(Settings{});
     AdaptiveAudioRing<8192> wifiMicrophone(4800);
     net::JitterBuffer wifiPackets(32,4);
     std::array<float,480> localSignal{},remoteSignal{},wifiOutput{},micOutput{};
@@ -117,7 +117,7 @@ int main(){
     for(std::size_t captureFrames:{128,240,256,512,1024,1536})
     for(std::size_t renderFrames:{128,240,256,512,1024,1536})
     for(double ppm:{-500.,0.,500.}) {
-        ListeningMixer batched(Device::Windows,std::max(captureFrames,renderFrames)+240);
+        ListeningMixer batched(Device::A,std::max(captureFrames,renderFrames)+240);
         Settings clean;batched.setSettings(clean);double captureTime=0,renderTime=17;
         while(std::min(captureTime,renderTime)<48000*5.) {
             if(captureTime<=renderTime){
@@ -134,7 +134,7 @@ int main(){
     }
     std::puts("108 callback/clock combinations passed without steady-state missing samples or overflow");
 
-    ListeningMixer concurrent(Device::Windows,480);std::atomic<bool> stop=false;
+    ListeningMixer concurrent(Device::A,480);std::atomic<bool> stop=false;
     std::thread producer([&]{std::array<float,480> samples{};samples.fill(.1f);while(!stop){concurrent.pushLocal(samples.data(),240);concurrent.pushRemote(samples.data(),240);}});
     std::thread controller([&]{for(int i=0;i<10000;++i){Settings s;s.routes[0].volume=(i&1)?.25f:1;concurrent.setSettings(s);if(i%20==0)concurrent.requestReset();if(i%100==0)concurrent.setTargetFrames((i&100)?480:768);}});
     for(int i=0;i<10000;++i){concurrent.render(rendered.data(),240);for(std::size_t n=0;n<480;++n)check(std::isfinite(rendered[n])&&std::abs(rendered[n])<=.201f,"bounded concurrent output");}

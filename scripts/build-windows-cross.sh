@@ -36,7 +36,7 @@ mkdir -p "$output_dir"
 "$compiler" -std=c++20 -O2 -static -DSODIUM_STATIC \
     -I"$project_root/include" -I"$dependency_prefix/include" \
     -I"$project_root/third_party/json/include" -I"$room_crypto_prefix/include" \
-    "$project_root/apps/agent.cpp" "$project_root/src/agent_platform.cpp" \
+    "$project_root/apps/agent.cpp" "$project_root/src/device_profile.cpp" "$project_root/src/agent_platform.cpp" \
     "$project_root/src/output_routing.cpp" "$project_root/src/output_routing_windows.cpp" \
     "$project_root/src/room.cpp" "$project_root/src/audio_windows.cpp" \
     "$project_root/src/credentials.cpp" "$project_root/src/engine.cpp" \

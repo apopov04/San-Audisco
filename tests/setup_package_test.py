@@ -3,6 +3,7 @@
 from pathlib import Path
 import hashlib
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -60,6 +61,66 @@ class PackageInputs(unittest.TestCase):
         for spec in lock['components'].values():
             self.assertEqual(len(bytes.fromhex(spec['sha256'])),32)
             self.assertTrue(spec['source'].startswith('https://'))
+
+
+@unittest.skipUnless(sys.platform == 'win32' and os.environ.get('SAN_AUDISCO_SETUP_UI_EXE'),
+                     'Set SAN_AUDISCO_SETUP_UI_EXE on Windows/Wine for native setup checks')
+class WindowsSetupUI(unittest.TestCase):
+    def test_guided_setup_layout_and_checks(self):
+        # Never clicks an install action: only Welcome, Details, and Check.
+        import ctypes as c
+        import ctypes.wintypes as w
+        import subprocess
+        import time
+        u=c.WinDLL('user32',use_last_error=True)
+        u.FindWindowW.argtypes=[w.LPCWSTR,w.LPCWSTR];u.FindWindowW.restype=w.HWND
+        u.GetDlgItem.argtypes=[w.HWND,c.c_int];u.GetDlgItem.restype=w.HWND
+        u.SendMessageW.argtypes=[w.HWND,w.UINT,w.WPARAM,w.LPARAM];u.SendMessageW.restype=w.LPARAM
+        u.GetWindowRect.argtypes=[w.HWND,c.POINTER(w.RECT)]
+        u.IsWindowVisible.argtypes=[w.HWND];u.IsWindowVisible.restype=w.BOOL
+        u.IsWindowEnabled.argtypes=[w.HWND];u.IsWindowEnabled.restype=w.BOOL
+        u.SetWindowPos.argtypes=[w.HWND,w.HWND,c.c_int,c.c_int,c.c_int,c.c_int,w.UINT]
+        def wait(predicate):
+            until=time.monotonic()+20
+            while time.monotonic()<until:
+                if predicate():return
+                time.sleep(.05)
+            self.fail('Native setup did not reach expected state')
+        def value(handle):
+            text=c.create_unicode_buffer(4096)
+            u.SendMessageW(handle,13,len(text),c.cast(text,c.c_void_p).value)
+            return text.value
+        self.assertFalse(u.FindWindowW('SanAudiscoPrivateSetup',None),'Existing setup must be closed first')
+        process=subprocess.Popen([os.environ['SAN_AUDISCO_SETUP_UI_EXE']])
+        try:
+            wait(lambda:u.FindWindowW('SanAudiscoPrivateSetup',None))
+            window=u.FindWindowW('SanAudiscoPrivateSetup',None)
+            get=lambda control:u.GetDlgItem(window,control)
+            wait(lambda:value(get(100))=='Check this computer')
+            self.assertFalse(u.IsWindowVisible(get(251)))
+            self.assertTrue(u.SendMessageW(get(200),0x171,0,0),'Brand icon is missing')
+            def bounds(control):
+                rect=w.RECT();self.assertTrue(u.GetWindowRect(get(control),c.byref(rect)));return rect
+            for width,height in [(800,700),(1000,850),(680,500)]:
+                u.SetWindowPos(window,None,0,0,width,height,0x16)
+                time.sleep(.1)
+                self.assertLessEqual(bounds(200).right,bounds(201).left)
+                for row in range(3):self.assertLessEqual(bounds(220+row).right,bounds(240+row).left)
+                self.assertLessEqual(bounds(250).bottom,bounds(110).top)
+            u.SetWindowPos(window,None,0,0,900,950,0x16)
+            u.SendMessageW(get(110),0xf5,0,0)
+            self.assertTrue(u.IsWindowVisible(get(251)))
+            self.assertLessEqual(bounds(251).bottom,bounds(106).top)
+            self.assertLessEqual(bounds(108).bottom,bounds(100).top)
+            u.SendMessageW(get(110),0xf5,0,0)
+            u.SendMessageW(get(100),0xf5,0,0)
+            wait(lambda:u.IsWindowEnabled(get(100)))
+            self.assertIn(value(get(100)),('Install / update San Audisco','Install playback component',
+                'Install microphone component','Open San Audisco','Check again'))
+            self.assertNotEqual(value(get(240)),'Not checked')
+            u.SendMessageW(window,0x10,0,0);process.wait(timeout=5)
+        finally:
+            if process.poll() is None:process.terminate();process.wait(timeout=5)
 
 
 if __name__=='__main__':unittest.main()

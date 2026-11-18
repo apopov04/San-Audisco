@@ -14,19 +14,27 @@ struct AudioEndpoint: Identifiable {
  }
 }
 struct RoomDevice: Identifiable {
+ let appPlaybackOutput:String;let appMicrophoneInput:String
  let id: String; let name: String; let platform: String; let online: Bool
+ let slot:Int; let kind:String; let kindOverride:String; let mix:[String:Double]
  let audio: [AudioEndpoint]; let headphones: String; let microphone: String
  let playback: String; let micOutput: String; let setup: String; let diagnostics:[String:Any]
  init(_ value: [String: Any]) {
   id=value["id"] as? String ?? ""; name=value["name"] as? String ?? id
+  appPlaybackOutput=value["app_playback_output"] as? String ?? "";appMicrophoneInput=value["app_microphone_input"] as? String ?? ""
   platform=value["platform"] as? String ?? ""; online=value["online"] as? Bool ?? false
+  slot=(value["slot"] as? NSNumber)?.intValue ?? -1
+  kind=value["kind"] as? String ?? "unknown";kindOverride=value["kind_override"] as? String ?? "auto"
+  var decoded:[String:Double]=[:]
+  for (key,v) in value["mix"] as? [String:Any] ?? [:] {if let number=v as? NSNumber{decoded[key]=number.doubleValue}}
+  mix=decoded
   audio=(value["audio_devices"] as? [[String:Any]] ?? []).map(AudioEndpoint.init)
   headphones=value["headphones_output"] as? String ?? ""; microphone=value["physical_microphone"] as? String ?? ""
   playback=value["playback_input"] as? String ?? ""; micOutput=value["microphone_output"] as? String ?? ""
   setup=value["setup_status"] as? String ?? "Checking audio components…"
   diagnostics=value["diagnostics"] as? [String:Any] ?? [:]
  }
- var roleValue: Int { platform.lowercased().hasPrefix("win") ? 0 : 1 }
+ var iconName:String {kind == "laptop" ? "laptopcomputer":kind == "server" ? "server.rack":"desktopcomputer"}
 }
 struct NearbyRoom: Identifiable {
  let id: String; let name: String; let address: String
@@ -41,6 +49,10 @@ final class BridgeModel: ObservableObject {
  @Published var devices: [RoomDevice]=[]
  @Published var nearby: [NearbyRoom]=[]
  @Published var localID=""
+ @Published var outputHubID=""
+ @Published var inputHubID=""
+ @Published var deviceKindChoice="auto"
+ @Published var deviceMix:[String:[String:Double]]=[:]
  @Published var roomID=""
  @Published var deviceName=""
  @Published var invite=""
@@ -51,6 +63,10 @@ final class BridgeModel: ObservableObject {
  var selectedRoomAddress=""
  @Published var paired=false
  @Published var connected=false
+ @Published var compatible=false
+ @Published var sharedReady=false
+ @Published var controlsReady=false
+ @Published var handoverActive=false
  @Published var running=false
  @Published var wantedRunning=false
  @Published var available=false
@@ -61,7 +77,7 @@ final class BridgeModel: ObservableObject {
  @Published var muteReason=""
  @Published var diagnosticMessage=""
  @Published var diagnostics: [String:Any]=[:]
- @Published var settings: [String:Double]=["primary":0,"mic_source":1,"mute":1,"deafen":0,"master":1,"balance":0,"win_volume":1,"mac_volume":1]
+ @Published var settings: [String:Double]=["mute":1,"deafen":0,"master":1,"balance":0]
  @Published var startAtLogin=false
  private let requests=DispatchQueue(label:"San Audisco.agent.requests")
  private var timer: Timer?
@@ -141,8 +157,12 @@ final class BridgeModel: ObservableObject {
   expires=(state["invite_expires_seconds"] as? NSNumber)?.intValue ?? 0
   paired=state["paired"] as? Bool ?? false;connected=state["connected"] as? Bool ?? false;running=state["running"] as? Bool ?? false;wantedRunning=state["wanted_running"] as? Bool ?? running
   status=state["status"] as? String ?? (connected ? "Room connected" : "Waiting for the other computer")
+  compatible=state["compatible"] as? Bool ?? false;sharedReady=state["shared_ready"] as? Bool ?? false;controlsReady=state["controls_ready"] as? Bool ?? false;handoverActive=state["handover_active"] as? Bool ?? false
   muteReason=state["mute_reason"] as? String ?? ""
-  devices=(state["devices"] as? [[String:Any]] ?? []).map(RoomDevice.init)
+  devices=(state["devices"] as? [[String:Any]] ?? []).map(RoomDevice.init).sorted{a,b in a.slot == b.slot ? a.id < b.id:a.slot < b.slot}
+  outputHubID=state["hub_device_id"] as? String ?? "";inputHubID=state["mic_device_id"] as? String ?? ""
+  deviceKindChoice=state["device_kind_override"] as? String ?? devices.first{$0.id==localID}?.kindOverride ?? "auto"
+  for d in devices {for (key,value) in d.mix {let commandKey=key == "mic_muted" ? "mute":key == "deafened" ? "deafen":key == "silenced" ? "silence":key;if pendingControls["device:\(d.id):\(commandKey)"] == nil {deviceMix[d.id,default:[:]][commandKey]=value}}}
   nearby=(state["discovered"] as? [[String:Any]] ?? []).map(NearbyRoom.init)
   if let incoming=state["settings"] as? [String:Any] {
    for (key,value) in incoming {if pendingControls[key] == nil,let number=value as? NSNumber{settings[key]=number.doubleValue}}
@@ -158,15 +178,25 @@ final class BridgeModel: ObservableObject {
    pendingControls[key]=work;DispatchQueue.main.asyncAfter(deadline:.now()+0.15,execute:work)
   } else {pendingControls[key]=nil;send(["command":"control","key":key,"value":value])}
  }
+ func setRole(input:Bool,deviceID:String) {send(["command":"set_role","role":input ? "input":"output","device_id":deviceID])}
+ func deviceControl(_ deviceID:String,_ key:String,_ value:Double,debounce:Bool=false) {
+  deviceMix[deviceID,default:[:]][key]=value
+  let token="device:\(deviceID):\(key)";pendingControls[token]?.cancel()
+  let request:[String:Any]=["command":"control","device_id":deviceID,"key":key,"value":value]
+  if debounce {let work=DispatchWorkItem{[weak self] in guard let self=self else{return};self.pendingControls[token]=nil;self.send(request)};pendingControls[token]=work;DispatchQueue.main.asyncAfter(deadline:.now()+0.15,execute:work)}else{pendingControls[token]=nil;send(request)}
+ }
+ func deviceNumber(_ deviceID:String,_ key:String,default fallback:Double=0)->Double {deviceMix[deviceID]?[key] ?? fallback}
+ func deviceScalar(_ deviceID:String,_ key:String,default fallback:Double=0)->Binding<Double> {Binding(get:{self.deviceNumber(deviceID,key,default:fallback)},set:{self.deviceControl(deviceID,key,$0,debounce:true)})}
+ var canStart:Bool {available && connected && compatible && sharedReady && !handoverActive}
  func number(_ key:String,default fallback:Double=0)->Double {settings[key] ?? fallback}
  func scalar(_ key:String,default fallback:Double=0)->Binding<Double> {Binding(get:{self.number(key,default:fallback)},set:{self.control(key,$0,debounce:true)})}
  func toggle(_ key:String)->Binding<Bool> {Binding(get:{self.number(key) != 0},set:{self.control(key,$0 ? 1:0)})}
- func role(_ key:String)->Binding<Int> {Binding(get:{Int(self.number(key))},set:{self.control(key,Double($0))})}
  var formattedInvite:String {invite.count==8 ? String(invite.prefix(4))+"-"+String(invite.suffix(4)) : invite}
  func setLogin(_ enabled:Bool) {do{if enabled{try SMAppService.mainApp.register()}else{try SMAppService.mainApp.unregister()};startAtLogin=SMAppService.mainApp.status == .enabled;if enabled && !startAtLogin{error="Approve San Audisco in System Settings → General → Login Items."}}catch{self.error=error.localizedDescription;startAtLogin=SMAppService.mainApp.status == .enabled}}
+ func deviceLabel(_ device:RoomDevice)->String {let matches=devices.filter{$0.name==device.name};guard matches.count>1 else{return device.name};var count=4;while count<device.id.count && matches.filter({$0.id.prefix(count)==device.id.prefix(count)}).count>1{count+=1};return "\(device.name) · \(device.id.prefix(count))"}
  func isOnline(_ device:RoomDevice)->Bool {available && device.online && (device.id==localID || connected)}
  func level(_ device:RoomDevice,_ key:String)->Double {let source=device.id==localID ? diagnostics : device.diagnostics;let value=(source[key] as? NSNumber)?.doubleValue ?? 0;return value.isFinite ? min(1,max(0,value)):0}
- func create(){send(["command":"create","name":deviceName])}
+ func create(){var request:[String:Any]=["command":"create"];if deviceName != devices.first(where:{$0.id==localID})?.name{request["name"]=deviceName};send(request)}
  func join(){let code=joinCode.uppercased().filter{$0 != "-" && !$0.isWhitespace};guard code.count==8 else{error="Enter the eight letters and numbers shown on the other computer.";return};let address=joinAddress.trimmingCharacters(in:.whitespacesAndNewlines);var request:[String:Any]=["command":"join","code":code,"address":address];if !selectedRoomID.isEmpty && address==selectedRoomAddress{request["room_id"]=selectedRoomID};send(request)}
  func start() {
   guard !permissionPending else{return};let requestID=UUID();permissionRequestID=requestID
@@ -238,7 +268,6 @@ struct DeviceRouteView:View {
  let device:RoomDevice
  private var online:Bool {model.isOnline(device)}
  private var controlsDisabled:Bool {!online || model.busy}
- private var prefix:String {device.roleValue==0 ? "win":"mac"}
  private func route(_ key:String,_ current:String)->Binding<String> {Binding(get:{current},set:{model.send(["command":"configure","device_id":device.id,key:$0])})}
  private func select(_ title:String,key:String,current:String,input:Bool,virtual:Bool=false)->some View {
   let choices=device.audio.filter{(input ? $0.inputs>0 : $0.outputs>0) && $0.isVirtual==virtual}
@@ -246,19 +275,19 @@ struct DeviceRouteView:View {
   let options:[(id:String,name:String)]=[("","Choose \(title.lowercased())…")]+(missing ? [(current,"Saved device · unavailable")]:[])+choices.map{($0.id,$0.name)}
   return VStack(alignment:.leading,spacing:5){
    Text(title).font(.subheadline).foregroundColor(.secondary)
-   AudioDevicePicker(title:"\(device.name) \(title.lowercased())",options:options,selection:route(key,current)).frame(height:26).disabled(controlsDisabled)
+   AudioDevicePicker(title:"\(model.deviceLabel(device)) \(title.lowercased())",options:options,selection:route(key,current)).frame(height:26).disabled(controlsDisabled)
   }.frame(minWidth:0,maxWidth:.infinity,alignment:.leading)
  }
  private func audioButton(deafen:Bool)->some View {
-  let key=prefix+(deafen ? "_deafen":"_mute")
-  let inherited=model.number("deafen") != 0 || (!deafen && (model.number("mute",default:1) != 0 || model.number(prefix+"_deafen") != 0))
-  let active=inherited || model.number(key) != 0
+  let key=deafen ? "deafen":"mute"
+  let inherited=model.number("deafen") != 0 || (!deafen && (model.number("mute",default:1) != 0 || model.deviceNumber(device.id,"deafen") != 0))
+  let active=inherited || model.deviceNumber(device.id,key) != 0
   let action=deafen ? (active ? "Undeafen":"Deafen"):(active ? "Unmute microphone on":"Mute microphone on")
-  let hint=inherited ? (model.number("deafen") != 0 ? "Deafen is on in Global audio. Turn it off there first.":model.number("mute",default:1) != 0 ? "Microphone is muted in Global audio. Unmute it there first.":"This computer is deafened. Undeafen it first.") : "\(action) \(device.name)"
-  return Button{model.control(key,active ? 0:1)}label:{
+  let hint=inherited ? (model.number("deafen") != 0 ? "Deafen is on in Global audio. Turn it off there first.":model.number("mute",default:1) != 0 ? "Microphone is muted in Global audio. Unmute it there first.":"This computer is deafened. Undeafen it first.") : "\(action) \(model.deviceLabel(device))"
+  return Button{model.deviceControl(device.id,key,active ? 0:1)}label:{
    AudioControlIcon(headphones:deafen,blocked:active).foregroundColor(active ? .red:.primary)
   }.buttonStyle(.bordered).help(hint).disabled(inherited)
-   .accessibilityLabel(inherited ? "\(deafen ? "Deafened":"Microphone muted on") \(device.name). \(hint)":"\(action) \(device.name)").accessibilityValue(active ? "On":"Off")
+   .accessibilityLabel(inherited ? "\(deafen ? "Deafened":"Microphone muted on") \(device.name). \(hint)":"\(action) \(model.deviceLabel(device))").accessibilityValue(active ? "On":"Off")
 
  }
 
@@ -268,11 +297,19 @@ struct DeviceRouteView:View {
    select("Output",key:"headphones_output",current:device.headphones,input:false).frame(minWidth:0,maxWidth:.infinity)
   }
   Divider()
-  VStack(alignment:.leading,spacing:6){HStack{Text("Audio from this computer");Spacer();Text("\(Int(model.number(prefix+"_volume",default:1)*100))%").monospacedDigit()};Slider(value:model.scalar(prefix+"_volume",default:1),in:0...1).accessibilityLabel("\(device.name) listening volume")}.disabled(controlsDisabled || !model.connected)
-  HStack(spacing:8){audioButton(deafen:false);audioButton(deafen:true);Spacer()}.disabled(controlsDisabled || !model.connected)
+  VStack(alignment:.leading,spacing:6){HStack{Text("Audio from this computer");Spacer();Text("\(Int(model.deviceNumber(device.id,"volume",default:1)*100))%").monospacedDigit()};Slider(value:model.deviceScalar(device.id,"volume",default:1),in:0...1).accessibilityLabel("\(model.deviceLabel(device)) listening volume")}.disabled(controlsDisabled || !model.controlsReady)
+  HStack(spacing:8){audioButton(deafen:false);audioButton(deafen:true);Spacer()}.disabled(controlsDisabled || !model.controlsReady)
   if online && device.setup != "Ready" {Text(device.setup).font(.caption).foregroundColor(.secondary).fixedSize(horizontal:false,vertical:true)}
   DisclosureGroup("Advanced audio routes") {VStack(alignment:.leading,spacing:12){select("App audio cable",key:"playback_input",current:device.playback,input:true,virtual:true);select("Microphone delivery cable",key:"microphone_output",current:device.micOutput,input:false,virtual:true)}.padding(.top,8)}.font(.caption)
  }.frame(maxWidth:.infinity,alignment:.topLeading)}
+}
+
+struct SetupBrandHeader:View {
+ let title:String;let subtitle:String
+ var body:some View {HStack(spacing:12){
+  Image(nsImage:NSWorkspace.shared.icon(forFile:Bundle.main.bundlePath)).resizable().interpolation(.high).frame(width:48,height:48).accessibilityHidden(true)
+  VStack(alignment:.leading,spacing:4){Text(title).font(.title2).bold();Text(subtitle).font(.caption).foregroundColor(.secondary)}
+ }}
 }
 
 struct RoomSettingsView:View {
@@ -280,11 +317,14 @@ struct RoomSettingsView:View {
  @Environment(\.dismiss) private var dismiss
  @State private var forget=false
  var body:some View {VStack(alignment:.leading,spacing:20){
-  HStack{Text(m.paired ? "Room settings":"Connect your computers").font(.title2).bold();Spacer();Button("Done"){dismiss()}}
+  HStack{SetupBrandHeader(title:m.paired ? "Room settings":"Connect your computers",subtitle:"San Audisco · one room, two computers");Spacer();Button("Done"){dismiss()}}
   ScrollView{VStack(alignment:.leading,spacing:20){
+   Text("This computer").font(.headline)
    HStack{TextField("This computer’s name",text:$m.deviceName);Button("Save name"){m.send(["command":"configure","device_id":m.localID,"name":m.deviceName])}.disabled(m.busy || m.localID.isEmpty)}
+   HStack{Text("Computer icon");Picker("Computer icon",selection:Binding(get:{m.deviceKindChoice},set:{m.deviceKindChoice=$0;m.send(["command":"device_profile","kind":$0])})){Text("Automatic").tag("auto");Label("Laptop",systemImage:"laptopcomputer").tag("laptop");Label("Desktop",systemImage:"desktopcomputer").tag("desktop");Label("Studio / server",systemImage:"server.rack").tag("server")}.labelsHidden()}.disabled(m.busy || !m.available)
    if !m.paired {
-    Text("Open San Audisco on both computers using the same Wi-Fi or local network.").foregroundColor(.secondary)
+    Divider();Text("1 · Connect the computers").font(.headline)
+    Text("Open San Audisco on both computers using the same Wi-Fi or local network. Create a room on one, then enter its code on the other.").foregroundColor(.secondary)
     if m.invite.isEmpty {Button("Create a room"){m.create()}.disabled(m.busy || !m.available)}else{
      Text("Enter this code on your other computer").font(.headline)
      HStack{Text(m.formattedInvite).font(.system(size:32,weight:.semibold,design:.monospaced)).textSelection(.enabled);Button("Copy"){NSPasteboard.general.clearContents();NSPasteboard.general.setString(m.formattedInvite,forType:.string)}}
@@ -294,9 +334,15 @@ struct RoomSettingsView:View {
     HStack{TextField("Room code",text:$m.joinCode);Button("Join room"){m.join()}.disabled(m.busy || !m.available)}
     DisclosureGroup("Connection options") {VStack(alignment:.leading,spacing:10){HStack{TextField("Other computer’s address (optional)",text:$m.joinAddress);Button("Find rooms"){m.send(["command":"discover"])}};ForEach(m.nearby){room in Button(room.name){m.joinAddress=room.address;m.selectedRoomID=room.id;m.selectedRoomAddress=room.address}.buttonStyle(.link)}}.padding(.top,10)}
    }else{
-    ForEach(m.devices){d in HStack{Image(systemName:d.roleValue==0 ? "desktopcomputer":"laptopcomputer");Text(d.name);Spacer();Text(d.id==m.localID ? "This computer":(m.connected ? "Connected":"Offline")).foregroundColor(.secondary)}}
+    ForEach(m.devices){d in HStack{Image(systemName:d.iconName);Text(m.deviceLabel(d));Spacer();Text(d.id==m.localID ? "This computer":(m.connected ? "Connected":"Offline")).foregroundColor(.secondary)}}
     Text("Pairing is remembered. Both apps control the same room.").foregroundColor(.secondary)
-    DisclosureGroup("Mix balance") {VStack(alignment:.leading,spacing:8){HStack{Text("Windows");Slider(value:m.scalar("balance"),in:-1...1).accessibilityLabel("Windows to Mac audio balance");Text("Mac")};Button("Center balance"){m.control("balance",0)}}.padding(.top,8)}.disabled(m.busy || !m.connected)
+    GroupBox("Finish audio setup"){VStack(alignment:.leading,spacing:10){
+     Label("Choose an Output Hub for your headphones.",systemImage:"headphones")
+     Label("Choose an Input Hub for your microphone.",systemImage:"mic")
+     Text("Use the crowned buttons above the computers in the main window. Then Autoconfigure sets up audio routing on both devices.").font(.caption).foregroundColor(.secondary)
+     Button("Autoconfigure both computers"){m.send(["command":"autoconfigure"])}.disabled(m.busy || !m.connected)
+    }.padding(6)}
+    DisclosureGroup("Mix balance") {VStack(alignment:.leading,spacing:8){HStack{Text(m.devices.first{$0.slot==0}?.name ?? "First computer").lineLimit(1);Slider(value:m.scalar("balance"),in:-1...1).accessibilityLabel("Balance between the two computers");Text(m.devices.first{$0.slot==1}?.name ?? "Second computer").lineLimit(1)};Button("Center balance"){m.control("balance",0)}}.padding(.top,8)}.disabled(m.busy || !m.controlsReady)
     Button("Forget this pairing…",role:.destructive){forget=true}
    }
    Divider();Toggle("Start San Audisco at login",isOn:Binding(get:{m.startAtLogin},set:{m.setLogin($0)})).disabled(m.busy || !m.available)
@@ -309,27 +355,48 @@ struct RoomSettingsView:View {
 struct AudioChecksView:View {
  @ObservedObject var m:BridgeModel
  @Environment(\.dismiss) private var dismiss
+ private var linked:Bool {m.available && m.connected && m.compatible && m.sharedReady && !m.handoverActive}
+ private var routesReady:Bool {m.devices.count==2 && m.devices.allSatisfy{m.isOnline($0) && $0.setup=="Ready"}}
+ private var selectedHubs:Bool {m.devices.contains{$0.id==m.outputHubID && !$0.headphones.isEmpty} && m.devices.contains{$0.id==m.inputHubID && !$0.microphone.isEmpty}}
+ private func checklist(_ title:String,_ detail:String,ready:Bool)->some View {
+  HStack(alignment:.top,spacing:10){Image(systemName:ready ? "checkmark.circle.fill":"circle").foregroundColor(ready ? .green:.secondary).font(.title3);VStack(alignment:.leading,spacing:3){Text(title).font(.subheadline).bold();Text(detail).font(.caption).foregroundColor(.secondary).fixedSize(horizontal:false,vertical:true)};Spacer()}.accessibilityElement(children:.combine)
+ }
+ private var checklistView:some View {GroupBox("Setup checklist"){VStack(alignment:.leading,spacing:14){
+  checklist("Connect both computers",m.handoverActive ? "Switching audio hub…":!m.connected ? "Open Room settings to create or join a room.":!m.compatible ? "Update San Audisco on the other computer.":m.sharedReady ? "Both computers share the same room.":"Waiting for room settings to synchronize.",ready:linked)
+  checklist("Choose Input and Output Hubs",selectedHubs ? "Your selected microphone supplies both computers. Headphones play from the Output Hub.":"Select input and output devices, then use the crowned buttons on the main screen.",ready:selectedHubs)
+  checklist("Configure audio routes",routesReady ? "Audio components and selected routes are ready.":"Run Autoconfigure. If a component is missing, reopen San Audisco Setup on that computer.",ready:routesReady)
+  checklist("Start and test audio",m.running ? "Play a test sound below and check the microphone meters.":"Start audio when both computers are ready. macOS may ask for microphone access.",ready:m.running && linked)
+ }.padding(8)}}
+ private func deviceChecks(_ d:RoomDevice)->some View {
+  GroupBox {VStack(alignment:.leading,spacing:12){
+   HStack{Label(m.deviceLabel(d),systemImage:d.iconName).font(.headline);Spacer();Text(m.isOnline(d) ? (d.setup=="Ready" ? "Ready":"Needs attention"):"Offline").font(.caption).foregroundColor(m.isOnline(d) && d.setup=="Ready" ? .green:.secondary)}
+   if d.setup != "Ready" {Text(d.setup).font(.caption).foregroundColor(.secondary).fixedSize(horizontal:false,vertical:true)}
+   ForEach(["playback_level","microphone_level","microphone_delivery_level"],id:\.self){key in
+    let level=m.level(d,key)
+    HStack{Text(["playback_level":"App audio","microphone_level":"Microphone","microphone_delivery_level":"Voice sent to apps"][key] ?? key).font(.caption).frame(width:120,alignment:.leading);ProgressView(value:level>0 ? min(1,max(0,(20*log10(level)+60)/60)):0).accessibilityLabel("\(m.deviceLabel(d)) \(key)");Text(level>0 ? String(format:"%.0f dB",20*log10(level)):"Silent").font(.caption).monospacedDigit().frame(width:55,alignment:.trailing)}
+   }
+   Button("Play test sound"){m.send(["command":"test_tone","device_id":d.id])}.disabled(m.busy || !m.running || !m.isOnline(d)).help("Play a two-second test sound from \(m.deviceLabel(d)) through the Output Hub.")
+  }.padding(8)}
+ }
  var body:some View {VStack(alignment:.leading,spacing:18){
-  HStack{Text("Audio checks").font(.title2).bold();Spacer();Button("Done"){dismiss()}}
+  HStack{SetupBrandHeader(title:"Audio checks",subtitle:"San Audisco · get both computers ready");Spacer();Button("Done"){dismiss()}}
   ScrollView{VStack(alignment:.leading,spacing:18){
-   HStack{Button("Refresh devices"){m.send(["command":"diagnose"])};Button("Reconnect agent"){m.reconnectAgent()}}.disabled(m.busy)
-   if !m.running && AVCaptureDevice.authorizationStatus(for:.audio) != .authorized {Button("Allow microphone access and start audio"){m.start()}.disabled(m.busy || !m.connected)}
-   ForEach(m.devices){d in GroupBox(d.name){VStack(alignment:.leading,spacing:10){
-    Text(d.setup).font(.caption)
-    ForEach(["playback_level","microphone_level","microphone_delivery_level"],id:\.self){key in
-     let level=m.level(d,key)
-     HStack{Text(["playback_level":"App audio","microphone_level":"Microphone","microphone_delivery_level":"Voice sent to apps"][key] ?? key).frame(width:150,alignment:.leading);ProgressView(value:level>0 ? min(1,max(0,(20*log10(level)+60)/60)):0);Text(level>0 ? String(format:"%.0f dB",20*log10(level)):"Silent").monospacedDigit().frame(width:65,alignment:.trailing)}
-    }
-    Button("Play test sound from \(d.name)"){m.send(["command":"test_tone","device_id":d.id])}.disabled(m.busy || !m.running || !d.online)
-   }.padding(8)}}
-   Text("Test sounds play for two seconds through the Output Hub.").font(.caption).foregroundColor(.secondary)
-   if !m.diagnosticMessage.isEmpty {Text(m.diagnosticMessage).textSelection(.enabled)}
-   Divider();Text("App audio settings").font(.headline)
-   Text("Discord on Mac\nSpeaker: BlackHole 2ch · Microphone: BlackHole 16ch")
-   Text("Deadlock on Windows\nOutput: CABLE Input · Microphone: Hi-Fi Cable Output")
-   if !m.error.isEmpty{Text(m.error).foregroundColor(.red).textSelection(.enabled)}
-  }}
- }.padding(24).frame(width:620,height:560)}
+   checklistView
+   HStack{Button("Autoconfigure"){m.send(["command":"autoconfigure"])}.disabled(m.busy || !m.available);Button("Refresh"){m.send(["command":"diagnose"])}.disabled(m.busy || !m.available);Spacer();if !m.running {Button(m.permissionPending ? "Cancel start":"Start audio"){if m.permissionPending{m.cancelPermission()}else{m.start()}}.buttonStyle(.borderedProminent).disabled(m.busy || !linked)}}
+   if !m.error.isEmpty{Label(m.error,systemImage:"exclamationmark.triangle").foregroundColor(.red).textSelection(.enabled).fixedSize(horizontal:false,vertical:true)}
+   ForEach(m.devices){d in deviceChecks(d)}
+   Text("Test sounds play through the Output Hub. Microphone mute remains under your control in Global audio.").font(.caption).foregroundColor(.secondary)
+   DisclosureGroup("Settings for Discord and other apps"){VStack(alignment:.leading,spacing:12){
+    Text("Apps that follow the system default use the routes selected by Autoconfigure. Apps with a fixed device may need their own audio settings updated.").font(.caption).foregroundColor(.secondary)
+    ForEach(m.devices){d in VStack(alignment:.leading,spacing:5){Text(m.deviceLabel(d)).font(.subheadline).bold();Text("Output: \(d.audio.first{$0.id==d.appPlaybackOutput}?.name ?? "Run Autoconfigure") · Input: \(d.audio.first{$0.id==d.appMicrophoneInput}?.name ?? "Run Autoconfigure")").font(.caption)}}
+   }.padding(.top,8)}
+   DisclosureGroup("Advanced details"){VStack(alignment:.leading,spacing:10){
+    if !m.diagnosticMessage.isEmpty {Text(m.diagnosticMessage).font(.caption).textSelection(.enabled)}
+    ForEach(m.devices){d in VStack(alignment:.leading,spacing:4){Text(m.deviceLabel(d)).font(.subheadline).bold();Text("Input: \(d.audio.first{$0.id==d.microphone}?.name ?? "Not selected")").font(.caption);Text("Output: \(d.audio.first{$0.id==d.headphones}?.name ?? "Not selected")").font(.caption)}}
+    Button("Reconnect background service"){m.reconnectAgent()}.disabled(m.busy)
+   }.padding(.top,8)}
+  }.padding(.trailing,4)}
+ }.padding(24).frame(width:620,height:650)}
 }
 
 // Scalable suspension bridge; its color follows room connectivity, not audio playback.
@@ -394,22 +461,21 @@ struct ContentView:View {
  @EnvironmentObject var m:BridgeModel
  @State private var showRoom=false
  @State private var showChecks=false
- private func device(_ role:Int)->RoomDevice? {m.devices.first{$0.roleValue==role}}
+ private func device(_ slot:Int)->RoomDevice? {m.devices.first{$0.slot==slot}}
  private func online(_ d:RoomDevice?)->Bool {guard let d=d else{return false};return m.isOnline(d)}
  private var linkLabel:String {!m.available ? "App unavailable":m.connected ? "Connected":m.paired ? "Reconnecting…":"Not connected"}
  private var micBlocked:Bool {m.number("mute",default:1) != 0 || m.number("deafen") != 0 || (m.diagnostics["muted"] as? Bool == true)}
  @ViewBuilder private func hubChoice(_ role:Int,input:Bool)->some View {
-  let key=input ? "mic_source":"primary"
   let title=input ? "Input Hub":"Output Hub"
-  let selected=Int(m.number(key,default:input ? 1:0))==role
   let d=device(role)
+  let selected=d != nil && (input ? m.inputHubID:m.outputHubID)==d?.id
   let hasEndpoint=d?.audio.contains(where:{a in !a.isVirtual && (input ? (a.id==d?.microphone && a.inputs>0):(a.id==d?.headphones && a.outputs>0))}) ?? false
   let active=selected && m.paired
   let label=active ? "\(title) · \(d?.name ?? "This computer")":"Use \(d?.name ?? "this computer") as \(title)"
-  Button{if !selected{m.control(key,Double(role))}}label:{
+  Button{if !selected,let d=d{m.setRole(input:input,deviceID:d.id)}}label:{
    AudioControlIcon(headphones:!input,crowned:true).foregroundColor(active ? .blue:.primary)
   }.buttonStyle(.bordered).tint(active ? .blue:nil)
-   .disabled(!online(d) || !m.connected || m.busy || (!active && !hasEndpoint))
+   .disabled(!online(d) || !m.canStart || m.busy || (!active && !hasEndpoint))
    .help("\(label). \(input ? "Supplies the microphone to both computers.":"Plays the combined audio through its output.")")
    .accessibilityLabel(label).accessibilityValue(active ? "Selected":"Not selected")
 
@@ -421,14 +487,14 @@ struct ContentView:View {
   return Button{m.control(deafen ? "deafen":"mute",active ? 0:1)}label:{
    AudioControlIcon(headphones:deafen,blocked:active).foregroundColor(active ? .red:.primary)
   }.buttonStyle(.bordered).help(label).accessibilityLabel(label).accessibilityValue(active ? "On":"Off")
-   .disabled(!m.connected || m.busy || inherited)
+   .disabled(!m.controlsReady || m.busy || inherited)
  }
  @ViewBuilder private func computer(_ role:Int)->some View {
   let d=device(role);let ready=online(d)
   VStack(spacing:12){
    HStack(spacing:8){hubChoice(role,input:true);hubChoice(role,input:false)}.frame(height:44)
-   Image(systemName:role==0 ? "desktopcomputer":"laptopcomputer").font(.system(size:68,weight:.light)).foregroundColor(ready ? .blue:.secondary).frame(height:84).accessibilityHidden(true)
-   Text(d?.name ?? (role==0 ? "Windows PC":"MacBook")).font(.title3).fontWeight(.semibold).lineLimit(2)
+   Image(systemName:d?.iconName ?? "desktopcomputer").font(.system(size:68,weight:.light)).foregroundColor(ready ? .blue:.secondary).frame(height:84).accessibilityHidden(true)
+   Text(d.map{m.deviceLabel($0)} ?? "Other computer").font(.title3).fontWeight(.semibold).lineLimit(2)
    HStack(spacing:5){Circle().fill(ready ? Color.blue:Color.secondary).frame(width:6,height:6);Text(ready ? ((d?.id==m.localID) ? "This computer · available":"Connected"):(m.paired ? "Offline":"Not connected"))}.font(.caption).foregroundColor(.secondary)
   }.frame(maxWidth:.infinity)
  }
@@ -453,9 +519,9 @@ struct ContentView:View {
     globalAudioButton(deafen:false)
     globalAudioButton(deafen:true)
     Spacer()
-    HStack(spacing:8){Text("Master volume").font(.caption).foregroundColor(.secondary);Slider(value:m.scalar("master",default:1),in:0...1).accessibilityLabel("Master listening volume").help("Volume of both computers combined. Does not change microphone volume.").frame(width:110)}.disabled(!m.connected || m.busy)
+    HStack(spacing:8){Text("Master volume").font(.caption).foregroundColor(.secondary);Slider(value:m.scalar("master",default:1),in:0...1).accessibilityLabel("Master listening volume").help("Volume of both computers combined. Does not change microphone volume.").frame(width:110)}.disabled(!m.controlsReady || m.busy)
     if m.busy{ProgressView().controlSize(.small)}
-    Button(m.permissionPending ? "Cancel start":((m.running || m.wantedRunning) ? "Stop audio":"Start audio")){if m.permissionPending{m.cancelPermission()}else if m.running || m.wantedRunning{m.send(["command":"stop"])}else{m.start()}}.disabled(m.busy || (!m.connected && !m.running && !m.wantedRunning)).keyboardShortcut(.defaultAction).help("Start or stop playback and microphone relay on both connected computers. Your room stays paired.")
+    Button(m.permissionPending ? "Cancel start":((m.running || m.wantedRunning) ? "Stop audio":"Start audio")){if m.permissionPending{m.cancelPermission()}else if m.running || m.wantedRunning{m.send(["command":"stop"])}else{m.start()}}.disabled(m.busy || (!m.canStart && !m.running && !m.wantedRunning && !m.permissionPending)).keyboardShortcut(.defaultAction).help("Start or stop playback and microphone relay on both connected computers. Your room stays paired.")
    }
    Text(!m.available ? "San Audisco is unavailable. Open Audio checks to reconnect.":(m.permissionPending ? "Waiting for microphone permission…":m.status)).font(.caption).foregroundColor(.secondary).fixedSize(horizontal:false,vertical:true)
   }

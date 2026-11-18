@@ -56,7 +56,7 @@ def build_mac(args, lock, scratch):
     rows = [{'path':p.relative_to(resources).as_posix(), 'sha256':hashlib.sha256(p.read_bytes()).hexdigest()} for p in files_under(resources)]
     write_manifest(resources / 'manifest.json', {'schema':1, 'private_only':True, 'files':rows})
     with (contents / 'Info.plist').open('wb') as f:
-        plistlib.dump({'CFBundleIdentifier':'local.audiobridge.setup', 'CFBundleExecutable':'SanAudiscoSetup', 'CFBundleName':'San Audisco Setup', 'CFBundleIconFile':'SanAudisco', 'CFBundleVersion':'12', 'CFBundleShortVersionString':'0.2.10', 'LSMinimumSystemVersion':'13.0', 'NSHighResolutionCapable':True}, f)
+        plistlib.dump({'CFBundleIdentifier':'local.audiobridge.setup', 'CFBundleExecutable':'SanAudiscoSetup', 'CFBundleName':'San Audisco Setup', 'CFBundleIconFile':'SanAudisco', 'CFBundleVersion':'13', 'CFBundleShortVersionString':'0.3.0', 'LSMinimumSystemVersion':'13.0', 'NSHighResolutionCapable':True}, f)
     run(['clang++', '-target', 'arm64-apple-macos13.0', '-std=c++20', '-O2', '-c', ROOT/'installer/setup_policy.cpp', '-o',scratch/'setup_policy.o'])
     run(['swiftc', '-target', 'arm64-apple-macos13.0', '-O', '-parse-as-library', ROOT / 'installer/macos/Setup.swift', scratch/'setup_policy.o', '-o', contents / 'MacOS/SanAudiscoSetup', '-framework', 'SwiftUI', '-framework', 'AppKit', '-framework', 'CoreAudio', '-framework', 'CryptoKit'])
     spec = importlib.util.spec_from_file_location('sign_mac', ROOT/'scripts/sign-mac.py')
@@ -98,7 +98,27 @@ def build_windows(args, lock, scratch):
         entries.extend((component,name,data) for name,data in checked_zip(package))
     header = ['#pragma once', 'struct Payload {int id; const wchar_t* group; const wchar_t* path; const char* sha256;};', 'inline const Payload payload[] = {']
     shutil.copy2(ROOT/'assets/SanAudisco.ico', scratch/'SanAudisco.ico')
-    rc = ['#include <windows.h>', '1 RT_MANIFEST "setup.manifest"', '101 ICON "SanAudisco.ico"']
+    rc = ['#include <windows.h>', '1 RT_MANIFEST "setup.manifest"', '101 ICON "SanAudisco.ico"', '''1 VERSIONINFO
+FILEVERSION 0,3,0,0
+PRODUCTVERSION 0,3,0,0
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_APP
+BEGIN
+ BLOCK "StringFileInfo"
+ BEGIN
+  BLOCK "040904b0"
+  BEGIN
+   VALUE "FileDescription", "San Audisco Setup\\0"
+   VALUE "ProductName", "San Audisco\\0"
+   VALUE "FileVersion", "0.3.0\\0"
+   VALUE "ProductVersion", "0.3.0\\0"
+  END
+ END
+ BLOCK "VarFileInfo"
+ BEGIN
+  VALUE "Translation", 0x409, 1200
+ END
+END''']
     manifest = []
     for number, (group, name, data) in enumerate(entries, 100):
         staged = scratch / f'payload-{number}.bin'; staged.write_bytes(data)
@@ -111,14 +131,14 @@ def build_windows(args, lock, scratch):
     (scratch / 'payload.hpp').write_text('\n'.join(header)+'\n')
     (scratch / 'setup.rc').write_text('\n'.join(rc)+'\n')
     (scratch / 'setup.manifest').write_text('''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0"><trustInfo xmlns="urn:schemas-microsoft-com:asm.v3"><security><requestedPrivileges><requestedExecutionLevel level="asInvoker" uiAccess="false"/></requestedPrivileges></security></trustInfo><compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1"><application><supportedOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}"/></application></compatibility></assembly>''')
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0"><dependency><dependentAssembly><assemblyIdentity type="win32" name="Microsoft.Windows.Common-Controls" version="6.0.0.0" processorArchitecture="*" publicKeyToken="6595b64144ccf1df" language="*"/></dependentAssembly></dependency><trustInfo xmlns="urn:schemas-microsoft-com:asm.v3"><security><requestedPrivileges><requestedExecutionLevel level="asInvoker" uiAccess="false"/></requestedPrivileges></security></trustInfo><compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1"><application><supportedOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}"/></application></compatibility></assembly>''')
     toolchain = args.toolchain.resolve()
     subprocess.run([str(toolchain/'x86_64-w64-mingw32-windres'), 'setup.rc', '-O','coff','-o','setup.res'], cwd=scratch,check=True)
     args.output.mkdir(parents=True,exist_ok=True)
     artifact = args.output / 'San Audisco-Private-Setup-Windows-x64.exe'
     if artifact.exists():
         raise ValueError('Refusing to overwrite an existing installer artifact')
-    run([toolchain/'x86_64-w64-mingw32-clang++', '-std=c++20','-O2','-municode','-mwindows','-static','-DUNICODE','-D_UNICODE','-I',ROOT/'installer', '-I',scratch, ROOT/'installer/windows/setup.cpp',ROOT/'installer/setup_policy.cpp',scratch/'setup.res','-o',artifact,'-lbcrypt','-lwintrust','-lcrypt32','-lshell32','-lole32','-luuid','-lpropsys'])
+    run([toolchain/'x86_64-w64-mingw32-clang++', '-std=c++20','-O2','-municode','-mwindows','-static','-DUNICODE','-D_UNICODE','-I',ROOT/'installer', '-I',scratch, ROOT/'installer/windows/setup.cpp',ROOT/'installer/setup_policy.cpp',scratch/'setup.res','-o',artifact,'-lbcrypt','-lwintrust','-lcrypt32','-lshell32','-lole32','-luuid','-lpropsys','-lgdi32'])
     write_manifest(args.output/'WINDOWS_PRIVATE_PAYLOAD.json',{'schema':1,'private_only':True,'files':manifest})
     return artifact
 

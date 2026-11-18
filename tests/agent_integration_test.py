@@ -1,43 +1,12 @@
 #!/usr/bin/env python3
-"""Two isolated agents + production engine using synthetic audio; never touches live audio routes."""
-import json, os, pathlib, socket, subprocess, sys, tempfile, time
-agent=pathlib.Path(sys.argv[1]).resolve(); engine=pathlib.Path(sys.argv[2]).resolve()
-def port():
-    with socket.socket() as s:s.bind(('127.0.0.1',0));return s.getsockname()[1]
-def wait(fn, label, seconds=15):
-    end=time.monotonic()+seconds;last=None
-    while time.monotonic()<end:
-        try:
-            last=fn()
-            if last:return last
-        except (OSError,ValueError,AssertionError,subprocess.TimeoutExpired):pass
-        time.sleep(.12)
-    raise AssertionError(f'{label}: timed out, last={last}')
-class Instance:
-    def __init__(self, root, platform, roomport, media, discovery):
-        self.root=root;self.root.mkdir();self.platform=platform
-        self.args=['--data-dir',str(root),'--engine',str(engine),'--platform',platform,'--bind','127.0.0.1','--room-port',str(roomport),'--media-port',str(media),'--discovery-port',str(discovery)]
-        self.log=open(root/'server.log','w');self.start()
-    def start(self):
-        self.process=subprocess.Popen([str(agent),'serve',*self.args],stdout=self.log,stderr=self.log,env={**os.environ,'BRIDGE_FAKE_METRICS':'0'})
-        wait(lambda:self.call('status')['ok'],'agent startup')
-    def call(self,command,**kw):
-        p=subprocess.run([str(agent),'request',*self.args],input=json.dumps({'command':command,**kw})+'\n',text=True,capture_output=True,timeout=8)
-        return json.loads(p.stdout)
-    def state(self):return self.call('status')['state']
-    def close(self):
-        try:self.call('forget')
-        except Exception:pass
-        try:self.call('quit')
-        except Exception:pass
-        try:self.process.wait(timeout=5)
-        except subprocess.TimeoutExpired:self.process.kill();self.process.wait()
-        self.log.close()
+"""Isolated real-agent integration; synthetic hardware only."""
+from agent_test_support import *
 with tempfile.TemporaryDirectory(prefix='san-audisco-agent-test-') as temp:
     root=pathlib.Path(temp);wp,mp,wm,mm=port(),port(),port(),port();instances=[]
     try:
-        win=Instance(root/'win','windows',wp,wm,mp);instances.append(win)
-        mac=Instance(root/'mac','mac',mp,mm,wp);instances.append(mac)
+        platforms=os.environ.get('SAN_TEST_PAIR','windows,mac').split(',')
+        win=Instance(root/'win',platforms[0],wp,wm,mp);instances.append(win)
+        mac=Instance(root/'mac',platforms[1],mp,mm,wp);instances.append(mac)
         assert not win.state()['running'] and not mac.state()['running']
         assert not win.state()['diagnostics']['output_routing_active']
         assert not mac.state()['diagnostics']['output_routing_active']
@@ -55,26 +24,31 @@ with tempfile.TemporaryDirectory(prefix='san-audisco-agent-test-') as temp:
         mid=mac.state()['device_id'];wid=win.state()['device_id']
         assert win.call('configure',device_id=mid,name='Laptop from Windows')['ok']
         wait(lambda:mac.state()['name']=='Laptop from Windows','remote rename')
-        rejected=win.call('configure',device_id=wid,physical_microphone='win-mic-sink')
+        rejected=win.call('configure',device_id=wid,physical_microphone=('win-' if platforms[0]=='windows' else 'mac-')+'mic-sink')
         assert not rejected['ok']
         assert mac.call('autoconfigure')['ok']
         wait(lambda:mac.state()['pending_changes']==0,'room-wide Autoconfigure acknowledgement')
-        assert win.call('start')['ok']
+        wait(lambda:win.state()['shared_ready'] and mac.state()['shared_ready'],'shared authority state')
+        for role,device_id in [('output',wid),('input',mid)]:
+            r=win.call('set_role',role=role,device_id=device_id);assert r['ok'],r
+            field='hub_device_id' if role=='output' else 'mic_device_id'
+            wait(lambda:win.state()[field]==device_id and mac.state()[field]==device_id and win.state()['shared_ready'] and mac.state()['shared_ready'] and not win.state()['handover_active'] and not mac.state()['handover_active'],'initial role assignment')
+        started=win.call('start');assert started['ok'],started
         wait(lambda:win.state()['diagnostics'].get('synchronized') and mac.state()['diagnostics'].get('synchronized'),'engine synchronized')
         wait(lambda:win.state()['diagnostics']['output_routing_active'] and mac.state()['diagnostics']['output_routing_active'],'automatic output takeover after both engines ready')
         wait(lambda:win.state()['diagnostics']['input_routing_active'] and mac.state()['diagnostics']['input_routing_active'],'Autoconfigure enables shared default microphone')
-        for device,target in [(win,'win-mic-capture'),(mac,'mac-mic-sink')]:
+        for device,target in [(x,'win-mic-capture' if x.platform=='windows' else 'mac-mic-sink') for x in (win,mac)]:
             journal=json.loads((device.root/'input-restore.json').read_text())
             assert {r['target'] for r in journal['entries']}=={target}
-        for device,target in [(win,'win-playback-render'),(mac,'mac-playback')]:
+        for device,target in [(x,'win-playback-render' if x.platform=='windows' else 'mac-playback') for x in (win,mac)]:
             journal=json.loads((device.root/'output-restore.json').read_text())
             assert {r['target'] for r in journal['entries']}=={target}
             assert {r['before'] for r in journal['entries']}=={'test-speakers','test-headphones','test-calls'}
         time.sleep(1.2)
         assert mac.call('control',key='mute',value=0)['ok']
         wait(lambda:not win.state()['diagnostics'].get('muted',True) and not mac.state()['diagnostics'].get('muted',True),'remote unmute')
-        assert mac.call('control',key='win_volume',value=.42)['ok']
-        wait(lambda:abs(win.state()['settings']['win_volume']-.42)<.001 and abs(mac.state()['settings']['win_volume']-.42)<.001,'volume acknowledgement')
+        assert mac.call('control',device_id=wid,key='volume',value=.42)['ok']
+        wait(lambda:abs(next(d['mix']['volume'] for d in win.state()['devices'] if d['id']==wid)-.42)<.001 and abs(next(d['mix']['volume'] for d in mac.state()['devices'] if d['id']==wid)-.42)<.001,'volume acknowledgement')
         assert win.call('control',key='deafen',value=1)['ok']
         wait(lambda:mac.state()['settings']['deafen']==1,'deafen sync')
         assert win.call('control',key='deafen',value=0)['ok']
@@ -82,6 +56,25 @@ with tempfile.TemporaryDirectory(prefix='san-audisco-agent-test-') as temp:
         assert win.call('test_tone',device_id=mid)['ok']
         wait(lambda:win.state()['pending_changes']==0,'remote test sound acknowledgement')
         print('PASS remote setup, direction validation, room-wide start, mixer controls, signal meters and remote test-tone command')
+        # Exercise all four role combinations while audio is running. IDs, not OS,
+        # select the output and microphone owner, including same-platform pairs.
+        for output in (wid,mid):
+            for source in (wid,mid):
+                for role,target in [('output',output),('input',source)]:
+                    wait(lambda:win.state()['shared_ready'] and mac.state()['shared_ready'],'ready before handover')
+                    result=mac.call('set_role',role=role,device_id=target);assert result['ok'],result
+                    field='hub_device_id' if role=='output' else 'mic_device_id'
+                    wait(lambda:all(x.state()[field]==target and not x.state()['handover_active'] for x in (win,mac)),'role handover')
+                wait(lambda:all(x.state()['diagnostics'].get('synchronized') for x in (win,mac)),'engines resynchronized after handover')
+                for x in (win,mac):
+                    st=x.state();assert st['hub_device_id']==output and st['mic_device_id']==source
+                    assert st['diagnostics'].get('headphones_ready')==(st['device_id']==output)
+                    assert st['diagnostics'].get('microphone_ready')==(st['device_id']==source)
+                assert mac.call('control',key='mute',value=0)['ok']
+                wait(lambda:all(not x.state()['diagnostics'].get('muted',True) for x in (win,mac)),'unmute after handover')
+                assert win.call('control',device_id=mid,key='volume',value=.63)['ok']
+                wait(lambda:all(abs(next(d['mix']['volume'] for d in x.state()['devices'] if d['id']==mid)-.63)<.001 for x in (win,mac)),'controls follow new coordinator')
+        print('PASS all four output/input role assignments, live handover, source routing and settings authority on either participant')
         # Restart an agent with saved state, preserving pairing and explicit start intent.
         mac.call('quit');mac.process.wait(timeout=5)
         assert mac.call('quit')['ok']  # Idempotent Quit when no daemon holds its lock.

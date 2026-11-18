@@ -16,7 +16,7 @@ import socket
 import sys
 import tempfile
 import time
-from runtime_test import Peer, wait_for, free_port
+from runtime_test import EngineControlDriver, Peer, wait_for, free_port
 
 
 def main():
@@ -46,9 +46,10 @@ def main():
             for i, role in enumerate(('windows', 'mac')):
                 prefix = 'win' if i == 0 else 'mac'
                 config = root/f'{prefix}.conf'
-                config.write_text(f'device={role}\nkey_file={key}\npeer=127.0.0.1\nport={ports[i]}\npeer_port={ports[1-i]}\nplayback_input={prefix}-playback\nphysical_microphone={prefix}-mic\nheadphones_output={prefix}-headphones\nmicrophone_output={prefix}-mic-sink\n')
+                config.write_text(f'slot={i}\nkey_file={key}\npeer=127.0.0.1\nport={ports[i]}\npeer_port={ports[1-i]}\nplayback_input={prefix}-playback\nphysical_microphone={prefix}-mic\nheadphones_output={prefix}-headphones\nmicrophone_output={prefix}-mic-sink\n')
                 starts.append(time.monotonic())
                 peers.append(Peer(str(Path(args.executable).resolve()), config, root/f'{prefix}.jsonl'))
+            controller = EngineControlDriver(peers)
             wait_for(lambda: all(p.latest().get('connected') and p.latest().get('synchronized') for p in peers), 'pairing failed')
             desired = int(args.primary == 'mac')
             if desired:

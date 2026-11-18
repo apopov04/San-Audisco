@@ -6,7 +6,7 @@ import secrets
 import sys
 import tempfile
 import time
-from runtime_test import Peer, free_port, metric_check, wait_for
+from runtime_test import EngineControlDriver, Peer, free_port, metric_check, wait_for
 
 
 def main():
@@ -24,10 +24,11 @@ def main():
             for i, role in enumerate(('windows', 'mac')):
                 prefix = 'win' if i == 0 else 'mac'
                 config = root / f'{prefix}.conf'
-                config.write_text(f'device={role}\nkey_file={key}\npeer=127.0.0.1\nport={ports[i]}\npeer_port={ports[1-i]}\nplayback_input={prefix}-playback\nmicrophone_output={prefix}-mic-sink\n' +
+                config.write_text(f'slot={i}\nkey_file={key}\npeer=127.0.0.1\nport={ports[i]}\npeer_port={ports[1-i]}\nplayback_input={prefix}-playback\nmicrophone_output={prefix}-mic-sink\n' +
                     ('headphones_output=win-headphones\n' if i == 0 else 'physical_microphone=mac-mic\n'))
                 peers.append(Peer(executable, config, root / f'{prefix}.jsonl'))
             win, mac = peers
+            controller = EngineControlDriver(peers)
             wait_for(lambda: all(p.latest().get('connected') and p.latest().get('synchronized') for p in peers),
                      'Missing unused devices prevented startup/pairing')
             now = time.time()

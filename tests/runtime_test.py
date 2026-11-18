@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Exercise the real CLI, control protocol, network codec, and audio graph in two processes.
 Only the platform AudioStream is replaced with deterministic tone devices.
+A test-only control driver delivers agent-authorized snapshots to both engines;
+this suite does not claim to validate the room authority/handover protocol.
 """
 import json
 import os
@@ -27,6 +29,7 @@ class Peer:
         self.executable, self.config, self.log = executable, config, log
         self.states, self.errors = [], []
         self.process = None
+        self.controller = None
         self.start()
 
     def start(self):
@@ -48,8 +51,16 @@ class Peer:
                 self.errors.append(line.strip())
         threading.Thread(target=read_output, args=(self.process,), daemon=True).start()
         threading.Thread(target=read_errors, args=(self.process,), daemon=True).start()
+        if self.controller is not None:
+            self.controller.reconnect()
 
     def command(self, text):
+        if self.controller is not None and text.strip() not in ('quit', 'test_tone') and not text.startswith('state '):
+            self.controller.change(text)
+            return
+        self.raw_command(text)
+
+    def raw_command(self, text):
         if self.process.poll() is not None:
             raise AssertionError(f'Peer exited {self.process.returncode}: {self.errors}')
         self.process.stdin.write(text.rstrip() + '\n')
@@ -86,6 +97,57 @@ class Peer:
             except ValueError:
                 pass  # The logger may be appending its final line concurrently.
         return result
+
+
+class EngineControlDriver:
+    """Test-only agent stand-in. No networking or authority logic lives here.
+
+    Production agents negotiate ownership separately; engine tests deliver the
+    resulting complete snapshot directly to each child process, over stdin.
+    """
+    def __init__(self, peers, initial=None, publish=True):
+        self.peers = peers
+        self.epoch, self.revision = 1, 1
+        self.settings = dict(primary=0, mic_source=1, mute=1, deafen=0, balance=0, master=1)
+        for slot in (0, 1):
+            self.settings.update({f'slot{slot}_volume': 1, f'slot{slot}_mute': 0,
+                                  f'slot{slot}_deafen': 0, f'slot{slot}_silence': 0})
+        if initial:
+            self.settings.update(initial)
+        for peer in peers:
+            peer.controller = self
+        if publish:
+            self.publish()
+
+    def frame(self, epoch=None, revision=None):
+        snapshot = '|'.join(f'{key} {value}' for key, value in self.settings.items())
+        return f'state {self.epoch if epoch is None else epoch} {self.revision if revision is None else revision} {snapshot}'
+
+    def publish(self):
+        for peer in self.peers:
+            if peer.process.poll() is None:
+                peer.raw_command(self.frame())
+
+    def change(self, commands):
+        changed_roles = False
+        for row in commands.splitlines():
+            key, value = row.split()
+            assert key in self.settings, f'Unknown test control {key}'
+            value = float(value)
+            if key in ('primary', 'mic_source') and self.settings[key] != value:
+                changed_roles = True
+            self.settings[key] = value
+        if changed_roles:
+            self.epoch += 1
+            self.settings['mute'] = 1
+        self.revision += 1
+        self.publish()
+
+    def reconnect(self):
+        self.epoch += 1
+        self.revision += 1
+        self.settings['mute'] = 1
+        self.publish()
 
 
 def wait_for(predicate, description, timeout=8):
@@ -131,9 +193,10 @@ def main():
             for i, role in enumerate(('windows', 'mac')):
                 prefix = 'win' if i == 0 else 'mac'
                 config = root / f'{prefix}.conf'
-                config.write_text(f'device={role}\nkey_file={key}\npeer=127.0.0.1\nport={ports[i]}\npeer_port={ports[1-i]}\nplayback_input={prefix}-playback\nphysical_microphone={prefix}-mic\nheadphones_output={prefix}-headphones\nmicrophone_output={prefix}-mic-sink\n')
+                config.write_text(f'slot={i}\nkey_file={key}\npeer=127.0.0.1\nport={ports[i]}\npeer_port={ports[1-i]}\nplayback_input={prefix}-playback\nphysical_microphone={prefix}-mic\nheadphones_output={prefix}-headphones\nmicrophone_output={prefix}-mic-sink\n')
                 peers.append(Peer(executable, config, root / f'{prefix}.jsonl'))
             win, mac = peers
+            controller = EngineControlDriver(peers)
             checks = 0
             def connected():
                 return all(p.latest().get('connected') and p.latest().get('synchronized', True) for p in peers)
@@ -146,7 +209,7 @@ def main():
                 when = time.time()
                 peer.command(commands)
                 if os.environ.get('BRIDGE_RUNTIME_STRESS') == '1' and commands in (
-                        'mac_deafen 0\nwin_volume 0.25', 'deafen 0'):
+                        'slot1_deafen 0\nslot0_volume 0.25', 'deafen 0'):
                     if os.name == 'posix' and hasattr(signal, 'SIGSTOP'):
                         # Fixed staggered pauses exercise control propagation and receive
                         # re-priming while output callback queues are being reset. No audio
@@ -174,23 +237,23 @@ def main():
             verify('Mac command unmutes same microphone to both applications',
                 audio(win, 'win-mic-sink', now, present=(3,), absent=(0, 1, 2)),
                 audio(mac, 'mac-mic-sink', now, present=(3,), absent=(0, 1, 2)))
-            now = step(mac, 'win_mute 1')
+            now = step(mac, 'slot0_mute 1')
             verify('Windows microphone mute leaves Mac microphone audible',
                 audio(win, 'win-mic-sink', now, silent=True), audio(mac, 'mac-mic-sink', now, present=(3,)))
-            step(win, 'win_mute 0')
-            now = step(mac, 'mac_deafen 1')
+            step(win, 'slot0_mute 0')
+            now = step(mac, 'slot1_deafen 1')
             verify('Mac deafen gates its playback and its microphone destination',
                 audio(win, 'win-headphones', now, present=(0,), absent=(1,)),
                 audio(mac, 'mac-mic-sink', now, silent=True), audio(win, 'win-mic-sink', now, present=(3,)))
-            now = step(win, 'mac_deafen 0\nwin_volume 0.25')
+            now = step(win, 'slot1_deafen 0\nslot0_volume 0.25')
             verify('independent volume slider attenuates Windows source',
                 audio(win, 'win-headphones', now, levels={0: (.022, .052), 1: (.09, .19)}))
-            now = step(mac, 'win_volume 1\nbalance -1')
+            now = step(mac, 'slot0_volume 1\nbalance -1')
             verify('balance endpoint selects Windows audio', audio(win, 'win-headphones', now, present=(0,), absent=(1,)))
-            now = step(win, 'balance 0\nmac_silence 1')
+            now = step(win, 'balance 0\nslot1_silence 1')
             verify('silence affects listening only', audio(win, 'win-headphones', now, present=(0,), absent=(1,)),
                 audio(mac, 'mac-mic-sink', now, present=(3,)))
-            step(win, 'mac_silence 0')
+            step(win, 'slot1_silence 0')
             now = step(mac, 'primary 1')
             verify('primary handover moves mixed playback to Mac and blocks voice',
                 audio(mac, 'mac-headphones', now, present=(0, 1)),
@@ -210,6 +273,23 @@ def main():
             now = step(win, 'deafen 0')
             verify('undeafen restores prior route state', audio(mac, 'mac-headphones', now, present=(0,1)),
                 audio(win, 'win-mic-sink', now, present=(2,)), audio(mac, 'mac-mic-sink', now, present=(2,)))
+            # A delayed previous authority or old revision must not overwrite the
+            # current acknowledged mix. Exercise the actual engine parser and audio,
+            # not only the test driver's state bookkeeping.
+            now = time.time()
+            muted_mix = '|'.join(f'{key} {0 if key == "master" else value}'
+                                 for key, value in controller.settings.items())
+            for peer in peers:
+                peer.raw_command(f'state {controller.epoch-1} {controller.revision+1000} {muted_mix}')
+                peer.raw_command(f'state {controller.epoch} {controller.revision-1} {muted_mix}')
+            verify('stale authority and settings revisions cannot replace the audible mix',
+                audio(mac, 'mac-headphones', now, present=(0,1)),
+                audio(win, 'win-mic-sink', now, present=(2,)),
+                audio(mac, 'mac-mic-sink', now, present=(2,)))
+            wait_for(lambda: all(p.latest().get('_received', 0) > now and
+                                 p.latest().get('authority_epoch') == controller.epoch and
+                                 p.latest().get('settings_revision') == controller.revision for p in peers),
+                     'stale state changed engine authority or revision')
             # A short scheduler suspension must not leave incoming timestamps permanently
             # behind playout. It is shorter than the transport liveness timeout.
             if os.name == 'posix' and hasattr(signal, 'SIGSTOP'):

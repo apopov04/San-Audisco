@@ -8,7 +8,7 @@
 using namespace bridge;
 void check(bool b,const char* msg){if(!b)throw std::runtime_error(msg);}
 int main(){try{auto key=net::random_key();net::Config a,b;a.bind_address=b.bind_address="127.0.0.1";a.bind_port=46981;a.peer_port=46982;b.bind_port=46982;b.peer_port=46981;a.key=b.key=key;net::Transport win(a),mac(b);for(int i=0;i<400&&(!win.ready()||!mac.ready());i++){win.poll();mac.poll();std::this_thread::sleep_for(std::chrono::milliseconds(5));}check(win.ready()&&mac.ready(),"Handshake failed");
- Engine ew(Device::Windows),em(Device::Mac);Settings s;s.primary=Device::Windows;s.microphoneSource=Device::Mac;ew.setSettings(s);em.setSettings(s);
+ Engine ew(Device::A),em(Device::B);Settings s;s.primary=Device::A;s.microphoneSource=Device::B;ew.setSettings(s);em.setSettings(s);
  std::array<float,480> game{},discord{},voice{},txplay{},txmic{},receivedPlay{},receivedMic{},listen{},gameMic{},discordMic{};std::array<int16_t,480> pcm{};game.fill(.15f);discord.fill(.25f);voice.fill(.35f);
  em.process({discord.data(),nullptr,voice.data(),nullptr},{nullptr,discordMic.data(),nullptr,txplay.data(),txmic.data()},240);
  net::AudioDecoder decoder;

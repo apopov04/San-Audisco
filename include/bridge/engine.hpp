@@ -6,8 +6,8 @@
 #include <mutex>
 
 namespace bridge {
-enum class Device : unsigned { Windows = 0, Mac = 1 };
-constexpr Device other(Device d) noexcept { return d == Device::Windows ? Device::Mac : Device::Windows; }
+enum class Device : unsigned { A = 0, B = 1 };
+constexpr Device other(Device d) noexcept { return d == Device::A ? Device::B : Device::A; }
 struct RouteSettings {
     float volume = 1.0f;
     bool micMuted = false;
@@ -15,12 +15,12 @@ struct RouteSettings {
     bool deafened = false;
 };
 struct Settings {
-    Device primary = Device::Windows;
-    Device microphoneSource = Device::Mac;
+    Device primary = Device::A;
+    Device microphoneSource = Device::B;
     std::array<RouteSettings, 2> routes{};
     bool globalMute = false;
     bool globalDeafen = false;
-    float balance = 0.0f; // -1 Windows only; +1 Mac only; center leaves both unchanged.
+    float balance = 0.0f; // -1 participant A only; +1 participant B only; center leaves both unchanged.
     float masterVolume = 1.0f;
 };
 // All buffers are interleaved stereo; microphone channels are averaged to mono.

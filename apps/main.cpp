@@ -120,7 +120,7 @@ public:
         for(std::size_t i=0;i<count;++i){char c=bytes[i];if(c=='\r')continue;
             if(c=='\n'){if(!dropping_)callback(pending_);pending_.clear();dropping_=false;}
             else if(c=='\b'||c==127){if(!pending_.empty())pending_.pop_back();}
-            else if(pending_.size()<100&&!dropping_)pending_+=c;
+            else if(pending_.size()<4096&&!dropping_)pending_+=c;
             else {pending_.clear();dropping_=true;}
         }
         if(ended&&!pending_.empty()&&!dropping_){callback(pending_);pending_.clear();}
@@ -164,11 +164,11 @@ int main(int argc,char** argv) {try {
         std::cout<<(removed?"Pairing credential deleted.\n":"Pairing credential was not present.\n");return 0;
     }
     if(argc!=3||std::string(argv[1])!="run") {
-        std::cout<<"San Audisco: devices | keygen FILE | key-import ID FILE | key-delete ID | run CONFIG\nCommands on stdin: primary 0|1, mic_source 0|1, win_volume 0..1, mac_volume 0..1, win_mute 0|1, mac_mute 0|1, win_deafen 0|1, mac_deafen 0|1, mute 0|1, deafen 0|1, balance -1..1, quit\n";return 0;
+        std::cout<<"San Audisco: devices | keygen FILE | key-import ID FILE | key-delete ID | run CONFIG\nCommands on stdin: primary 0|1, mic_source 0|1, slot0_volume 0..1, slot1_volume 0..1, slot0_mute 0|1, slot1_mute 0|1, slot0_deafen 0|1, slot1_deafen 0|1, mute 0|1, deafen 0|1, balance -1..1, quit\n";return 0;
     }
     auto config=read_config(argv[2]);auto required=[&](const char* k){if(config[k].empty())throw std::runtime_error(std::string("Missing config: ")+k);return config[k];};
-    if(required("device")!="windows"&&required("device")!="mac")throw std::runtime_error("device must be windows or mac");
-    Device local=required("device")=="windows"?Device::Windows:Device::Mac;
+    if(required("slot")!="0"&&required("slot")!="1")throw std::runtime_error("slot must be 0 or 1");
+    Device local=required("slot")=="0"?Device::A:Device::B;
     const auto playbackId=required("playback_input"),micOutputId=required("microphone_output");
     // A secondary computer need not have headphones or a physical microphone.
     // Missing routes remain explicit: selecting that role cannot use a default device.
@@ -209,9 +209,8 @@ int main(int argc,char** argv) {try {
     Engine engine(local);net::JitterBuffer jp{32,4},jm{32,4};net::AudioDecoder decoder;
     std::array<float,480> lp{},lm{},rm{},localMic{},remoteMic{},txp{},txm{};
     std::array<int16_t,480> wire{};
-    uint64_t tick=0,revision=0,remoteRevision=0,request=0,appliedRequest=0,generation=0,nextSampleTime=0,playbackDiscontinuities=0,microphoneDiscontinuities=0;
+    uint64_t tick=0,revision=0,authorityEpoch=0,micEnableRevision=0,remoteRevision=0,remoteEpoch=0,generation=0,nextSampleTime=0,playbackDiscontinuities=0,microphoneDiscontinuities=0;
     float playbackLevel=0,microphoneLevel=0,deliveryLevel=0,receivedMicLevel=0;
-    std::map<std::string,float> pending;
     bool wasReady=false,synchronized=false,run=true,previousMicBlocked=true,previousRemoteMicEnabled=false;
     Settings previous=settings;Commands commands;
     auto next=std::chrono::steady_clock::now(),retryHeadphones=next,retryMicrophone=next,retryPlayback=next,retryMicSink=next;
@@ -228,7 +227,7 @@ int main(int argc,char** argv) {try {
     };
     auto resetRemote=[&]{
         microphoneBlocked=true;settings.globalMute=true;synchronized=false;
-        revision=remoteRevision=request=appliedRequest=0;pending.clear();
+        remoteRevision=remoteEpoch=0;
         jp.reset();jm.reset();decoder.reset();
         listeningMixer.requestReset(ListeningMixer::Remote);networkMicrophone.discard();
         // Producer is this worker, so only stop the output consumer before flush.
@@ -246,10 +245,19 @@ int main(int argc,char** argv) {try {
         commands.poll([&](const std::string& line){
             if(line=="quit"){run=false;return;}
             if(line=="test_tone"){testToneFrames.store(96000,std::memory_order_relaxed);return;}
-            Settings candidate=settings;std::map<std::string,float> changes;
-            if(!control::parse(candidate,line,&changes)){std::cerr<<"Ignored invalid command\n";return;}
-            if(local==Device::Windows){settings=candidate;++revision;}
-            else {for(auto&[k,v]:changes)pending[k]=v;++request;}
+            // The authenticated room agent is the sole settings authority. Media
+            // packets acknowledge applied state; they never contain mixer commands.
+            std::istringstream input(line);std::string command;uint64_t epoch=0,rev=0;
+            if(!(input>>command>>epoch>>rev)||command!="state"||!epoch||!rev)return;
+            if(epoch<authorityEpoch||(epoch==authorityEpoch&&rev<=revision))return;
+            std::string body;std::getline(input,body);std::replace(body.begin(),body.end(),'|','\n');
+            Settings candidate=settings;if(!control::parse(candidate,body))return;
+            if(authorityEpoch!=epoch){synchronized=false;remoteEpoch=remoteRevision=0;}
+            bool opensMic=(settings.globalMute&&!candidate.globalMute)||(settings.globalDeafen&&!candidate.globalDeafen);
+            for(unsigned i=0;i<2;++i)opensMic=opensMic||(settings.routes[i].micMuted&&!candidate.routes[i].micMuted)||(settings.routes[i].deafened&&!candidate.routes[i].deafened);
+            if(opensMic||authorityEpoch!=epoch)micEnableRevision=rev;
+            settings=candidate;authorityEpoch=epoch;revision=rev;
+
         });
         if(!run||commands.ended)break;
         for(int count=0;count<128;++count) {
@@ -261,16 +269,10 @@ int main(int argc,char** argv) {try {
                 else if(packet->stream==net::Stream::Microphone)jm.push(std::move(*packet));
             } else if(packet->kind==net::Kind::Control) {
                 std::string message(packet->payload.begin(),packet->payload.end());std::istringstream in(message);
-                char type=0;uint64_t rev=0,ack=0;if(!(in>>type>>rev>>ack))continue;
-                std::string body((std::istreambuf_iterator<char>(in)),{});
-                if(local==Device::Windows&&type=='C'&&rev>appliedRequest) {
-                    Settings candidate=settings;if(!control::parse(candidate,body))continue;
-                    settings=candidate;appliedRequest=rev;++revision;
-                } else if(local==Device::Mac&&type=='S'&&rev>=remoteRevision) {
-                    Settings candidate=settings;if(!control::parse(candidate,body))continue;
-                    settings=candidate;remoteRevision=rev;synchronized=true;
-                    if(ack==request)pending.clear();
-                } else if(local==Device::Windows&&type=='A'&&rev==revision)synchronized=true;
+                std::string type,extra;uint64_t epoch=0,rev=0;unsigned peerSlot=2;
+                if(!(in>>type>>epoch>>rev>>peerSlot)||(in>>extra)||type!="V3"||peerSlot!=unsigned(other(local)))continue;
+                if(epoch==authorityEpoch&&rev){remoteEpoch=epoch;remoteRevision=std::max(remoteRevision,rev);synchronized=revision>0;}
+
             }
         }
         const bool ready=network.ready();
@@ -286,7 +288,7 @@ int main(int argc,char** argv) {try {
             micIn.discard();listeningMixer.requestReset();micOut.discard();jp.reset();jm.reset();decoder.reset();
             listeningMixer.requestReset(ListeningMixer::Remote);networkMicrophone.discard();
             // Both peers require explicit unmute after a route handover.
-            settings.globalMute=true;if(local==Device::Windows)++revision;
+            settings.globalMute=true;
             previousMicBlocked=true;previousRemoteMicEnabled=false;resumeMicSink();retryHeadphones=retryMicrophone=began;
         }
         previous=settings;
@@ -303,15 +305,11 @@ int main(int argc,char** argv) {try {
             try {if(physicalMicId.empty())throw std::runtime_error("No physical_microphone configured on the selected microphone source");microphone.open(physicalMicId,true,[&](float* p,size_t n){micIn.push(p,n);});microphone.start();}
             catch(const std::exception& e){microphone.close();std::cerr<<"Microphone unavailable: "<<e.what()<<'\n';retryMicrophone=began+std::chrono::seconds(1);}
         } else if(settings.microphoneSource!=local&&microphone.running())microphone.close();
-        if(tick%20==0&&ready) {
-            std::string message;
-            if(local==Device::Windows)message="S "+std::to_string(revision)+" "+std::to_string(appliedRequest)+"\n"+control::snapshot(settings);
-            else {
-                if(synchronized){std::string ack="A "+std::to_string(remoteRevision)+" 0\n";network.send_control(std::span(reinterpret_cast<const uint8_t*>(ack.data()),ack.size()));}
-                if(!pending.empty())message="C "+std::to_string(request)+" 0\n"+control::serialize(pending);
-            }
-            if(!message.empty())network.send_control(std::span(reinterpret_cast<const uint8_t*>(message.data()),message.size()));
+        if(tick%20==0&&ready&&authorityEpoch&&revision) {
+            auto message="V3 "+std::to_string(authorityEpoch)+" "+std::to_string(revision)+" "+std::to_string(unsigned(local));
+            network.send_control(std::span(reinterpret_cast<const uint8_t*>(message.data()),message.size()));
         }
+
         playbackIn.pop(lp.data(),240);micIn.pop(lm.data(),240);
         auto receive=[&](net::JitterBuffer& jitter,net::Stream stream,uint64_t& seenDiscontinuities){
             const bool isPlayback=stream==net::Stream::Playback;
@@ -344,7 +342,7 @@ int main(int argc,char** argv) {try {
         receive(jp,net::Stream::Playback,playbackDiscontinuities);receive(jm,net::Stream::Microphone,microphoneDiscontinuities);
         networkMicrophone.pop(rm.data(),240);
         Settings effective=settings;
-        if(!ready||!synchronized||!micSink.running()||(settings.primary==local&&!listen.running())||(settings.microphoneSource==local&&!microphone.running()))effective.globalMute=true;
+        if(!ready||!synchronized||remoteEpoch!=authorityEpoch||remoteRevision<micEnableRevision||!micSink.running()||(settings.primary==local&&!listen.running())||(settings.microphoneSource==local&&!microphone.running()))effective.globalMute=true;
         const bool micBlocked=effective.globalMute||effective.globalDeafen||effective.routes[int(local)].micMuted||effective.routes[int(local)].deafened;
         const auto& remoteRoute=effective.routes[int(other(local))];
         const bool remoteMicEnabled=settings.microphoneSource==local&&!effective.globalMute&&!effective.globalDeafen&&!remoteRoute.micMuted&&!remoteRoute.deafened;
@@ -366,7 +364,7 @@ int main(int argc,char** argv) {try {
         micOut.push(localMic.data(),240);
         auto level=[](const auto&samples){double sum=0;for(float x:samples)sum+=double(x)*x;return float(std::min(1.,std::sqrt(sum/samples.size())));};
         playbackLevel=std::max(playbackLevel,level(lp));microphoneLevel=std::max(microphoneLevel,level(lm));deliveryLevel=std::max(deliveryLevel,level(localMic));receivedMicLevel=std::max(receivedMicLevel,level(rm));
-        listeningBlocked=effective.globalDeafen;microphoneBlocked=micBlocked;
+        listeningBlocked=!ready||!synchronized||effective.globalDeafen;microphoneBlocked=micBlocked;
         auto send=[&](net::Stream stream,const std::array<float,480>& audio){
             for(size_t i=0;i<480;++i)wire[i]=static_cast<int16_t>(std::clamp(audio[i],-1.f,0.999969f)*32768.f);
             network.send_audio(stream,wire,sampleTime);
@@ -375,9 +373,9 @@ int main(int argc,char** argv) {try {
         if(settings.microphoneSource==local)send(net::Stream::Microphone,txm);
         if(tick%200==0) {
             std::cout<<"{\"connected\":"<<(ready?"true":"false")<<",\"synchronized\":"<<(synchronized?"true":"false")<<",\"primary\":"<<int(settings.primary)
-                <<",\"mic_source\":"<<int(settings.microphoneSource)<<",\"muted\":"<<(effective.globalMute?"true":"false")<<",\"deafen\":"<<(settings.globalDeafen?"true":"false")
+                <<",\"authority_epoch\":"<<authorityEpoch<<",\"settings_revision\":"<<revision<<",\"peer_revision\":"<<remoteRevision<<",\"mic_source\":"<<int(settings.microphoneSource)<<",\"muted\":"<<(effective.globalMute?"true":"false")<<",\"deafen\":"<<(settings.globalDeafen?"true":"false")
                 <<",\"balance\":"<<settings.balance<<",\"master\":"<<settings.masterVolume;
-            for(int i=0;i<2;++i){const auto& r=settings.routes[i];const char* prefix=i==0?"win":"mac";
+            for(int i=0;i<2;++i){const auto& r=settings.routes[i];const char* prefix=i==0?"slot0":"slot1";
                 std::cout<<",\""<<prefix<<"_mute\":"<<(r.micMuted?"true":"false")<<",\""<<prefix<<"_deafen\":"<<(r.deafened?"true":"false")
                     <<",\""<<prefix<<"_volume\":"<<r.volume<<",\""<<prefix<<"_silence\":"<<(r.silenced?"true":"false");}
             std::cout<<",\"buffer_frames\":"<<hardwareBufferFrames<<",\"listening_buffer_frames\":"<<listeningMixer.targetFrames()<<",\"playback_ready\":"<<(playback.running()?"true":"false")<<",\"mic_sink_ready\":"<<(micSink.running()?"true":"false")

@@ -7,7 +7,7 @@ namespace {
 float finite(float x) noexcept { return std::isfinite(x) ? x : 0.0f; }
 float sample(const float* p, std::size_t i) noexcept { return p ? finite(p[i]) : 0.0f; }
 float limit(float x) noexcept { return std::clamp(finite(x), -1.0f, 1.0f); }
-unsigned index(Device d) noexcept { return d == Device::Mac ? 1u : 0u; }
+unsigned index(Device d) noexcept { return d == Device::B ? 1u : 0u; }
 unsigned pack(const Settings& s) noexcept {
     unsigned f = index(s.primary) | (index(s.microphoneSource) << 1);
     f |= unsigned(s.globalMute) << 2; f |= unsigned(s.globalDeafen) << 3;
@@ -45,8 +45,8 @@ void Engine::loadSettings() noexcept {
         s.balance = gains_[2].load(); s.masterVolume = gains_[3].load();
         const auto f = flags_.load();
         if (revision_.load() != begin) continue;
-        s.primary = (f & 1) ? Device::Mac : Device::Windows;
-        s.microphoneSource = (f & 2) ? Device::Mac : Device::Windows;
+        s.primary = (f & 1) ? Device::B : Device::A;
+        s.microphoneSource = (f & 2) ? Device::B : Device::A;
         s.globalMute = f & 4; s.globalDeafen = f & 8;
         for (unsigned i = 0; i < 2; ++i) {
             s.routes[i].micMuted = f & (1u << (4 + 3 * i));

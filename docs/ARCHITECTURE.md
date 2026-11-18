@@ -1,4 +1,4 @@
-# San Audisco v0.2 architecture
+# San Audisco v0.3 architecture
 
 ## Processes and ownership
 
@@ -13,11 +13,14 @@ remote commands, and engine supervision. It does not move audio samples. Audio
 continues over the existing encrypted UDP/Opus engine transport. The UI is SwiftUI
 on macOS and native Win32 on Windows; there is no embedded browser runtime.
 
-The paired Windows engine remains the internal mixer coordinator regardless of
-which computer is Hub. Both UIs use acknowledged engine telemetry. The agent sends
-remote requests with monotonically increasing IDs and connection-generation
-tracking, reports rejection/timeouts, and periodically exchanges current inventory.
-Device IDs, rather than display names, identify saved routes.
+The selected Output Hub agent coordinates shared settings independently of OS.
+Both UIs address stable computer IDs; platform selects only the native backend.
+Epoch/revision-tagged snapshots reach both child engines over private IPC.
+The media channel acknowledges state but cannot change it. Handover closes the
+old output before committing the next generation; ambiguous transitions pause
+until both devices reconcile and the user explicitly starts again. See
+[V03_ARCHITECTURE.md](V03_ARCHITECTURE.md) for migration and state transitions.
+
 
 ## Audio routes
 

@@ -29,10 +29,10 @@ try:
 except (subprocess.CalledProcessError, FileNotFoundError):
     commit, dirty = None, None
 manifest = {
-    'version': '0.2.10', 'source_commit': commit, 'source_dirty': dirty,
+    'version': '0.3.0', 'source_commit': commit, 'source_dirty': dirty,
     'packaged_at_utc': datetime.now(timezone.utc).isoformat(),
     'binary_sha256': {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in artifacts.items()},
-    'validation': 'See docs/BRANDING.md and accompanying installation evidence. Core and native UI model tests pass; Wine UI tests are compatibility checks, not hardware audio measurements.',
+    'validation': 'See docs/V03_VALIDATION.md. Core, synthetic routing and native Windows UI checks pass; physical AirPods acceptance of this update is pending.',
 }
 (dist/'BUILD_INFO.json').write_text(json.dumps(manifest, indent=2)+'\n')
 with zipfile.ZipFile(dist/'San Audisco-Windows-x64.zip','w',zipfile.ZIP_DEFLATED) as z:

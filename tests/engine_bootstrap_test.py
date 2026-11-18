@@ -12,6 +12,7 @@ import sys
 import tempfile
 import threading
 import time
+from runtime_test import EngineControlDriver
 
 
 def port():
@@ -32,6 +33,7 @@ def wait(predicate, label, seconds=12):
 class Peer:
     def __init__(self, executable, config, log, initial):
         self.log, self.states, self.errors = log, [], []
+        self.controller = None
         self.process = subprocess.Popen([str(executable), 'run', str(config)],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             env=dict(os.environ, BRIDGE_FAKE_LOG=str(log), BRIDGE_FAKE_METRICS='1'))
@@ -52,6 +54,12 @@ class Peer:
         self.process.stdin.flush()
 
     def command(self, command):
+        if self.controller is not None and command.strip() not in ('quit', 'test_tone') and not command.startswith('state '):
+            self.controller.change(command)
+            return
+        self.raw_command(command)
+
+    def raw_command(self, command):
         self.process.stdin.write(command.encode() + b'\n')
         self.process.stdin.flush()
 
@@ -97,7 +105,7 @@ def main():
         configs = []
         for index, (platform, prefix) in enumerate((('windows', 'win'), ('mac', 'mac'))):
             config = root / (platform + '.conf')
-            config.write_text(f'device={platform}\nkey_stdin=1\npeer=127.0.0.1\n'
+            config.write_text(f'slot={index}\nkey_stdin=1\npeer=127.0.0.1\n'
                 f'port={ports[index]}\npeer_port={ports[1-index]}\n'
                 f'playback_input={prefix}-playback\nphysical_microphone={prefix}-mic\n'
                 f'headphones_output={prefix}-headphones\nmicrophone_output={prefix}-mic-sink\n')
@@ -114,16 +122,19 @@ def main():
         print('PASS empty, short, nonhex, NUL, overlong and invalid-delimiter key frames rejected', flush=True)
         peers = []
         try:
-            win = Peer(executable, configs[0], root/'win.jsonl', key+b'\nwin_volume 0.37\n')
+            initial = EngineControlDriver([], initial={'slot0_volume': .37}, publish=False)
+            frame = key+b'\n'+initial.frame().encode()+b'\n'
+            win = Peer(executable, configs[0], root/'win.jsonl', frame)
             peers.append(win)
-            mac = Peer(executable, configs[1], root/'mac.jsonl', key+b'\n')
+            mac = Peer(executable, configs[1], root/'mac.jsonl', frame)
             peers.append(mac)
+            controller = EngineControlDriver(peers, initial={'slot0_volume': .37}, publish=False)
             wait(lambda: win.state().get('synchronized') and mac.state().get('synchronized'), 'Engine pair did not synchronize')
-            wait(lambda: abs(win.state().get('win_volume', -1)-.37) < .001 and
-                 abs(mac.state().get('win_volume', -1)-.37) < .001,
+            wait(lambda: abs(win.state().get('slot0_volume', -1)-.37) < .001 and
+                 abs(mac.state().get('slot0_volume', -1)-.37) < .001,
                  'Commands coalesced with key frame were lost')
             print('PASS valid private bootstrap preserves queued control commands', flush=True)
-            win.command('win_volume 1')
+            win.command('slot0_volume 1')
             win.command('mute 0')
             wait(lambda: not win.state().get('muted', True) and not mac.state().get('muted', True), 'Unmute failed')
             baseline = time.time()+.4

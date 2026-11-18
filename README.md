@@ -1,6 +1,6 @@
-# San Audisco v0.2.10
+# San Audisco v0.3.0
 
-San Audisco (formerly AudioBridge) mixes audio from a Windows PC and a Mac into headphones connected to
+San Audisco (formerly AudioBridge) mixes audio from two Windows or Mac computers into headphones connected to
 one computer, and sends a selected physical microphone to voice apps on both.
 The **Output Hub** plays the mixed audio through its selected output. The
 **Input Hub** supplies its selected microphone to both computers. These roles
@@ -101,14 +101,14 @@ approval, permissions, and a possible driver restart remain.
   i7-7700, AirPods Pro 3.
 - Mac: Apple Silicon, macOS 13+. Native execution validated on this macOS 26 host;
   the older minimum OS still needs execution testing.
-- One Mac and one Windows computer on a LAN. No accounts, cloud audio, Internet
+- Two computers on a LAN: Windows–Windows, Mac–Mac or Windows–Mac. No accounts, cloud audio, Internet
   relay, multi-member rooms, or iPhone audio-routing role in this release.
 - Mac app/setup are ad-hoc development signed; Windows app/setup are unsigned.
   Production notarization/signing was not supplied. Keep normal OS security enabled.
 
 Existing `mac.conf` / `windows.conf` route choices are copied into the separate
 `room-v2` state directory on first launch, with a legacy backup. Old files and
-credentials are retained for rollback. You still create the new room once.
+credentials are retained for rollback. Existing v0.2 rooms migrate without re-pairing; new users create a room once.
 Application settings live in the user's legacy AudioBridge application-data directory;
 room secrets use macOS Keychain or current-user Windows DPAPI.
 
@@ -156,3 +156,7 @@ artifacts or infer redistribution rights from personal use.
 - [Engine CLI and latency characteristics](docs/ENGINE.md)
 - [Historical v0.1 test evidence](VALIDATION.md)
 - [Target hardware test procedure](HARDWARE_TEST.md)
+
+## Version 0.3 device roles
+
+Windows–Windows, Mac–Mac and mixed rooms use device IDs and an Output Hub coordinator. Input Hub is independent. Both devices must run v0.3; existing rooms and routes migrate without re-pairing. See [v0.3 architecture](docs/V03_ARCHITECTURE.md) for protocol and migration, and [v0.3 validation](docs/V03_VALIDATION.md) for completed checks and pending hardware acceptance.

@@ -1,6 +1,6 @@
 # San Audisco room protocol v2
 
-This protocol manages a two-device (one Windows, one Mac) LAN room. It does not
+This protocol manages a two-device (any Windows/macOS combination) LAN room. It does not
 replace or change the audio codec, audio engine, or real-time transport.
 
 ## Implemented dependencies
@@ -35,7 +35,7 @@ is untrusted; no saved address or device identity is changed until authenticatio
 succeeds. A manual-address probe sends the same bounded query as unicast UDP.
 This handles blocked broadcast, not networks that block all peer traffic.
 
-One room admits one Windows and one Mac. Already paired rooms do not accept
+One room admits two distinct computer IDs, regardless of OS. Already paired rooms do not accept
 another invitation. Pairing guesses are limited globally to ten per minute and
 twenty per invitation. There are at most eight concurrent handshake connections,
 with ten-second deadlines. Discovery retains at most 64 devices for ten seconds.
@@ -98,3 +98,7 @@ saved keys, expiry, cancellation, manual unicast discovery and rate limiting.
 `room_wire_test` places a TCP relay between actual instances and verifies rejection
 of modified ciphertext, replayed ciphertext, and altered handshake device names
 or service ports. Tests use synthetic identities and disposable credentials only.
+
+## Application capability layer
+
+The pairing cryptographic protocol and key domains remain stable for saved-room compatibility. Authenticated agent snapshots advertise application protocol3. Audio start is blocked until both advertise3 and agree on the shared document. Device kind/model metadata is exchanged inside the authenticated room, separate from pairing identity. See V03_ARCHITECTURE.md for control and media acknowledgement schemas.
