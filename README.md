@@ -1,6 +1,6 @@
-# AudioBridge v0.2.4
+# Golden Gate Audio v0.2.5
 
-AudioBridge mixes audio from a Windows PC and a Mac into headphones connected to
+Golden Gate Audio (formerly AudioBridge) mixes audio from a Windows PC and a Mac into headphones connected to
 one computer, and sends a selected physical microphone to voice apps on both.
 The **Output Hub** plays the mixed audio through its selected output. The
 **Input Hub** supplies its selected microphone to both computers. These roles

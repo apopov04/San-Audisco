@@ -81,3 +81,22 @@ propagation, unchanged individual preferences, restoration, and the existing
 room/route behavior. Mac visual checks exercise the same global propagation and
 independent hub selections; its model/IPC test and both production builds pass.
 Windows GUI validation uses Wine, not the physical gaming PC.
+
+## v0.2.5 Golden Gate Audio
+
+The display name is now Golden Gate Audio. A vector suspension bridge replaces
+the central link: international-orange red when the room is connected, gray
+otherwise. The existing connection-status text remains below it; stopping audio
+does not disconnect the room or gray out the bridge. Both native UIs draw the
+bridge without bitmap assets or additional runtime dependencies.
+
+The global slider is labeled Master volume: it scales both playback sources
+together, leaving microphone levels unchanged. Start/Stop audio now has hover
+help explaining that it controls playback and microphone relay on both connected
+computers while preserving the room pairing.
+
+Existing AudioBridge executable names, installation paths, bundle identifiers and
+room data remain compatible. The installer updates the existing application; a
+new pairing or duplicate background service is not required for this display rename.
+Mac visual checks cover connected, stopped-but-connected and disconnected states.
+The Mac model suite and Windows native GUI fixture suite under Wine pass.

@@ -125,14 +125,14 @@ void saveState(){
 }
 void refresh(){
  detect();try{const int completed=finishedVendor.exchange(0);if((completed==1&&cablePresent)||(completed==2&&hifiPresent)){installationBoot=bootSeconds();restartPending=true;rememberBoot();}readBoot();}catch(const std::exception&e){std::lock_guard<std::mutex>lock(messageMutex);message=widen(e.what());}
- std::wstring detail=L"VB-CABLE: "+std::wstring(cableReady?L"audio endpoints ready — preserve existing installation":L"not ready; install or check after restart")+L"\r\n\r\nHi-Fi Cable: "+std::wstring(hifiReady?L"both endpoints ready at 48 kHz — preserve installation":(hifiWrongRate?L"set BOTH playback and recording endpoints to 48 kHz in Sound settings":L"not ready; install or check after restart"))+L"\r\n\r\nAudioBridge: "+std::wstring(appAvailable()?L"installed for this Windows user":L"not installed");
+ std::wstring detail=L"VB-CABLE: "+std::wstring(cableReady?L"audio endpoints ready — preserve existing installation":L"not ready; install or check after restart")+L"\r\n\r\nHi-Fi Cable: "+std::wstring(hifiReady?L"both endpoints ready at 48 kHz — preserve installation":(hifiWrongRate?L"set BOTH playback and recording endpoints to 48 kHz in Sound settings":L"not ready; install or check after restart"))+L"\r\n\r\nGolden Gate Audio: "+std::wstring(appAvailable()?L"installed for this Windows user":L"not installed");
  SetWindowTextW(detailLabel,detail.c_str());std::wstring msg;{std::lock_guard<std::mutex>lock(messageMutex);msg=message;}if(restartPending)msg+=L"\r\nA driver was installed during this boot. Restart Windows when convenient, then reopen setup.";SetWindowTextW(statusLabel,msg.c_str());
  for(auto button:buttons)EnableWindow(button,!busy.load());
  if(buttons.size()>=5){EnableWindow(buttons[1],!busy&&!cableReady);EnableWindow(buttons[2],!busy&&!hifiReady);EnableWindow(buttons[4],!busy&&ab_setup_action(cableReady&&hifiReady,1,restartPending)==AB_KEEP&&appAvailable());}
  try{saveState();}catch(...){}
 }
 void installApp(){
- if(processRunning(L"AudioBridgeApp.exe")||processRunning(L"audiobridge.exe")||processRunning(L"bridge-agent.exe"))fail("Quit AudioBridge and its background agent before updating. Setup will not interrupt live audio.");
+ if(processRunning(L"AudioBridgeApp.exe")||processRunning(L"audiobridge.exe")||processRunning(L"bridge-agent.exe"))fail("Quit Golden Gate Audio and its background agent before updating. Setup will not interrupt live audio.");
  auto candidate=base/L"app-v0.2-new";std::error_code ec;fs::remove_all(candidate,ec);extract(L"app",candidate);
  auto backup=base/(L"app-backup-"+std::to_wstring(GetTickCount64()));
  if(fs::exists(appDir))fs::rename(appDir,backup);
@@ -140,17 +140,17 @@ void installApp(){
  wchar_t programs[MAX_PATH]{};
  if(SUCCEEDED(SHGetFolderPathW(nullptr,CSIDL_PROGRAMS,nullptr,SHGFP_TYPE_CURRENT,programs))){IShellLinkW* shortcut=nullptr;if(SUCCEEDED(CoCreateInstance(CLSID_ShellLink,nullptr,CLSCTX_INPROC_SERVER,IID_IShellLinkW,reinterpret_cast<void**>(&shortcut)))){
   shortcut->SetPath((appDir/L"AudioBridgeApp.exe").c_str());shortcut->SetWorkingDirectory(appDir.c_str());IPersistFile* persist=nullptr;if(SUCCEEDED(shortcut->QueryInterface(IID_IPersistFile,reinterpret_cast<void**>(&persist)))){persist->Save((fs::path(programs)/L"AudioBridge.lnk").c_str(),TRUE);persist->Release();}shortcut->Release();}}
- report(L"AudioBridge installed for this user. Settings and existing audio drivers were retained. Setup never starts audio automatically.");
+ report(L"Golden Gate Audio installed for this user. Settings and existing audio drivers were retained. Setup never starts audio automatically.");
 }
 void removeApp(){
  if(ab_setup_remove_shared_driver()!=0)fail("Unexpected uninstall policy; no changes made.");
- if(processRunning(L"AudioBridgeApp.exe")||processRunning(L"audiobridge.exe")||processRunning(L"bridge-agent.exe"))fail("Quit AudioBridge and its background agent before removing the app.");
+ if(processRunning(L"AudioBridgeApp.exe")||processRunning(L"audiobridge.exe")||processRunning(L"bridge-agent.exe"))fail("Quit Golden Gate Audio and its background agent before removing the app.");
  // Only files owned by this bootstrap's app payload are removed. Drivers, user
  // configuration, pairing records, setup state and previous-version backups stay.
  for(const auto& file:payload){if(std::wstring(file.group)!=L"app")continue;auto target=appDir/file.path;if(fs::exists(target)&&fs::is_regular_file(target))fs::remove(target);}
  std::error_code error;fs::remove(appDir/L"licenses",error);fs::remove(appDir,error);
  wchar_t programs[MAX_PATH]{};if(SUCCEEDED(SHGetFolderPathW(nullptr,CSIDL_PROGRAMS,nullptr,SHGFP_TYPE_CURRENT,programs)))fs::remove(fs::path(programs)/L"AudioBridge.lnk",error);
- report(L"AudioBridge app removed. Shared audio drivers, pairing/settings, setup files and previous-version backups were retained.");
+ report(L"Golden Gate Audio app removed. Shared audio drivers, pairing/settings, setup files and previous-version backups were retained.");
 }
 
 void installVendor(bool hifi,bool ready,bool present){
@@ -173,7 +173,7 @@ void asyncAction(int id){
  std::thread([id,ready,present]{CoInitializeEx(nullptr,COINIT_MULTITHREADED);try{if(id==101)installApp();else if(id==108)removeApp();else installVendor(id==103,ready,present);}catch(const std::exception&e){report(widen(e.what()));}CoUninitialize();busy=false;PostMessageW(window,WM_APP+1,0,0);}).detach();
 }
 LRESULT CALLBACK procedure(HWND h,UINT m,WPARAM w,LPARAM l){
- switch(m){case WM_COMMAND:{auto id=LOWORD(w);if(id>=101&&id<=103)asyncAction(id);else if(id==108){if(MessageBoxW(h,L"Remove the AudioBridge app for this user? Shared audio drivers and pairing/settings will be kept.",L"Remove app only",MB_YESNO|MB_ICONQUESTION)==IDYES)asyncAction(id);}else if(id==104)refresh();else if(id==105)ShellExecuteW(h,L"open",(appDir/L"AudioBridgeApp.exe").c_str(),nullptr,appDir.c_str(),SW_SHOWNORMAL);else if(id==109)MessageBoxW(h,L"On your trusted home network, allow bridge-agent.exe and audiobridge.exe through Windows Defender Firewall for Private networks. Do not enable Public access or disable the firewall.\n\nIf room discovery fails, use Windows Security > Firewall & network protection > Allow an app through firewall and select the installed binaries in LocalAppData\\AudioBridge\\app.\n\nRoom discovery/control uses UDP/TCP 45671; audio uses UDP 45670. Guest Wi-Fi client isolation can also prevent pairing.",L"Private-network firewall setup",MB_OK|MB_ICONINFORMATION);else if(id==107)ShellExecuteW(h,L"open",L"control.exe",L"mmsys.cpl",nullptr,SW_SHOWNORMAL);else if(id==106)ShellExecuteW(h,L"open",L"https://vb-audio.com/Services/licensing.htm",nullptr,nullptr,SW_SHOWNORMAL);return 0;}
+ switch(m){case WM_COMMAND:{auto id=LOWORD(w);if(id>=101&&id<=103)asyncAction(id);else if(id==108){if(MessageBoxW(h,L"Remove the Golden Gate Audio app for this user? Shared audio drivers and pairing/settings will be kept.",L"Remove app only",MB_YESNO|MB_ICONQUESTION)==IDYES)asyncAction(id);}else if(id==104)refresh();else if(id==105)ShellExecuteW(h,L"open",(appDir/L"AudioBridgeApp.exe").c_str(),nullptr,appDir.c_str(),SW_SHOWNORMAL);else if(id==109)MessageBoxW(h,L"On your trusted home network, allow bridge-agent.exe and audiobridge.exe through Windows Defender Firewall for Private networks. Do not enable Public access or disable the firewall.\n\nIf room discovery fails, use Windows Security > Firewall & network protection > Allow an app through firewall and select the installed binaries in LocalAppData\\AudioBridge\\app.\n\nRoom discovery/control uses UDP/TCP 45671; audio uses UDP 45670. Guest Wi-Fi client isolation can also prevent pairing.",L"Private-network firewall setup",MB_OK|MB_ICONINFORMATION);else if(id==107)ShellExecuteW(h,L"open",L"control.exe",L"mmsys.cpl",nullptr,SW_SHOWNORMAL);else if(id==106)ShellExecuteW(h,L"open",L"https://vb-audio.com/Services/licensing.htm",nullptr,nullptr,SW_SHOWNORMAL);return 0;}
  case WM_APP+1:refresh();return 0;
  case WM_CLOSE:if(busy){MessageBoxW(h,L"Finish or cancel the vendor installer first. Setup will not kill it.",L"Installation in progress",MB_OK);return 0;}DestroyWindow(h);return 0;
  case WM_DESTROY:PostQuitMessage(0);return 0;}
@@ -183,19 +183,19 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,LPWSTR,int){
  try{
   int count=0;auto argv=CommandLineToArgvW(GetCommandLineW(),&count);checkOnly=count==2&&std::wstring(argv[1])==L"--check-payload";LocalFree(argv);
   for(const auto&file:payload)resource(file);if(checkOnly)return 0;
-  HANDLE singleton=CreateMutexW(nullptr,TRUE,L"Local\\AudioBridgePrivateSetupV2");if(!singleton||GetLastError()==ERROR_ALREADY_EXISTS)fail("AudioBridge Setup is already running.");
+  HANDLE singleton=CreateMutexW(nullptr,TRUE,L"Local\\AudioBridgePrivateSetupV2");if(!singleton||GetLastError()==ERROR_ALREADY_EXISTS)fail("Golden Gate Audio Setup is already running.");
   CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);PWSTR local=nullptr;if(FAILED(SHGetKnownFolderPath(FOLDERID_LocalAppData,0,nullptr,&local)))fail("Cannot locate per-user application data");base=fs::path(local)/L"AudioBridge";CoTaskMemFree(local);appDir=base/L"app";stage=base/L"setup-v2-payload";
   WNDCLASSW wc{};wc.lpfnWndProc=procedure;wc.hInstance=instance;wc.lpszClassName=L"AudioBridgePrivateSetup";wc.hCursor=LoadCursor(nullptr,IDC_ARROW);wc.hbrBackground=reinterpret_cast<HBRUSH>(COLOR_WINDOW+1);RegisterClassW(&wc);
-  window=CreateWindowW(wc.lpszClassName,L"AudioBridge Setup — private build",WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX,CW_USEDEFAULT,CW_USEDEFAULT,760,535,nullptr,nullptr,instance,nullptr);
+  window=CreateWindowW(wc.lpszClassName,L"Golden Gate Audio Setup — private build",WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX,CW_USEDEFAULT,CW_USEDEFAULT,760,535,nullptr,nullptr,instance,nullptr);
   auto label=[&](const wchar_t* text,int y,int height){return CreateWindowW(L"STATIC",text,WS_CHILD|WS_VISIBLE,24,y,700,height,window,nullptr,instance,nullptr);};
-  label(L"AudioBridge v0.2 — one setup, existing audio components",20,30);detailLabel=label(L"Checking installed endpoints...",60,125);
-  const wchar_t* titles[]{L"Install / update app",L"Install VB-CABLE",L"Install Hi-Fi Cable",L"Check again",L"Open AudioBridge"};
+  label(L"Golden Gate Audio — existing audio components",20,30);detailLabel=label(L"Checking installed endpoints...",60,125);
+  const wchar_t* titles[]{L"Install / update app",L"Install VB-CABLE",L"Install Hi-Fi Cable",L"Check again",L"Open app"};
   for(int i=0;i<5;++i){int row=i/3,col=i%3;buttons.push_back(CreateWindowW(L"BUTTON",titles[i],WS_CHILD|WS_VISIBLE|WS_TABSTOP,24+col*236,200+row*42,224,32,window,reinterpret_cast<HMENU>(INT_PTR(101+i)),instance,nullptr));}
-  statusLabel=label(L"",300,70);label(L"VB-CABLE / Hi-Fi Cable by VB-Audio. Donationware — contributions welcome.\r\nVendor prompts may require a restart; AudioBridge never restarts Windows.",378,40);
+  statusLabel=label(L"",300,70);label(L"VB-CABLE / Hi-Fi Cable by VB-Audio. Donationware — contributions welcome.\r\nVendor prompts may require a restart; Golden Gate Audio never restarts Windows.",378,40);
   buttons.push_back(CreateWindowW(L"BUTTON",L"Vendor licensing and support",WS_CHILD|WS_VISIBLE|WS_TABSTOP,24,422,240,24,window,reinterpret_cast<HMENU>(106),instance,nullptr));
   buttons.push_back(CreateWindowW(L"BUTTON",L"Sound settings (48 kHz)",WS_CHILD|WS_VISIBLE|WS_TABSTOP,280,422,240,24,window,reinterpret_cast<HMENU>(107),instance,nullptr));
   buttons.push_back(CreateWindowW(L"BUTTON",L"Firewall help",WS_CHILD|WS_VISIBLE|WS_TABSTOP,532,422,180,24,window,reinterpret_cast<HMENU>(109),instance,nullptr));
   buttons.push_back(CreateWindowW(L"BUTTON",L"Remove app only",WS_CHILD|WS_VISIBLE|WS_TABSTOP,24,458,224,28,window,reinterpret_cast<HMENU>(108),instance,nullptr));
   refresh();ShowWindow(window,SW_SHOWNORMAL);MSG msg;while(GetMessageW(&msg,nullptr,0,0)>0){if(!IsDialogMessageW(window,&msg)){TranslateMessage(&msg);DispatchMessageW(&msg);}}CoUninitialize();CloseHandle(singleton);return 0;
- }catch(const std::exception&e){if(checkOnly)return 1;MessageBoxW(nullptr,widen(e.what()).c_str(),L"AudioBridge Setup",MB_ICONERROR|MB_OK);return 1;}
+ }catch(const std::exception&e){if(checkOnly)return 1;MessageBoxW(nullptr,widen(e.what()).c_str(),L"Golden Gate Audio Setup",MB_ICONERROR|MB_OK);return 1;}
 }
