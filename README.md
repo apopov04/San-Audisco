@@ -1,4 +1,4 @@
-# San Audisco v0.3.0
+# San Audisco v0.3.1
 
 San Audisco (formerly AudioBridge) mixes audio from two Windows or Mac computers into headphones connected to
 one computer, and sends a selected physical microphone to voice apps on both.
@@ -16,6 +16,12 @@ acceptance still required on the actual pair. See [v0.2 validation](docs/V02_VAL
 Version 0.2.10 adds automatic system playback routing and restoration, and reduces
 Windows redraws. See [routing and update notes](docs/V029_UPDATE.md) and
 [signing and OS permissions](docs/SIGNING.md).
+
+Version 0.3.1 brings the Mac overview layout to Windows: aligned header actions,
+rounded selectors and icon buttons, matching device/global mute and deafen pairs,
+and light/dark appearance. It keeps native Windows controls and system graphics
+libraries. Choose **Room settings → Appearance → System, Light, or Dark**.
+See [Windows appearance and validation](docs/WINDOWS_APPEARANCE.md).
 
 ## Start using a room
 

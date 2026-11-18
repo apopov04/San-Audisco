@@ -504,7 +504,8 @@ struct ContentView:View {
   }
  }
  var body:some View {VStack(alignment:.leading,spacing:0){
-  HStack{Text("San Audisco").font(.title2).fontWeight(.semibold);Spacer();Button("Autoconfigure"){m.send(["command":"autoconfigure"])}.disabled(!m.available || m.busy).help("Set up audio routes on both connected computers. Keeps your selected physical input and output.");Button(m.paired ? "Room settings":"Connect computers"){showRoom=true};Button{showChecks=true}label:{Label("Audio checks",systemImage:"waveform.path.ecg")}}.padding(.bottom,22)
+  HStack{Text("San Audisco").font(.title2).fontWeight(.semibold);Spacer();Button("Autoconfigure"){m.send(["command":"autoconfigure"])}.disabled(!m.available || m.busy).help("Set up audio routes on both connected computers. Keeps your selected physical input and output.");Button(m.paired ? "Room settings":"Connect computers"){showRoom=true};Button{showChecks=true}label:{Label("Audio checks",systemImage:"waveform.path.ecg")}}
+  Divider().padding(.vertical,16)
   ScrollView{VStack(spacing:18){
    HStack(alignment:.center,spacing:20){computer(0);VStack(spacing:8){BridgeConnectionView(connected:m.connected && m.available);Text(linkLabel).font(.caption).foregroundColor(.secondary)}.frame(width:160);computer(1)}
    HStack(alignment:.top,spacing:32){routes(0);Divider();routes(1)}
@@ -516,8 +517,7 @@ struct ContentView:View {
    if !m.error.isEmpty {HStack(alignment:.top){Image(systemName:"exclamationmark.triangle");Text(m.error).textSelection(.enabled);Spacer();Button("Check setup"){showChecks=true}}.foregroundColor(.red)}
    if m.running && micBlocked {HStack(alignment:.top){Image(systemName:"mic.slash");Text(m.number("deafen") != 0 ? "Both computers are deafened. Listening and microphone delivery are off.":(m.muteReason.isEmpty ? "Microphone is blocked. Check audio readiness before speaking.":m.muteReason)).font(.callout);Spacer()}.foregroundColor(.orange)}
    HStack(spacing:16){
-    globalAudioButton(deafen:false)
-    globalAudioButton(deafen:true)
+    HStack(spacing:8){globalAudioButton(deafen:false);globalAudioButton(deafen:true)}
     Spacer()
     HStack(spacing:8){Text("Master volume").font(.caption).foregroundColor(.secondary);Slider(value:m.scalar("master",default:1),in:0...1).accessibilityLabel("Master listening volume").help("Volume of both computers combined. Does not change microphone volume.").frame(width:110)}.disabled(!m.controlsReady || m.busy)
     if m.busy{ProgressView().controlSize(.small)}

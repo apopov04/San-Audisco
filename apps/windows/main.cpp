@@ -24,6 +24,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include "appearance.hpp"
 
 namespace {
 using Json=nlohmann::json;
@@ -52,7 +53,7 @@ void open_panel(int);
 LRESULT CALLBACK panel_proc(HWND,UINT,WPARAM,LPARAM);
 LRESULT CALLBACK focus_proc(HWND,UINT,WPARAM,LPARAM,UINT_PTR,DWORD_PTR);
 HWND window{},status_label{},error_label{},mute_reason{},run_button{};
-HWND name_edit{},kind_box{},invite_label{},code_edit{},address_edit{},nearby_box{},login_check{},create_button{},join_button{},forget_button{};
+HWND appearance_box{},name_edit{},kind_box{},invite_label{},code_edit{},address_edit{},nearby_box{},login_check{},create_button{},join_button{},forget_button{};
 HWND computer_box{},headphones_box{},microphone_box{},playback_box{},micoutput_box{},apply_button{},setup_label{};
 HWND playback_label{},micoutput_label{},advanced_button{};
 HWND hub_box{},mic_source{},first_volume{},second_volume{},balance{},master{},mute{},deafen{},first_mute{},second_mute{},first_deafen{},second_deafen{},first_label{},second_label{},diagnostics_box{};
@@ -149,15 +150,16 @@ void set_role(int slot,bool input){if(slot>=0&&slot<2&&!card_id[slot].empty()&&c
 HWND element(const wchar_t* cls,const wchar_t* caption,DWORD style,int x,int y,int width,int height,int id){
  int page=building_page>0?building_page:0;auto parent=page?panels[page]:window;
  if(page)y-=40;
+ int divider=std::wstring(cls)==L"STATIC"?((style&SS_TYPEMASK)==SS_ETCHEDHORZ?1:(style&SS_TYPEMASK)==SS_ETCHEDVERT?2:0):0;if(divider)style=(style&~SS_TYPEMASK)|SS_SIMPLE;
  auto h=CreateWindowExW(0,cls,caption,WS_CHILD|WS_VISIBLE|WS_CLIPSIBLINGS|style,px(x),px(y),px(width),px(height),parent,reinterpret_cast<HMENU>(static_cast<INT_PTR>(id)),nullptr,nullptr);
  control_message(h,WM_SETFONT,reinterpret_cast<WPARAM>(ui_font),TRUE);if(building_page>=0)pages[building_page].push_back(h);
- layout_items.push_back({h,x,y,width,height,page});if(style&WS_TABSTOP)SetWindowSubclass(h,focus_proc,1,0);return h;
+ if(divider)SetPropW(h,L"SanAudisco.Divider",reinterpret_cast<HANDLE>(INT_PTR(divider)));appearance::attach(h,ui_dpi);layout_items.push_back({h,x,y,width,height,page});if(style&WS_TABSTOP)SetWindowSubclass(h,focus_proc,1,0);return h;
 }
 HICON audio_icon(bool headphones,bool blocked,bool crowned=false){
  int size=px(crowned?32:28);BITMAPINFO info{};info.bmiHeader.biSize=sizeof(BITMAPINFOHEADER);info.bmiHeader.biWidth=size;info.bmiHeader.biHeight=-size;info.bmiHeader.biPlanes=1;info.bmiHeader.biBitCount=32;info.bmiHeader.biCompression=BI_RGB;
  void* raw=nullptr;HDC dc=CreateCompatibleDC(nullptr);auto bitmap=CreateDIBSection(dc,&info,DIB_RGB_COLORS,&raw,nullptr,0);if(!dc||!bitmap||!raw){if(bitmap)DeleteObject(bitmap);if(dc)DeleteDC(dc);return nullptr;}
  std::fill_n(static_cast<DWORD*>(raw),size*size,0);auto previous=SelectObject(dc,bitmap);SetMapMode(dc,MM_ANISOTROPIC);SetWindowExtEx(dc,28,28,nullptr);SetViewportExtEx(dc,size,size,nullptr);
- auto ink=blocked?(crowned?RGB(30,110,220):RGB(190,45,50)):GetSysColor(COLOR_BTNTEXT);if(!ink)ink=RGB(1,1,1);auto pen=CreatePen(PS_SOLID,2,ink);auto oldPen=SelectObject(dc,pen),oldBrush=SelectObject(dc,GetStockObject(NULL_BRUSH));
+ auto ink=appearance::palette.highContrast?GetSysColor(COLOR_BTNTEXT):blocked?(crowned?RGB(30,110,220):RGB(190,45,50)):GetSysColor(COLOR_BTNTEXT);if(!ink)ink=RGB(1,1,1);auto pen=CreatePen(PS_SOLID,2,ink);auto oldPen=SelectObject(dc,pen),oldBrush=SelectObject(dc,GetStockObject(NULL_BRUSH));
  if(crowned){POINT crown[]{{8,7},{6,1},{11,4},{14,1},{17,4},{22,1},{20,7},{8,7}};Polyline(dc,crown,8);SetViewportExtEx(dc,px(24),px(24),nullptr);SetViewportOrgEx(dc,px(4),px(10),nullptr);}
  if(headphones){MoveToEx(dc,5,15,nullptr);POINT arc[]{{5,1},{23,1},{23,15}};PolyBezierTo(dc,arc,3);RoundRect(dc,3,13,9,23,4,4);RoundRect(dc,19,13,25,23,4,4);}
  else{RoundRect(dc,10,3,18,17,7,7);MoveToEx(dc,6,12,nullptr);POINT arc[]{{6,24},{22,24},{22,12}};PolyBezierTo(dc,arc,3);MoveToEx(dc,14,21,nullptr);LineTo(dc,14,25);MoveToEx(dc,9,25,nullptr);LineTo(dc,19,25);}
@@ -167,8 +169,13 @@ HICON audio_icon(bool headphones,bool blocked,bool crowned=false){
  auto mask=CreateBitmap(size,size,1,1,nullptr);HDC maskDC=CreateCompatibleDC(nullptr);auto oldMask=SelectObject(maskDC,mask);RECT area{0,0,size,size};FillRect(maskDC,&area,static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH)));SelectObject(maskDC,oldMask);DeleteDC(maskDC);
  ICONINFO icon{};icon.fIcon=TRUE;icon.hbmColor=bitmap;icon.hbmMask=mask;auto result=CreateIconIndirect(&icon);DeleteObject(bitmap);DeleteObject(mask);return result;
 }
+void rebuild_audio_icons(){
+ for(auto&row:audio_icons)for(auto&icon:row){if(icon)DestroyIcon(icon);icon=nullptr;}for(auto&row:hub_icons)for(auto&icon:row){if(icon)DestroyIcon(icon);icon=nullptr;}
+ for(int kind=0;kind<2;++kind)for(int active=0;active<2;++active){audio_icons[kind][active]=audio_icon(kind!=0,active!=0);hub_icons[kind][active]=audio_icon(kind!=0,active!=0,true);}
+ for(int kind=0;kind<2;++kind){for(auto h:{kind?deafen:mute,kind?first_deafen:first_mute,kind?second_deafen:second_mute})if(h)control_message(h,BM_SETIMAGE,IMAGE_ICON,reinterpret_cast<LPARAM>(audio_icons[kind][SendMessageW(h,BM_GETCHECK,0,0)==BST_CHECKED]));for(int slot=0;slot<2;++slot){auto h=kind?card_hub[slot]:card_source[slot];if(h)control_message(h,BM_SETIMAGE,IMAGE_ICON,reinterpret_cast<LPARAM>(hub_icons[kind][SendMessageW(h,BM_GETCHECK,0,0)==BST_CHECKED]));}}
+}
 void audio_tooltip(HWND button){TOOLINFOW tip{};tip.cbSize=sizeof tip;tip.uFlags=TTF_IDISHWND|TTF_SUBCLASS;tip.hwnd=window;tip.uId=reinterpret_cast<UINT_PTR>(button);tip.lpszText=LPSTR_TEXTCALLBACKW;control_message(audio_tooltips,TTM_ADDTOOLW,0,reinterpret_cast<LPARAM>(&tip));}
-HWND combo(int x,int y,int width,int id){return element(L"COMBOBOX",L"",CBS_DROPDOWNLIST|WS_TABSTOP|WS_VSCROLL,x,y,width,220,id);}
+HWND combo(int x,int y,int width,int id){return element(L"COMBOBOX",L"",CBS_DROPDOWNLIST|CBS_OWNERDRAWFIXED|CBS_HASSTRINGS|WS_TABSTOP|WS_VSCROLL,x,y,width,220,id);}
 HWND slider(int y,int id,int position){auto h=element(TRACKBAR_CLASSW,L"",TBS_NOTICKS|WS_TABSTOP,170,y,390,28,id);control_message(h,TBM_SETRANGE,TRUE,MAKELONG(0,100));control_message(h,TBM_SETPOS,TRUE,position);mix_controls.push_back(h);return h;}
 void sync_bridge_animation(){
  BOOL effects=TRUE;SystemParametersInfoW(SPI_GETCLIENTAREAANIMATION,0,&effects,0);
@@ -215,7 +222,7 @@ void update_cards(){auto settings=state.value("settings",Json::object());
    set_text(button,utf16(label).c_str());enable_control(button,controls_ready()&&online&&!inherited);
   }
   for(int kind=0;kind<2;++kind){bool selected=paired&&!card_id[slot].empty()&&string_value(state,kind?"hub_device_id":"mic_device_id")==card_id[slot];control_message(kind?card_hub[slot]:card_source[slot],BM_SETIMAGE,IMAGE_ICON,reinterpret_cast<LPARAM>(hub_icons[kind][selected?1:0]));}
-  auto percent=std::to_string(static_cast<int>(std::lround(number(d.value("mix",Json::object()),"volume",1)*100)));set_text(GetDlgItem(window,780+slot),utf16("Audio from this computer · "+percent+"%").c_str());
+  auto percent=std::to_string(static_cast<int>(std::lround(number(d.value("mix",Json::object()),"volume",1)*100)));set_text(GetDlgItem(window,782+slot),utf16(percent+"%").c_str());
   auto volume=slot?second_volume:first_volume;enable_control(volume,controls_ready()&&online);if(GetCapture()!=volume)control_message(volume,TBM_SETPOS,TRUE,static_cast<LPARAM>(number(d.value("mix",Json::object()),"volume",1)*100));
  }
  Json graphic={{"available",agent_available},{"connected",connected}};
@@ -224,42 +231,57 @@ void update_cards(){auto settings=state.value("settings",Json::object());
  if(graphic!=previous_graphic){previous_graphic=graphic;InvalidateRect(GetDlgItem(window,760),nullptr,FALSE);}
  set_text(link_status,!agent_available?L"App unavailable":connected?L"Connected":paired?L"Reconnecting…":L"Not connected");sync_bridge_animation();
 }
-void draw_computers(HDC dc){
- const COLORREF blue=RGB(30,110,220),gray=RGB(155,163,173);
- auto pen=CreatePen(PS_SOLID,2,connected&&agent_available?RGB(191,66,43):gray);auto old=SelectObject(dc,pen);
- auto point=[](int x,int y){return POINT{355+x*3/2,143+y};};
- auto line=[&](int x,int y,int xx,int yy){auto a=point(x,y),b=point(xx,yy);MoveToEx(dc,a.x,a.y,nullptr);LineTo(dc,b.x,b.y);};
- auto cable=[](int x){double u=x<45?(x-2)/43.0:x>115?(158-x)/43.0:(x-80)/35.0;return 12+static_cast<int>((x<45||x>115?42:32)*(1-u*u));};
+void draw_computers(HDC dc,bool static_art=true,bool traffic=true){
+ appearance::graphics_ready();if(!appearance::palette.backgroundBrush)appearance::refresh();
+ // Honor the caller's GDI mapping so the same vectors serve the display and
+ // screenshot renderer at every DPI, without bitmap icon scaling artifacts.
+ POINT points[]{{0,0},{1000,1000}};LPtoDP(dc,points,2);int savedDC=SaveDC(dc);SetMapMode(dc,MM_TEXT);SetWindowOrgEx(dc,0,0,nullptr);SetViewportOrgEx(dc,0,0,nullptr);{Gdiplus::Graphics g(dc);g.TranslateTransform(float(points[0].x),float(points[0].y));g.ScaleTransform((points[1].x-points[0].x)/1000.f,(points[1].y-points[0].y)/1000.f);g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+ auto& theme=appearance::palette;COLORREF gray=theme.secondary,blue=theme.accent;
+ Gdiplus::Pen bridge(appearance::color(connected&&agent_available?(theme.highContrast?theme.accent:RGB(191,66,43)):gray),1.7f);bridge.SetStartCap(Gdiplus::LineCapRound);bridge.SetEndCap(Gdiplus::LineCapRound);
+ auto point=[](float x,float y){return Gdiplus::PointF{397+x*1.1f,143+y};};
+ auto line=[&](float x,float y,float xx,float yy){g.DrawLine(&bridge,point(x,y),point(xx,yy));};
+ auto cable=[](float x){float u=x<45?(x-2)/43.f:x>115?(158-x)/43.f:(x-80)/35.f;return 12+(x<45||x>115?42:32)*(1-u*u);};
+ if(static_art){
  line(2,58,158,58);line(2,66,158,66);
- for(int x=4;x<=158;x+=2)line(x-2,cable(x-2),x,cable(x));
- for(int x=10;x<=150;x+=10)line(x,cable(x),x,58);
- for(int x:{45,115}){line(x-4,10,x-4,73);line(x+4,10,x+4,73);for(int y:{17,29,41,53,68})line(x-4,y,x+4,y);line(x-7,73,x+7,73);}
- SelectObject(dc,old);DeleteObject(pen);
- if(connected&&agent_available){
-  BOOL effects=TRUE;SystemParametersInfoW(SPI_GETCLIENTAREAANIMATION,0,&effects,0);
-  double travel=effects?GetTickCount64()/6000.0:0;
+ for(int x=4;x<=158;x+=2)line(float(x-2),cable(float(x-2)),float(x),cable(float(x)));
+ for(int x=10;x<=150;x+=10)line(float(x),cable(float(x)),float(x),58);
+ for(int x:{45,115}){line(float(x-4),10,float(x-4),73);line(float(x+4),10,float(x+4),73);for(int y:{17,29,41,53,68})line(float(x-4),float(y),float(x+4),float(y));line(float(x-7),73,float(x+7),73);}
+ }
+ if(traffic&&connected&&agent_available){BOOL effects=TRUE;SystemParametersInfoW(SPI_GETCLIENTAREAANIMATION,0,&effects,0);double travel=effects?GetTickCount64()/6000.0:0;
   constexpr COLORREF colors[]{RGB(70,205,235),RGB(102,224,169),RGB(249,211,88),RGB(185,154,247),RGB(108,163,255),RGB(233,240,247)};
-  auto previousBrush=SelectObject(dc,GetStockObject(DC_BRUSH)),previousPen=SelectObject(dc,GetStockObject(DC_PEN));
-  auto oldBrushColor=SetDCBrushColor(dc,colors[0]),oldPenColor=SetDCPenColor(dc,RGB(31,46,61));
-  int saved=SaveDC(dc);IntersectClipRect(dc,358,202,592,209);
-  for(int lane=0;lane<2;++lane)for(int dot=0;dot<3;++dot){
-   double journey=travel+dot/3.0,progress=std::fmod(journey,1.0);
-   SetDCBrushColor(dc,colors[(lane*3+dot+static_cast<unsigned long long>(journey))%6]);
-   int x=2+static_cast<int>(156*(lane==0?progress:1-progress));auto a=point(x-3,59+lane*4),b=point(x+4,62+lane*4);RoundRect(dc,a.x,a.y,b.x,b.y,2,2);
-  }
-  RestoreDC(dc,saved);SetDCBrushColor(dc,oldBrushColor);SetDCPenColor(dc,oldPenColor);SelectObject(dc,previousBrush);SelectObject(dc,previousPen);
+  auto saved=g.Save();g.SetClip(Gdiplus::RectF(399,202,172,8));
+  for(int lane=0;lane<2;++lane)for(int dot=0;dot<3;++dot){double journey=travel+dot/3.0,progress=std::fmod(journey,1.0);float x=2+float(156*(lane==0?progress:1-progress));auto a=point(x-3,float(59+lane*4));appearance::rounded(g,a.X,a.Y,7.7f,2.5f,1,colors[(lane*3+dot+static_cast<unsigned long long>(journey))%6]);}g.Restore(saved);
  }
- for(int slot=0;slot<2;++slot){auto d=slot_device(slot);bool online=agent_available&&!d.empty()&&boolean(d,"online")&&(string_value(d,"id")==string_value(state,"device_id")||connected);int x=slot?655:185;auto outline=CreatePen(PS_SOLID,3,online?blue:gray);auto fill=CreateSolidBrush(online?RGB(232,242,255):RGB(240,242,245));auto previousPen=SelectObject(dc,outline),previousBrush=SelectObject(dc,fill);
-  auto kind=string_value(d,"kind","desktop");
-  if(kind=="server"){
-   for(int row=0;row<3;++row){int y=150+row*25;RoundRect(dc,x+15,y,x+95,y+21,5,5);Ellipse(dc,x+23,y+7,x+29,y+13);MoveToEx(dc,x+40,y+10,nullptr);LineTo(dc,x+84,y+10);}
-  }else{
-   RoundRect(dc,x,148,x+110,214,9,9);
-   if(kind=="laptop"){POINT base[]{{x,214},{x+110,214},{x+124,224},{x+116,228},{x-6,228},{x-14,224}};Polygon(dc,base,6);MoveToEx(dc,x+43,219,nullptr);LineTo(dc,x+67,219);}
-   else{MoveToEx(dc,x+55,214,nullptr);LineTo(dc,x+55,227);MoveToEx(dc,x+30,227,nullptr);LineTo(dc,x+80,227);}
-  }
-  SelectObject(dc,previousPen);SelectObject(dc,previousBrush);DeleteObject(outline);DeleteObject(fill);
+ if(static_art)for(int slot=0;slot<2;++slot){auto d=slot_device(slot);bool online=agent_available&&!d.empty()&&boolean(d,"online")&&(string_value(d,"id")==string_value(state,"device_id")||connected);float center=slot?763.f:207.f;auto ink=online?blue:gray;auto kind=string_value(d,"kind","desktop");
+  Gdiplus::Pen stroke(appearance::color(ink),4.4f);stroke.SetStartCap(Gdiplus::LineCapRound);stroke.SetEndCap(Gdiplus::LineCapRound);stroke.SetLineJoin(Gdiplus::LineJoinRound);
+  if(kind=="server"){for(int row=0;row<3;++row){float y=148+row*25.f;appearance::outline(g,center-35,y,70,19,4,ink,3);Gdiplus::SolidBrush dot(appearance::color(ink));g.FillEllipse(&dot,center-27,y+7,5.f,5.f);g.DrawLine(&stroke,center-10,y+9,center+25,y+9);}}
+  else if(kind=="laptop"){appearance::outline(g,center-37,156,74,53,4,ink,4);g.DrawLine(&stroke,center-47,217.f,center+47,217.f);g.DrawLine(&stroke,center-37,210.f,center-47,217.f);g.DrawLine(&stroke,center+37,210.f,center+47,217.f);}
+  else{appearance::rounded(g,center-37,150,74,55,4,online?theme.selected:theme.surface);appearance::outline(g,center-37,150,74,55,4,ink,4);appearance::rounded(g,center-37,197,74,12,2,ink);g.DrawLine(&stroke,center,209.f,center,224.f);g.DrawLine(&stroke,center-15,225.f,center+15,225.f);}
  }
+ }RestoreDC(dc,savedDC);
+}
+// Keep the static bridge and device vectors in a size/state/theme keyed bitmap.
+// Animation copies that background and draws only the six moving dashes.
+struct DiagramBuffer {
+ HDC dc{};HBITMAP bitmap{};HGDIOBJ previous{};int width{},height{};
+ void reset(){if(dc&&previous)SelectObject(dc,previous);if(bitmap)DeleteObject(bitmap);if(dc)DeleteDC(dc);dc=nullptr;bitmap=nullptr;previous=nullptr;width=height=0;}
+ ~DiagramBuffer(){reset();}
+ bool ensure(HDC reference,int w,int h){if(dc&&width==w&&height==h)return true;reset();if(w<=0||h<=0)return false;dc=CreateCompatibleDC(reference);bitmap=CreateCompatibleBitmap(reference,w,h);if(!dc||!bitmap){reset();return false;}previous=SelectObject(dc,bitmap);width=w;height=h;return true;}
+};
+DiagramBuffer diagram_background,diagram_frame;
+Json diagram_cache_key;
+[[maybe_unused]] unsigned diagram_cache_builds=0;
+void paint_computers(const DRAWITEMSTRUCT& item){
+ int width=item.rcItem.right,height=item.rcItem.bottom;
+ if(!diagram_background.ensure(item.hDC,width,height)||!diagram_frame.ensure(item.hDC,width,height))return;
+ auto& t=appearance::palette;
+ Json key={width,height,agent_available,connected,t.background,t.surface,t.selected,t.accent,t.secondary,t.highContrast};
+ for(int slot=0;slot<2;++slot){auto d=slot_device(slot);key.push_back(Json{string_value(d,"kind","desktop"),!d.empty()&&boolean(d,"online")&&(string_value(d,"id")==string_value(state,"device_id")||connected)});}
+ auto draw=[&](HDC dc,bool static_art,bool traffic){auto saved=SaveDC(dc);SetMapMode(dc,MM_ANISOTROPIC);SetWindowExtEx(dc,830,95,nullptr);SetViewportExtEx(dc,width,height,nullptr);SetWindowOrgEx(dc,60,140,nullptr);draw_computers(dc,static_art,traffic);RestoreDC(dc,saved);};
+ if(key!=diagram_cache_key){FillRect(diagram_background.dc,&item.rcItem,t.backgroundBrush);draw(diagram_background.dc,true,false);diagram_cache_key=key;++diagram_cache_builds;}
+ BitBlt(diagram_frame.dc,0,0,width,height,diagram_background.dc,0,0,SRCCOPY);
+ if(connected&&agent_available)draw(diagram_frame.dc,false,true);
+ BitBlt(item.hDC,0,0,width,height,diagram_frame.dc,0,0,SRCCOPY);
 }
 std::wstring slot_name(int slot){return utf16(device_name(slot_device(slot)));}
 void fill_roles(){for(auto box:{hub_box,mic_source}){control_message(box,CB_RESETCONTENT,0,0);for(int slot=0;slot<2;++slot){auto name=slot_name(slot);control_message(box,CB_ADDSTRING,0,reinterpret_cast<LPARAM>(name.c_str()));}}}
@@ -320,8 +342,8 @@ int window_dpi(HWND w){
  if(test_dpi)return test_dpi;
 #endif
  auto fn=reinterpret_cast<UINT(WINAPI*)(HWND)>(GetProcAddress(GetModuleHandleW(L"user32.dll"),"GetDpiForWindow"));return fn?static_cast<int>(fn(w)):ui_dpi;}
-std::map<int,std::array<HFONT,3>> dpi_fonts;
-const std::array<HFONT,3>& fonts_for(int dpi){auto it=dpi_fonts.find(dpi);if(it!=dpi_fonts.end())return it->second;std::array<HFONT,3> f{};for(int i=0;i<3;++i)f[i]=CreateFontW(-MulDiv(i==0?16:i==1?27:20,dpi,96),0,0,0,i?FW_SEMIBOLD:FW_NORMAL,FALSE,FALSE,FALSE,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,CLEARTYPE_QUALITY,DEFAULT_PITCH,L"Segoe UI");return dpi_fonts.emplace(dpi,f).first->second;}
+std::map<int,std::array<HFONT,5>> dpi_fonts;
+const std::array<HFONT,5>& fonts_for(int dpi){auto it=dpi_fonts.find(dpi);if(it!=dpi_fonts.end())return it->second;std::array<HFONT,5> f{};constexpr int sizes[]{14,20,18,12,15};for(int i=0;i<5;++i)f[i]=CreateFontW(-MulDiv(sizes[i],dpi,96),0,0,0,(i==1||i==2||i==4)?FW_SEMIBOLD:FW_NORMAL,FALSE,FALSE,FALSE,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,CLEARTYPE_QUALITY,DEFAULT_PITCH,L"Segoe UI");return dpi_fonts.emplace(dpi,f).first->second;}
 void position(HWND h,int x,int y,int width,int height){for(auto&item:layout_items)if(item.handle==h){item.x=x;item.y=y-(item.page?40:0);item.width=width;item.height=height;break;}SetWindowPos(h,nullptr,px(x),px(y),px(width),px(height),SWP_NOZORDER);}
 void layout_window(HWND target){
  if(!target||laying_out)return;laying_out=true;
@@ -334,9 +356,11 @@ void layout_window(HWND target){
  HDWP batch=BeginDeferWindowPos(static_cast<int>(layout_items.size()));
  for(auto&item:layout_items){if(item.page!=page||!IsWindow(item.handle))continue;
   int x=item.x,y=item.y,w=item.width,h=item.height,id=GetDlgCtrlID(item.handle);
-  if(!page){double ratio=width/970.0;bool fixed=(id==702||id==704||id==722||id==724||id==411||id==412||id==421||id==422||id==440||id==441);x=static_cast<int>(std::lround(x*ratio));w=fixed?w:static_cast<int>(std::lround(w*ratio));}
+  if(!page){double ratio=width/970.0;bool fixed=(id==702||id==704||id==722||id==724||id==411||id==412||id==421||id==422||id==440||id==441);x=static_cast<int>(std::lround(x*ratio));w=fixed?w:static_cast<int>(std::lround(w*ratio));if(id==412||id==422||id==441||id==702||id==722)x=static_cast<int>(std::lround((item.x-52)*ratio))+52;}
   else if(width>840){w=static_cast<int>(std::lround(w*width/840.0));x=static_cast<int>(std::lround(x*width/840.0));}
-  auto font=fonts[(id==100)?1:(id==700||id==720||(id>=661&&id<=663))?2:0];if(reinterpret_cast<HFONT>(SendMessageW(item.handle,WM_GETFONT,0,0))!=font)SendMessageW(item.handle,WM_SETFONT,reinterpret_cast<WPARAM>(font),FALSE);
+  SetPropW(item.handle,L"SanAudisco.Dpi",reinterpret_cast<HANDLE>(INT_PTR(dpi)));
+  wchar_t cls[64]{};GetClassNameW(item.handle,cls,64);if(std::wstring(cls)==L"ComboBox"){SendMessageW(item.handle,CB_SETITEMHEIGHT,WPARAM(-1),scale(24));SendMessageW(item.handle,CB_SETITEMHEIGHT,0,scale(28));}
+  auto font=fonts[id==100?1:(id==700||id==720||(id>=661&&id<=663))?2:id==753?4:(id==701||id==721||id==740||id==754||id==750||id==755||id==606||id==607)?3:0];if(reinterpret_cast<HFONT>(SendMessageW(item.handle,WM_GETFONT,0,0))!=font)SendMessageW(item.handle,WM_SETFONT,reinterpret_cast<WPARAM>(font),FALSE);
   batch=DeferWindowPos(batch,item.handle,nullptr,scale(x)-scroll_x[page],scale(y)-scroll_y[page],scale(w),scale(h),SWP_NOZORDER|SWP_NOACTIVATE);
  }
  if(batch)EndDeferWindowPos(batch);laying_out=false;InvalidateRect(target,nullptr,TRUE);
@@ -361,14 +385,14 @@ void capture_test_window(HWND target,int page){
  RECT r{};GetWindowRect(target,&r);int width=r.right-r.left,height=r.bottom-r.top;
  BITMAPINFO info{};info.bmiHeader.biSize=sizeof(BITMAPINFOHEADER);info.bmiHeader.biWidth=width;info.bmiHeader.biHeight=-height;info.bmiHeader.biPlanes=1;info.bmiHeader.biBitCount=32;
  void* raw=nullptr;auto dc=CreateCompatibleDC(nullptr);auto bitmap=CreateDIBSection(dc,&info,DIB_RGB_COLORS,&raw,nullptr,0);if(!dc||!bitmap||!raw)return;
- auto old=SelectObject(dc,bitmap);RECT area{0,0,width,height};FillRect(dc,&area,GetSysColorBrush(COLOR_WINDOW));
+ auto old=SelectObject(dc,bitmap);RECT area{0,0,width,height};FillRect(dc,&area,appearance::palette.backgroundBrush);
  // Render native child controls separately: Wine's WM_PRINT/PRF_CHILDREN
  // does not reliably retain the child clip region when composing a parent.
  for(auto child=GetWindow(target,GW_CHILD);child;child=GetWindow(child,GW_HWNDNEXT)){
   if(!(GetWindowLongPtrW(child,GWL_STYLE)&WS_VISIBLE))continue;RECT rect{};GetWindowRect(child,&rect);int x=rect.left-r.left,y=rect.top-r.top;
   int saved=SaveDC(dc);IntersectClipRect(dc,x,y,x+rect.right-rect.left,y+rect.bottom-rect.top);SetViewportOrgEx(dc,x,y,nullptr);
   wchar_t cls[64]{};GetClassNameW(child,cls,64);int childWidth=rect.right-rect.left,childHeight=rect.bottom-rect.top;
-  if(std::wstring(cls)==L"Static"){
+  if(appearance::paint(child,dc)){}else if(std::wstring(cls)==L"Static"){
    // STATIC does not implement WM_PRINT in this Wine build. Use the real
    // font, text, alignment and rectangle; owner-draw calls its production renderer.
    if((GetWindowLongPtrW(child,GWL_STYLE)&SS_TYPEMASK)==SS_ICON){auto icon=reinterpret_cast<HICON>(SendMessageW(child,STM_GETICON,0,0));if(icon)DrawIconEx(dc,0,0,icon,childWidth,childHeight,0,nullptr,DI_NORMAL);}
@@ -387,7 +411,8 @@ void capture_test_window(HWND target,int page){
 LRESULT CALLBACK panel_proc(HWND h,UINT message,WPARAM wp,LPARAM lp){
  if(message==WM_NCCREATE){auto data=reinterpret_cast<CREATESTRUCTW*>(lp);SetWindowLongPtrW(h,GWLP_USERDATA,reinterpret_cast<LONG_PTR>(data->lpCreateParams));}
  if(scroll_window(h,message,wp,lp))return 0;
- switch(message){case WM_COMMAND:case WM_NOTIFY:case WM_HSCROLL:case WM_CTLCOLORSTATIC:return SendMessageW(window,message,wp,lp);
+ switch(message){case WM_COMMAND:case WM_NOTIFY:case WM_HSCROLL:case WM_CTLCOLORSTATIC:case WM_CTLCOLOREDIT:case WM_CTLCOLORLISTBOX:case WM_DRAWITEM:case WM_MEASUREITEM:return SendMessageW(window,message,wp,lp);
+ case WM_ERASEBKGND:{RECT r{};GetClientRect(h,&r);FillRect(reinterpret_cast<HDC>(wp),&r,appearance::palette.backgroundBrush);return 1;}
  case WM_CLOSE:ShowWindow(h,SW_HIDE);SetForegroundWindow(window);return 0;
  case WM_SIZE:layout_window(h);return 0;
  case WM_DPICHANGED:{auto r=reinterpret_cast<RECT*>(lp);SetWindowPos(h,nullptr,r->left,r->top,r->right-r->left,r->bottom-r->top,SWP_NOZORDER|SWP_NOACTIVATE);layout_window(h);return 0;}
@@ -416,33 +441,36 @@ LRESULT CALLBACK proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){if(scroll_window(w,ms
   for(int i=1;i<4;++i){panels[i]=CreateWindowExW(WS_EX_CONTROLPARENT,pane.lpszClassName,panelTitles[i],WS_OVERLAPPEDWINDOW|WS_CLIPCHILDREN|WS_VSCROLL|WS_HSCROLL,CW_USEDEFAULT,CW_USEDEFAULT,px(860),px(600),w,nullptr,pane.hInstance,reinterpret_cast<void*>(INT_PTR(i)));}
   for(int i=1;i<4;++i){building_page=i;auto brand=element(L"STATIC",L"San Audisco logo",SS_ICON|SS_CENTERIMAGE,38,44,40,40,650+i);control_message(brand,STM_SETICON,reinterpret_cast<WPARAM>(LoadImageW(GetModuleHandleW(nullptr),MAKEINTRESOURCEW(101),IMAGE_ICON,px(40),px(40),LR_SHARED)),0);auto caption=std::wstring(L"San Audisco · ")+panelTitles[i];element(L"STATIC",caption.c_str(),SS_ENDELLIPSIS,92,50,680,30,660+i);}building_page=-1;
   auto menu=GetSystemMenu(w,FALSE);AppendMenuW(menu,MF_SEPARATOR,0,nullptr);AppendMenuW(menu,MF_STRING,0xE100,L"Quit San Audisco");
-  auto title=element(L"STATIC",L"San Audisco",0,32,18,300,35,100);
-  autoconfigure_button=element(L"BUTTON",L"Autoconfigure",WS_TABSTOP,482,20,150,32,603);control_message(title,WM_SETFONT,reinterpret_cast<WPARAM>(title_font),TRUE);
-  element(L"BUTTON",L"Room settings",WS_TABSTOP,644,20,150,32,604);
-  element(L"BUTTON",L"Audio checks",WS_TABSTOP,806,20,132,32,605);
+  auto title=element(L"STATIC",L"San Audisco",0,32,28,300,30,100);
+  autoconfigure_button=element(L"BUTTON",L"Autoconfigure",WS_TABSTOP,547,28,120,28,603);control_message(title,WM_SETFONT,reinterpret_cast<WPARAM>(title_font),TRUE);
+  element(L"BUTTON",L"Room settings",WS_TABSTOP,675,28,120,28,604);
+  element(L"BUTTON",L"Audio checks",WS_TABSTOP,803,28,135,28,605);
+  element(L"STATIC",L"",SS_ETCHEDHORZ,32,72,906,1,757);
   audio_tooltips=CreateWindowExW(WS_EX_TOPMOST,TOOLTIPS_CLASSW,nullptr,WS_POPUP|TTS_ALWAYSTIP,CW_USEDEFAULT,CW_USEDEFAULT,CW_USEDEFAULT,CW_USEDEFAULT,w,nullptr,nullptr,nullptr);
   for(int kind=0;kind<2;++kind)for(int active=0;active<2;++active){audio_icons[kind][active]=audio_icon(kind!=0,active!=0);hub_icons[kind][active]=audio_icon(kind!=0,active!=0,true);}
   building_page=0;
   element(L"STATIC",L"Two computers linked by this room",SS_OWNERDRAW,60,140,830,95,760);
-  link_status=element(L"STATIC",L"Connecting…",SS_CENTER,402,238,146,24,740);
-  for(int slot=0;slot<2;++slot){int x=slot?530:60;int base=700+slot*20;
-   card_name[slot]=element(L"STATIC",L"Other computer",SS_CENTER|SS_ENDELLIPSIS,x+36,244,288,28,base);control_message(card_name[slot],WM_SETFONT,reinterpret_cast<WPARAM>(heading_font),TRUE);
-   card_status[slot]=element(L"STATIC",L"Waiting for connection",SS_CENTER,x,276,360,22,base+1);
-   card_source[slot]=element(L"BUTTON",L"Use as Input Hub",BS_CHECKBOX|BS_PUSHLIKE|BS_ICON|WS_TABSTOP,x+134,98,40,40,base+4);
-   card_hub[slot]=element(L"BUTTON",L"Use as Output Hub",BS_CHECKBOX|BS_PUSHLIKE|BS_ICON|WS_TABSTOP,x+186,98,40,40,base+2);
+  link_status=element(L"STATIC",L"Connecting…",SS_CENTER,412,238,146,24,740);
+  for(int slot=0;slot<2;++slot){int x=slot?522:32;int base=700+slot*20;int center=slot?763:207;
+   card_name[slot]=element(L"STATIC",L"Other computer",SS_CENTER|SS_ENDELLIPSIS,center-144,244,288,28,base);control_message(card_name[slot],WM_SETFONT,reinterpret_cast<WPARAM>(heading_font),TRUE);
+   card_status[slot]=element(L"STATIC",L"Waiting for connection",SS_CENTER,center-180,276,360,22,base+1);
+   card_source[slot]=element(L"BUTTON",L"Use as Input Hub",BS_CHECKBOX|BS_PUSHLIKE|BS_ICON|WS_TABSTOP,center-48,92,44,44,base+4);
+   card_hub[slot]=element(L"BUTTON",L"Use as Output Hub",BS_CHECKBOX|BS_PUSHLIKE|BS_ICON|WS_TABSTOP,center+4,92,44,44,base+2);
    audio_tooltip(card_source[slot]);audio_tooltip(card_hub[slot]);
-   element(L"STATIC",L"Input",0,x,313,175,22,base+6);card_microphone[slot]=combo(x,337,175,base+5);
-   element(L"STATIC",L"Output",0,x+185,313,175,22,base+7);card_headphones[slot]=combo(x+185,337,175,base+3);
+   element(L"STATIC",L"Input",0,x,313,202,22,base+6);card_microphone[slot]=combo(x,337,202,base+5);
+   element(L"STATIC",L"Output",0,x+214,313,202,22,base+7);card_headphones[slot]=combo(x+214,337,202,base+3);
    control_message(card_headphones[slot],CB_SETDROPPEDWIDTH,px(380),0);control_message(card_microphone[slot],CB_SETDROPPEDWIDTH,px(380),0);audio_tooltip(card_headphones[slot]);audio_tooltip(card_microphone[slot]);
-   element(L"STATIC",L"Audio from this computer",0,x,387,360,22,780+slot);
-   auto vol=slider(412,slot?420:410,100);position(vol,x-5,410,370,26);if(slot)second_volume=vol;else first_volume=vol;
-   auto m=element(L"BUTTON",L"Mute microphone on this computer",BS_AUTOCHECKBOX|BS_PUSHLIKE|BS_ICON|WS_TABSTOP,x,448,44,38,slot?421:411);
-   auto d=element(L"BUTTON",L"Deafen this computer",BS_AUTOCHECKBOX|BS_PUSHLIKE|BS_ICON|WS_TABSTOP,x+52,448,44,38,slot?422:412);
+   element(L"STATIC",L"",SS_ETCHEDHORZ,x,376,416,1,790+slot);
+   element(L"STATIC",L"Audio from this computer",0,x,387,341,22,780+slot);element(L"STATIC",L"100%",SS_RIGHT,x+351,387,65,22,782+slot);
+   auto vol=slider(412,slot?420:410,100);position(vol,x-9,410,434,26);if(slot)second_volume=vol;else first_volume=vol;
+   auto m=element(L"BUTTON",L"Mute microphone on this computer",BS_AUTOCHECKBOX|BS_PUSHLIKE|BS_ICON|WS_TABSTOP,x,448,44,44,slot?421:411);
+   auto d=element(L"BUTTON",L"Deafen this computer",BS_AUTOCHECKBOX|BS_PUSHLIKE|BS_ICON|WS_TABSTOP,x+52,448,44,44,slot?422:412);
    control_message(m,BM_SETIMAGE,IMAGE_ICON,reinterpret_cast<LPARAM>(audio_icons[0][0]));control_message(d,BM_SETIMAGE,IMAGE_ICON,reinterpret_cast<LPARAM>(audio_icons[1][0]));audio_tooltip(m);audio_tooltip(d);
    mix_controls.push_back(m);mix_controls.push_back(d);if(slot){second_mute=m;second_deafen=d;second_label=card_name[slot];}else{first_mute=m;first_deafen=d;first_label=card_name[slot];}
   }
-  element(L"STATIC",L"Connect headphones to the Output Hub. The Input Hub supplies microphone audio to both computers.",0,60,530,830,24,754);
-  element(L"BUTTON",L"Advanced audio routes…",WS_TABSTOP,60,494,250,30,606);
+  element(L"STATIC",L"Connect headphones to the Output Hub. The Input Hub supplies microphone audio to both computers.",0,32,538,906,22,754);
+  element(L"BUTTON",L"Advanced audio routes",WS_TABSTOP,32,502,250,28,606);element(L"BUTTON",L"Advanced audio routes",WS_TABSTOP,522,502,250,28,607);
+  element(L"STATIC",L"",SS_ETCHEDVERT,485,313,1,213,758);
   building_page=1;element(L"STATIC",L"This computer",0,38,95,145,22,0);name_edit=element(L"EDIT",L"",WS_BORDER|ES_AUTOHSCROLL|WS_TABSTOP,190,91,425,27,201);element(L"BUTTON",L"Save name",WS_TABSTOP,630,91,160,28,202);
   element(L"STATIC",L"Use the same local network. Create a room here, or join from your other computer.",0,38,138,750,25,0);create_button=element(L"BUTTON",L"Create room",WS_TABSTOP,38,174,155,32,203);invite_label=element(L"STATIC",L"",SS_LEFT,210,180,580,40,0);
   element(L"STATIC",L"Room code",0,38,238,145,22,0);code_edit=element(L"EDIT",L"",WS_BORDER|ES_AUTOHSCROLL|WS_TABSTOP|ES_UPPERCASE,190,233,425,29,204);control_message(code_edit,EM_SETLIMITTEXT,16,0);join_button=element(L"BUTTON",L"Join room",WS_TABSTOP,630,233,160,30,205);
@@ -451,6 +479,7 @@ LRESULT CALLBACK proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){if(scroll_window(w,ms
   login_check=element(L"BUTTON",L"Start San Audisco at login",BS_AUTOCHECKBOX|WS_TABSTOP,38,382,380,28,209);control_message(login_check,BM_SETCHECK,startup_enabled()?BST_CHECKED:BST_UNCHECKED,0);
   element(L"STATIC",L"Device icon",0,430,386,120,22,0);kind_box=combo(555,382,235,211);for(auto label:{L"Automatic",L"Laptop",L"Desktop",L"Server"})control_message(kind_box,CB_ADDSTRING,0,reinterpret_cast<LPARAM>(label));control_message(kind_box,CB_SETCURSEL,0,0);
   forget_button=element(L"BUTTON",L"Forget this pairing…",WS_TABSTOP,38,430,185,30,210);element(L"STATIC",L"Closing the window keeps audio running.\nOpen or quit San Audisco from its notification-area icon.",0,250,428,540,46,0);
+  element(L"STATIC",L"Appearance",0,38,500,145,22,0);appearance_box=combo(190,495,210,212);for(auto name:{L"System",L"Light",L"Dark"})control_message(appearance_box,CB_ADDSTRING,0,reinterpret_cast<LPARAM>(name));control_message(appearance_box,CB_SETCURSEL,appearance::preference,0);
   building_page=2;element(L"STATIC",L"Configure computer",0,38,96,160,22,0);computer_box=combo(215,91,575,301);element(L"STATIC",L"Output",0,38,146,165,22,0);headphones_box=combo(215,141,575,302);element(L"STATIC",L"Input",0,38,196,165,22,0);microphone_box=combo(215,191,575,303);
   setup_label=element(L"STATIC",L"Checking audio components…",0,38,240,750,52,0);advanced_button=element(L"BUTTON",L"Show advanced routes",WS_TABSTOP,38,301,200,30,304);
   playback_label=element(L"STATIC",L"Playback cable capture",0,38,354,175,22,0);playback_box=combo(215,349,575,305);micoutput_label=element(L"STATIC",L"Shared mic output",0,38,400,175,22,0);micoutput_box=combo(215,395,575,306);
@@ -464,13 +493,13 @@ LRESULT CALLBACK proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){if(scroll_window(w,ms
   element(L"STATIC",L"Test sounds play through the Output Hub. Meters show signal activity; listen to confirm.",0,38,430,750,25,0);
   routing_help=element(L"EDIT",L"Selected application routes appear here after setup.",WS_BORDER|ES_MULTILINE|ES_READONLY|ES_AUTOVSCROLL|WS_VSCROLL|WS_TABSTOP,38,470,750,80,530);
   building_page=-1;
-  element(L"STATIC",L"",SS_ETCHEDHORZ,40,564,880,2,756);
-  element(L"STATIC",L"Global audio",0,40,580,200,24,753);
-  mute=element(L"BUTTON",L"Mute microphone everywhere",BS_AUTOCHECKBOX|BS_PUSHLIKE|BS_ICON|WS_TABSTOP,40,620,40,40,440);deafen=element(L"BUTTON",L"Deafen both",BS_AUTOCHECKBOX|BS_PUSHLIKE|BS_ICON|WS_TABSTOP,92,620,40,40,441);
+  element(L"STATIC",L"",SS_ETCHEDHORZ,32,576,906,1,756);
+  element(L"STATIC",L"Global audio",0,32,596,200,24,753);
+  mute=element(L"BUTTON",L"Mute microphone everywhere",BS_AUTOCHECKBOX|BS_PUSHLIKE|BS_ICON|WS_TABSTOP,32,630,44,44,440);deafen=element(L"BUTTON",L"Deafen both",BS_AUTOCHECKBOX|BS_PUSHLIKE|BS_ICON|WS_TABSTOP,84,630,44,44,441);
   audio_tooltip(mute);audio_tooltip(deafen);
-  element(L"STATIC",L"Master volume",0,420,629,130,22,755);master=slider(620,431,100);position(master,555,622,170,28);mix_controls.push_back(mute);mix_controls.push_back(deafen);
-  status_label=element(L"STATIC",L"Connecting to background agent…",SS_ENDELLIPSIS,40,674,880,24,750);mute_reason=element(L"STATIC",L"",SS_ENDELLIPSIS,40,704,880,24,751);error_label=element(L"STATIC",L"",SS_LEFT,250,578,670,36,752);
-  run_button=element(L"BUTTON",L"Start audio",WS_TABSTOP,745,622,175,34,601);
+  element(L"STATIC",L"Master volume",0,580,642,95,22,755);master=slider(620,431,100);position(master,675,638,150,28);mix_controls.push_back(mute);mix_controls.push_back(deafen);
+  status_label=element(L"STATIC",L"Connecting to background agent…",SS_ENDELLIPSIS,32,690,906,24,750);mute_reason=element(L"STATIC",L"",SS_ENDELLIPSIS,32,720,906,24,751);error_label=element(L"STATIC",L"",SS_LEFT,250,592,688,36,752);
+  run_button=element(L"BUTTON",L"Start audio",WS_TABSTOP,838,638,100,28,601);
   audio_tooltip(master);audio_tooltip(run_button);
   for(auto h:mix_controls)enable_control(h,FALSE);for(auto h:card_hub)enable_control(h,FALSE);for(auto h:card_source)enable_control(h,FALSE);enable_control(run_button,FALSE);enable_control(apply_button,FALSE);show_page();layout_window(w);for(int i=1;i<4;++i)layout_window(panels[i]);
   tray.cbSize=sizeof(tray);tray.hWnd=w;tray.uID=1;tray.uFlags=NIF_MESSAGE|NIF_ICON|NIF_TIP;tray.uCallbackMessage=tray_message;tray.hIcon=LoadIconW(GetModuleHandleW(nullptr),MAKEINTRESOURCEW(101));wcscpy_s(tray.szTip,L"San Audisco — audio continues when the window closes");Shell_NotifyIconW(NIM_ADD,&tray);
@@ -478,14 +507,13 @@ LRESULT CALLBACK proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){if(scroll_window(w,ms
 #ifdef BRIDGE_UI_TEST
  case WM_APP+40:if(wp<4)capture_test_window(wp?panels[wp]:window,static_cast<int>(wp));return 0;
 #endif
- case WM_DRAWITEM:{auto item=reinterpret_cast<DRAWITEMSTRUCT*>(lp);if(item->CtlID==760){
-  // Buffer this small native graphic so the moving dashes do not flicker.
-  int width=item->rcItem.right,height=item->rcItem.bottom;auto buffer=CreateCompatibleDC(item->hDC);auto bitmap=CreateCompatibleBitmap(item->hDC,width,height);
-  if(!buffer||!bitmap){if(bitmap)DeleteObject(bitmap);if(buffer)DeleteDC(buffer);return TRUE;}
-  auto previous=SelectObject(buffer,bitmap);FillRect(buffer,&item->rcItem,GetSysColorBrush(COLOR_WINDOW));auto saved=SaveDC(buffer);SetMapMode(buffer,MM_ANISOTROPIC);SetWindowExtEx(buffer,96,96,nullptr);SetWindowExtEx(buffer,830,95,nullptr);SetViewportExtEx(buffer,width,height,nullptr);SetWindowOrgEx(buffer,60,140,nullptr);draw_computers(buffer);RestoreDC(buffer,saved);
-  BitBlt(item->hDC,0,0,width,height,buffer,0,0,SRCCOPY);SelectObject(buffer,previous);DeleteObject(bitmap);DeleteDC(buffer);return TRUE;}break;}
+ case WM_MEASUREITEM:{auto item=reinterpret_cast<MEASUREITEMSTRUCT*>(lp);if(item->CtlType==ODT_COMBOBOX){item->itemHeight=px(28);return TRUE;}break;}
+ case WM_DRAWITEM:{auto item=reinterpret_cast<DRAWITEMSTRUCT*>(lp);if(appearance::draw_combo_item(*item))return TRUE;if(item->CtlID==760){
+  paint_computers(*item);return TRUE;}break;}
 
- case WM_CTLCOLORSTATIC:{auto dc=reinterpret_cast<HDC>(wp);SetBkMode(dc,TRANSPARENT);SetTextColor(dc,reinterpret_cast<HWND>(lp)==error_label?RGB(185,40,40):reinterpret_cast<HWND>(lp)==mute_reason?RGB(150,92,20):RGB(30,36,45));return reinterpret_cast<LRESULT>(GetSysColorBrush(COLOR_WINDOW));}
+ case WM_ERASEBKGND:{RECT r{};GetClientRect(w,&r);FillRect(reinterpret_cast<HDC>(wp),&r,appearance::palette.backgroundBrush);return 1;}
+ case WM_CTLCOLOREDIT:case WM_CTLCOLORLISTBOX:case WM_CTLCOLORSTATIC:{auto dc=reinterpret_cast<HDC>(wp);auto child=reinterpret_cast<HWND>(lp);SetBkMode(dc,TRANSPARENT);SetTextColor(dc,appearance::static_ink(child));bool field=msg!=WM_CTLCOLORSTATIC||GetPropW(child,L"SanAudisco.NativeEdit");SetBkColor(dc,field?appearance::palette.surface:appearance::palette.background);return reinterpret_cast<LRESULT>(field?appearance::palette.surfaceBrush:appearance::palette.backgroundBrush);}
+
  case WM_NOTIFY:if(reinterpret_cast<NMHDR*>(lp)->hwndFrom==audio_tooltips&&reinterpret_cast<NMHDR*>(lp)->code==TTN_GETDISPINFOW){auto tip=reinterpret_cast<NMTTDISPINFOW*>(lp);static wchar_t label[512];GetWindowTextW(reinterpret_cast<HWND>(tip->hdr.idFrom),label,512);auto id=GetDlgCtrlID(reinterpret_cast<HWND>(tip->hdr.idFrom));
  if(id==431)wcscpy_s(label,L"Volume of both computers combined. Does not change microphone volume.");
  if(id==601)wcscpy_s(label,L"Start or stop playback and microphone relay on both connected computers. Your room stays paired.");
@@ -502,6 +530,13 @@ LRESULT CALLBACK proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){if(scroll_window(w,ms
   else if(id==206&&event==CBN_SELCHANGE){auto index=control_message(nearby_box,CB_GETCURSEL,0,0);if(index>=0&&static_cast<size_t>(index)<nearby.size()){selected_room_address=string_value(nearby[index],"address");selected_room_id=string_value(nearby[index],"id");set_text(address_edit,utf16(selected_room_address).c_str());}}
   else if(id==209){try{startup(control_message(login_check,BM_GETCHECK,0,0)==BST_CHECKED);}catch(const std::exception&e){set_text(error_label,utf16(e.what()).c_str());control_message(login_check,BM_SETCHECK,startup_enabled()?BST_CHECKED:BST_UNCHECKED,0);}}
   else if(id==211&&event==CBN_SELCHANGE){const char* kinds[]{"auto","laptop","desktop","server"};auto selected=control_message(kind_box,CB_GETCURSEL,0,0);if(selected>=0&&selected<4)request({{"command","device_profile"},{"kind",kinds[selected]}});}
+  else if(id==212&&event==CBN_SELCHANGE){appearance::preference=static_cast<int>(control_message(appearance_box,CB_GETCURSEL,0,0));DWORD value=appearance::preference;
+#ifndef BRIDGE_UI_TEST
+ RegSetKeyValueW(HKEY_CURRENT_USER,L"Software\\SanAudisco",L"Appearance",REG_DWORD,&value,sizeof(value));
+#else
+ (void)value;appearance::testTheme=-1;
+#endif
+ SendMessageW(w,WM_THEMECHANGED,0,0);}
   else if(id==210){if(MessageBoxW(w,L"Audio will stop. You will need a new room code to connect these computers again.",L"Forget this pairing?",MB_OKCANCEL|MB_ICONQUESTION)==IDOK)request({{"command","forget"}});}
   else if(id==301&&event==CBN_SELCHANGE)choose_configured_device();
   else if((id==302||id==303||id==305||id==306)&&event==CBN_SELCHANGE){device_dirty=true;enable_control(apply_button,TRUE);}
@@ -519,7 +554,7 @@ LRESULT CALLBACK proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){if(scroll_window(w,ms
   else if((id==520||id==521)&&!tone_ids[id-520].empty())request({{"command","test_tone"},{"device_id",tone_ids[id-520]}});
   else if(id==601)request({{"command",(running||wanted_running)?"stop":"start"}});
   else if(id==603)request({{"command","autoconfigure"}});
-  else if(id==604)open_panel(1);else if(id==605)open_panel(3);else if(id==606)open_panel(2);
+  else if(id==604)open_panel(1);else if(id==605)open_panel(3);else if(id==606||id==607){auto d=slot_device(id==607?1:0);for(size_t i=0;i<devices.size();++i)if(string_value(devices[i],"id")==string_value(d,"id"))control_message(computer_box,CB_SETCURSEL,i,0);choose_configured_device();open_panel(2);}
   else if(id==602){quitting=true;request({{"command","quit"}},false,true);}
   return 0;}
  case WM_HSCROLL:{if(!lp)break;if(updating)return 0;auto h=reinterpret_cast<HWND>(lp);double value=static_cast<double>(control_message(h,TBM_GETPOS,0,0))/100;if(h==first_volume||h==second_volume)device_control(h==first_volume?0:1,"volume",value);else control(h==master?"master":"balance",h==balance?value*2-1:value);return 0;}
@@ -531,13 +566,14 @@ LRESULT CALLBACK proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){if(scroll_window(w,ms
   return 0;}
  case WM_SIZE:layout_window(w);sync_bridge_animation();break;
  case WM_DPICHANGED:{ui_dpi=HIWORD(wp);for(auto& row:audio_icons)for(auto& icon:row){if(icon)DestroyIcon(icon);icon=nullptr;}for(auto& row:hub_icons)for(auto& icon:row){if(icon)DestroyIcon(icon);icon=nullptr;}for(int kind=0;kind<2;++kind)for(int active=0;active<2;++active){audio_icons[kind][active]=audio_icon(kind!=0,active!=0);hub_icons[kind][active]=audio_icon(kind!=0,active!=0,true);}auto r=reinterpret_cast<RECT*>(lp);SetWindowPos(w,nullptr,r->left,r->top,r->right-r->left,r->bottom-r->top,SWP_NOZORDER|SWP_NOACTIVATE);layout_window(w);apply_state(state);return 0;}
- case WM_SHOWWINDOW:case WM_SETTINGCHANGE:sync_bridge_animation();break;
+ case WM_SYSCOLORCHANGE:case WM_THEMECHANGED:case WM_SETTINGCHANGE:appearance::refresh(true);rebuild_audio_icons();appearance::frame(w);for(int i=1;i<4;++i)appearance::frame(panels[i]);for(auto&item:layout_items)appearance::retone(item.handle);RedrawWindow(w,nullptr,nullptr,RDW_INVALIDATE|RDW_ERASE|RDW_ALLCHILDREN);for(int i=1;i<4;++i)RedrawWindow(panels[i],nullptr,nullptr,RDW_INVALIDATE|RDW_ERASE|RDW_ALLCHILDREN);sync_bridge_animation();break;
+ case WM_SHOWWINDOW:sync_bridge_animation();break;
  case WM_SYSCOMMAND:if((wp&0xFFF0)==0xE100){quitting=true;request({{"command","quit"}},false,true);return 0;}break;
  case WM_TIMER:if(wp==bridge_timer){sync_bridge_animation();if(bridge_timer_running){auto graphic=GetDlgItem(w,760);RECT area{};GetClientRect(graphic,&area);RECT lane{MulDiv(293,area.right,830),MulDiv(59,area.bottom,95),MulDiv(538,area.right,830),MulDiv(71,area.bottom,95)};InvalidateRect(graphic,&lane,FALSE);}return 0;}if(wp!=refresh_timer)return 0;if(IsWindowVisible(w)&&!quitting){std::lock_guard lock(queue_mutex);if(!outstanding&&!status_queued&&!stopping){status_queued=true;queue.push_back({Json{{"command","status"}},true,false});queue_cv.notify_one();}}return 0;
  case tray_message:if(lp==WM_LBUTTONDBLCLK)open_window();else if(lp==WM_RBUTTONUP||lp==WM_CONTEXTMENU)tray_menu();return 0;
  case WM_CLOSE:for(int i=1;i<4;++i)ShowWindow(panels[i],SW_HIDE);ShowWindow(w,SW_HIDE);return 0;
  case WM_ENDSESSION:if(wp)DestroyWindow(w);return 0;
- case WM_DESTROY:for(auto& icons:hub_icons)for(auto icon:icons)if(icon)DestroyIcon(icon);for(auto& icons:audio_icons)for(auto icon:icons)if(icon)DestroyIcon(icon);DeleteObject(ui_font);DeleteObject(title_font);DeleteObject(heading_font);for(auto& entry:dpi_fonts)for(auto font:entry.second)DeleteObject(font);dpi_fonts.clear();KillTimer(w,refresh_timer);KillTimer(w,bridge_timer);Shell_NotifyIconW(NIM_DELETE,&tray);{std::lock_guard lock(queue_mutex);stopping=true;queue.clear();}queue_cv.notify_one();PostQuitMessage(0);return 0;
+ case WM_DESTROY:diagram_background.reset();diagram_frame.reset();diagram_cache_key.clear();for(auto& icons:hub_icons)for(auto icon:icons)if(icon)DestroyIcon(icon);for(auto& icons:audio_icons)for(auto icon:icons)if(icon)DestroyIcon(icon);DeleteObject(ui_font);DeleteObject(title_font);DeleteObject(heading_font);for(auto& entry:dpi_fonts)for(auto font:entry.second)DeleteObject(font);dpi_fonts.clear();KillTimer(w,refresh_timer);KillTimer(w,bridge_timer);Shell_NotifyIconW(NIM_DELETE,&tray);{std::lock_guard lock(queue_mutex);stopping=true;queue.clear();}queue_cv.notify_one();PostQuitMessage(0);return 0;
  }return DefWindowProcW(w,msg,wp,lp);}
 }
 int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR command_line,int show){
@@ -550,6 +586,11 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR command_line,int show){
 #ifdef BRIDGE_UI_TEST
  if(command_line)if(auto flag=wcsstr(command_line,L"--ui-test-dpi=")){int value=static_cast<int>(wcstol(flag+14,nullptr,10));if(value==96||value==120||value==144||value==192)test_dpi=ui_dpi=value;}
 #endif
+ DWORD appearanceValue=0,appearanceBytes=sizeof(appearanceValue);RegGetValueW(HKEY_CURRENT_USER,L"Software\\SanAudisco",L"Appearance",RRF_RT_REG_DWORD,nullptr,&appearanceValue,&appearanceBytes);appearance::preference=appearanceValue<=2?int(appearanceValue):0;
+#ifdef BRIDGE_UI_TEST
+ if(command_line&&wcsstr(command_line,L"--ui-test-theme=dark"))appearance::testTheme=1;else if(command_line&&wcsstr(command_line,L"--ui-test-theme=light"))appearance::testTheme=0;
+#endif
+ appearance::graphics_ready();appearance::refresh();
  INITCOMMONCONTROLSEX cc{sizeof(cc),ICC_BAR_CLASSES|ICC_TAB_CLASSES|ICC_PROGRESS_CLASS};InitCommonControlsEx(&cc);
  WNDCLASSW cls{};cls.lpfnWndProc=proc;cls.hInstance=instance;
 #ifdef BRIDGE_UI_TEST
@@ -564,7 +605,7 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR command_line,int show){
  if(!existing)existing=FindWindowW(L"AudioBridgeRoomWindow",nullptr);
 #endif
  if(existing){if(!command_line||!wcsstr(command_line,L"--background")){ShowWindow(existing,SW_RESTORE);SetForegroundWindow(existing);}return 0;}
- HWND w=CreateWindowExW(0,cls.lpszClassName,L"San Audisco",WS_OVERLAPPEDWINDOW|WS_CLIPCHILDREN|WS_VSCROLL|WS_HSCROLL,CW_USEDEFAULT,CW_USEDEFAULT,px(990),px(810),nullptr,nullptr,instance,nullptr);if(!w)return 1;
+ HWND w=CreateWindowExW(0,cls.lpszClassName,L"San Audisco",WS_OVERLAPPEDWINDOW|WS_CLIPCHILDREN|WS_VSCROLL|WS_HSCROLL,CW_USEDEFAULT,CW_USEDEFAULT,px(990),px(810),nullptr,nullptr,instance,nullptr);if(!w)return 1;appearance::frame(w);for(int i=1;i<4;++i)appearance::frame(panels[i]);
  RECT work{};if(SystemParametersInfoW(SPI_GETWORKAREA,0,&work,0)){RECT r{};GetWindowRect(w,&r);SetWindowPos(w,nullptr,work.left+24,work.top+24,std::min<int>(r.right-r.left,work.right-work.left-48),std::min<int>(r.bottom-r.top,work.bottom-work.top-48),SWP_NOZORDER);}
  if(!command_line||!wcsstr(command_line,L"--background"))ShowWindow(w,show);
  MSG m;while(GetMessageW(&m,nullptr,0,0)>0){bool handled=false;for(int i=1;i<4;++i)if(IsWindowVisible(panels[i])&&IsDialogMessageW(panels[i],&m)){handled=true;break;}if(!handled&&!IsDialogMessageW(w,&m)){TranslateMessage(&m);DispatchMessageW(&m);}}

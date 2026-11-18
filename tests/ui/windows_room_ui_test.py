@@ -37,7 +37,8 @@ if not test_mode:assert not u.FindWindowW('AudioBridgeRoomWindow',None),'An exis
 state=exe.parent/'ui-fixture-state.json';events=exe.parent/'ui-fixture-requests.jsonl'
 state.unlink(missing_ok=True);events.unlink(missing_ok=True)
 dpi=int(sys.argv[2]) if len(sys.argv)>2 else 0
-p=subprocess.Popen([str(exe)]+([f'--ui-test-dpi={dpi}'] if dpi else []))
+theme=os.environ.get('SAN_AUDISCO_UI_THEME','')
+p=subprocess.Popen([str(exe)]+([f'--ui-test-dpi={dpi}'] if dpi else [])+([f'--ui-test-theme={theme}'] if theme else []))
 try:
  wait(lambda:u.FindWindowW(window_class,None),'GUI did not open')
  hwnd=u.FindWindowW(window_class,None)
@@ -102,6 +103,13 @@ try:
  assert bounds(760).bottom<=bounds(740).top,'Bridge paint region overlaps Connected text'
  assert bounds(700).right<=bounds(740).left and bounds(740).right<=bounds(720).left,'Connection label overlaps device names'
  for left,right in [(603,604),(604,605)]:assert bounds(left).right<=bounds(right).left,'Header buttons overlap'
+ # Header/footer dividers and all three audio-button pairs share one geometry.
+ assert bounds(757).top>=max(bounds(i).bottom for i in (100,603,604,605)),'Header divider intersects actions'
+ assert bounds(757).bottom<=min(bounds(i).top for i in (702,704,722,724)),'Header divider intersects hub selectors'
+ dimensions=lambda i:(bounds(i).right-bounds(i).left,bounds(i).bottom-bounds(i).top)
+ assert len({dimensions(i) for i in (411,412,421,422,440,441)})==1,'Audio buttons differ in size'
+ assert len({bounds(b).left-bounds(a).right for a,b in ((411,412),(421,422),(440,441))})==1,'Audio button pair gaps differ'
+ assert bounds(756).bottom<=bounds(753).top,'Global divider intersects heading'
  # Small windows retain readable controls and expose scrollbars instead of scaling text down.
  u.SetWindowPos.argtypes=[w.HWND,w.HWND,ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,w.UINT]
  u.SetWindowPos(hwnd,None,0,0,760,520,0x6)
@@ -227,6 +235,20 @@ try:
   assert 'unavailable' in value(get(701)) and 'unavailable' in value(get(721)),'Transport failure kept online device state'
  finally:unavailable.rename(fixture)
  wait(lambda:u.IsWindowEnabled(get(703)) and u.IsWindowEnabled(get(440)),'Successful status did not restore controls')
+ # Switching appearance is local UI state and never issues audio commands.
+ page(1)
+ commands_before=len([x for x in seen('control')])
+ for selection in (1,2,0,1 if theme=='light' else 2):
+  u.SendMessageW(get(212),0x14E,selection,0);u.SendMessageW(hwnd,0x111,212|(1<<16),get(212))
+  assert u.SendMessageW(get(212),0x147,0,0)==selection,'Appearance selection did not stick'
+ assert len(seen('control'))==commands_before,'Appearance change altered audio settings'
+ # Native button keyboard semantics survive custom painting.
+ page(0)
+ before=u.SendMessageW(get(440),0xF0,0,0)
+ u.SendMessageW(get(440),0x100,0x20,0);u.SendMessageW(get(440),0x101,0x20,0)
+ wait(lambda:u.SendMessageW(get(440),0xF0,0,0)!=before,'Space key failed to toggle global microphone')
+ u.SendMessageW(get(440),0x100,0x20,0);u.SendMessageW(get(440),0x101,0x20,0)
+ wait(lambda:u.SendMessageW(get(440),0xF0,0,0)==before,'Second Space key failed to restore microphone')
  if dpi:
   page(0)
   for panel_index in (0,1,3):
@@ -240,6 +262,6 @@ try:
  assert p.poll() is None and not seen('quit'),'Close stopped background app'
  u.ShowWindow(hwnd,9);u.SendMessageW(hwnd,0x112,0xE100,0);p.wait(timeout=12)
  assert p.returncode==0 and seen('quit'),'Explicit quit did not stop agent and exit'
- print(json.dumps({'passed':True,'dpi':dpi or 'native','scope':'real Win32 GUI + fixture IPC; no audio or real credentials','checks':['startup state','native settings/checks panels','device profile override','same-platform participants','non-overlapping header and bridge label','small-window scrolling','two-device main screen','animation timer does not poll agent','main control bounds','physical selector filtering','peer connection state','disabled unpaired roles','create invite','discovery selection','code validation and normalization','join acknowledgement','start acknowledgement','remote device configuration','crowned square hub selectors','individual icon buttons','effective global mute/deafen and preference restoration','long-name alignment','readiness diagnostics','local and remote signal meters','explicit remote test sound','cancel pending restart','explicit agent reconnect','failed status and transport recovery','close keeps running','explicit quit']}))
+ print(json.dumps({'passed':True,'theme':theme or 'system','dpi':dpi or 'native','scope':'real Win32 GUI + fixture IPC; no audio or real credentials','checks':['startup state','matching audio button sizes/gaps','header/footer divider bounds','local light/dark/system appearance','native Space-key toggle','native settings/checks panels','device profile override','same-platform participants','non-overlapping header and bridge label','small-window scrolling','two-device main screen','animation timer does not poll agent','main control bounds','physical selector filtering','peer connection state','disabled unpaired roles','create invite','discovery selection','code validation and normalization','join acknowledgement','start acknowledgement','remote device configuration','crowned square hub selectors','individual icon buttons','effective global mute/deafen and preference restoration','long-name alignment','readiness diagnostics','local and remote signal meters','explicit remote test sound','cancel pending restart','explicit agent reconnect','failed status and transport recovery','close keeps running','explicit quit']}))
 finally:
  if p.poll() is None:p.kill();p.wait()
