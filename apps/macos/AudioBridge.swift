@@ -185,6 +185,40 @@ final class BridgeModel: ObservableObject {
  func quit(){cancelPermission();send(["command":"quit"],completion:{NSApp.terminate(nil)})}
 }
 
+// Native pop-up sizing must not depend on the longest device name.
+final class BoundedAudioPopUp:NSPopUpButton {
+ override var intrinsicContentSize:NSSize {NSSize(width:NSView.noIntrinsicMetric,height:super.intrinsicContentSize.height)}
+}
+struct AudioDevicePicker:NSViewRepresentable {
+ let title:String
+ let options:[(id:String,name:String)]
+ @Binding var selection:String
+ @Environment(\.isEnabled) private var enabled
+ final class Coordinator:NSObject {
+  var owner:AudioDevicePicker
+  init(_ owner:AudioDevicePicker){self.owner=owner}
+  @objc func changed(_ sender:NSPopUpButton){owner.selection=sender.selectedItem?.representedObject as? String ?? ""}
+ }
+ func makeCoordinator()->Coordinator {Coordinator(self)}
+ func makeNSView(context:Context)->BoundedAudioPopUp {
+  let view=BoundedAudioPopUp(frame:.zero,pullsDown:false)
+  view.target=context.coordinator;view.action=#selector(Coordinator.changed(_:))
+  view.cell?.lineBreakMode = .byTruncatingTail;view.cell?.usesSingleLineMode=true
+  view.setContentHuggingPriority(.defaultLow,for:.horizontal)
+  view.setContentCompressionResistancePriority(.defaultLow,for:.horizontal)
+  return view
+ }
+ func updateNSView(_ view:BoundedAudioPopUp,context:Context){
+  context.coordinator.owner=self
+  if view.itemArray.map({$0.representedObject as? String ?? ""}) != options.map(\.id) || view.itemTitles != options.map(\.name) {
+   view.removeAllItems();for option in options{view.addItem(withTitle:option.name);view.lastItem?.representedObject=option.id}
+  }
+  view.selectItem(at:options.firstIndex(where:{$0.id==selection}) ?? 0)
+  view.isEnabled=enabled;view.setAccessibilityLabel(title)
+  view.toolTip=options.first(where:{$0.id==selection})?.name
+ }
+}
+
 struct DeviceRouteView:View {
  @ObservedObject var model:BridgeModel
  let device:RoomDevice
@@ -193,15 +227,27 @@ struct DeviceRouteView:View {
  private var prefix:String {device.roleValue==0 ? "win":"mac"}
  private func route(_ key:String,_ current:String)->Binding<String> {Binding(get:{current},set:{model.send(["command":"configure","device_id":device.id,key:$0])})}
  private func select(_ title:String,key:String,current:String,input:Bool,virtual:Bool=false)->some View {
-  VStack(alignment:.leading,spacing:5){
+  let choices=device.audio.filter{(input ? $0.inputs>0 : $0.outputs>0) && $0.isVirtual==virtual}
+  let missing = !current.isEmpty && !choices.contains(where:{$0.id==current})
+  let options:[(id:String,name:String)]=[("","Choose \(title.lowercased())…")]+(missing ? [(current,"Saved device · unavailable")]:[])+choices.map{($0.id,$0.name)}
+  return VStack(alignment:.leading,spacing:5){
    Text(title).font(.subheadline).foregroundColor(.secondary)
-   Picker(title,selection:route(key,current)){
-    Text("Choose \(title.lowercased())…").tag("")
-    if !current.isEmpty && !device.audio.contains(where:{$0.id==current}) {Text("Saved device · unavailable").tag(current)}
-    ForEach(device.audio.filter{(input ? $0.inputs>0 : $0.outputs>0) && $0.isVirtual==virtual}){Text($0.name).tag($0.id)}
-   }.labelsHidden().frame(minWidth:0,maxWidth:.infinity).clipped().disabled(controlsDisabled)
-  }
+   AudioDevicePicker(title:"\(device.name) \(title.lowercased())",options:options,selection:route(key,current)).frame(height:26).disabled(controlsDisabled)
+  }.frame(minWidth:0,maxWidth:.infinity,alignment:.leading)
  }
+ private func audioButton(deafen:Bool)->some View {
+  let key=prefix+(deafen ? "_deafen":"_mute")
+  let active=model.number(key) != 0
+  let action=deafen ? (active ? "Undeafen":"Deafen"):(active ? "Unmute microphone on":"Mute microphone on")
+  return Button{model.control(key,active ? 0:1)}label:{
+   Image(systemName:deafen ? "headphones":(active ? "mic.slash":"mic"))
+    .font(.system(size:16,weight:.medium)).frame(width:22,height:22)
+    .overlay{if deafen && active{Rectangle().frame(width:25,height:2).rotationEffect(.degrees(-45))}}
+    .foregroundColor(active ? .red:.primary)
+  }.buttonStyle(.bordered).help("\(action) \(device.name)")
+   .accessibilityLabel("\(action) \(device.name)").accessibilityValue(active ? "On":"Off")
+ }
+
  var body:some View {VStack(alignment:.leading,spacing:14){
   HStack(alignment:.top,spacing:12){
    select("Input",key:"physical_microphone",current:device.microphone,input:true).frame(minWidth:0,maxWidth:.infinity)
@@ -209,7 +255,7 @@ struct DeviceRouteView:View {
   }
   Divider()
   VStack(alignment:.leading,spacing:6){HStack{Text("Audio from this computer");Spacer();Text("\(Int(model.number(prefix+"_volume",default:1)*100))%").monospacedDigit()};Slider(value:model.scalar(prefix+"_volume",default:1),in:0...1).accessibilityLabel("\(device.name) listening volume")}.disabled(controlsDisabled || !model.connected)
-  HStack{Toggle("Mute mic here",isOn:model.toggle(prefix+"_mute")).help("Stop your voice reaching apps on \(device.name).");Spacer();Toggle("Deafen",isOn:model.toggle(prefix+"_deafen")).help("Stop this computer’s audio and microphone delivery.")}.disabled(controlsDisabled || !model.connected)
+  HStack(spacing:8){audioButton(deafen:false);audioButton(deafen:true);Spacer()}.disabled(controlsDisabled || !model.connected)
   if online && device.setup != "Ready" {Text(device.setup).font(.caption).foregroundColor(.secondary).fixedSize(horizontal:false,vertical:true)}
   DisclosureGroup("Advanced audio routes") {VStack(alignment:.leading,spacing:12){select("App audio cable",key:"playback_input",current:device.playback,input:true,virtual:true);select("Microphone delivery cable",key:"microphone_output",current:device.micOutput,input:false,virtual:true)}.padding(.top,8)}.font(.caption)
  }.frame(maxWidth:.infinity,alignment:.topLeading)}

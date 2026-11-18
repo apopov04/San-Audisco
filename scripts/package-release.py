@@ -29,7 +29,7 @@ try:
 except (subprocess.CalledProcessError, FileNotFoundError):
     commit, dirty = None, None
 manifest = {
-    'version': '0.2.2', 'source_commit': commit, 'source_dirty': dirty,
+    'version': '0.2.3', 'source_commit': commit, 'source_dirty': dirty,
     'packaged_at_utc': datetime.now(timezone.utc).isoformat(),
     'binary_sha256': {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in artifacts.items()},
     'validation': 'See docs/UI_REDESIGN.md and docs/V02_VALIDATION.md: automated/synthetic tests pass; v0.2 driver install, real audio and performance acceptance remain pending.',

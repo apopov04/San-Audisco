@@ -32,6 +32,7 @@ int ui_dpi=96;
 int px(int value){return MulDiv(value,ui_dpi,96);}
 void position(HWND h,int x,int y,int width,int height){SetWindowPos(h,nullptr,px(x),px(y),px(width),px(height),SWP_NOZORDER);}
 HFONT ui_font{},title_font{},heading_font{};
+HICON audio_icons[2][2]{};HWND audio_tooltips{};
 HWND card_name[2]{},card_status[2]{},card_headphones[2]{},card_microphone[2]{},card_hub[2]{},card_source[2]{},link_status{};
 std::string card_id[2],card_signature[2];std::vector<std::string> card_routes[2][2];
 HWND window{},tabs{},status_label{},error_label{},mute_reason{},run_button{};
@@ -105,6 +106,20 @@ void start_worker(){worker=std::thread([]{
 });}
 void control(const char* key,double value){request({{"command","control"},{"key",key},{"value",value}});}
 HWND element(const wchar_t* cls,const wchar_t* caption,DWORD style,int x,int y,int width,int height,int id){auto h=CreateWindowExW(0,cls,caption,WS_CHILD|WS_VISIBLE|style,px(x),px(y),px(width),px(height),window,reinterpret_cast<HMENU>(static_cast<INT_PTR>(id)),nullptr,nullptr);SendMessageW(h,WM_SETFONT,reinterpret_cast<WPARAM>(ui_font),TRUE);if(building_page>=0)pages[building_page].push_back(h);return h;}
+HICON audio_icon(bool headphones,bool blocked){
+ int size=px(28);BITMAPINFO info{};info.bmiHeader.biSize=sizeof(BITMAPINFOHEADER);info.bmiHeader.biWidth=size;info.bmiHeader.biHeight=-size;info.bmiHeader.biPlanes=1;info.bmiHeader.biBitCount=32;info.bmiHeader.biCompression=BI_RGB;
+ void* raw=nullptr;HDC dc=CreateCompatibleDC(nullptr);auto bitmap=CreateDIBSection(dc,&info,DIB_RGB_COLORS,&raw,nullptr,0);if(!dc||!bitmap||!raw){if(bitmap)DeleteObject(bitmap);if(dc)DeleteDC(dc);return nullptr;}
+ std::fill_n(static_cast<DWORD*>(raw),size*size,0);auto previous=SelectObject(dc,bitmap);SetMapMode(dc,MM_ANISOTROPIC);SetWindowExtEx(dc,28,28,nullptr);SetViewportExtEx(dc,size,size,nullptr);
+ auto ink=blocked?RGB(190,45,50):GetSysColor(COLOR_BTNTEXT);if(!ink)ink=RGB(1,1,1);auto pen=CreatePen(PS_SOLID,2,ink);auto oldPen=SelectObject(dc,pen),oldBrush=SelectObject(dc,GetStockObject(NULL_BRUSH));
+ if(headphones){MoveToEx(dc,5,15,nullptr);POINT arc[]{{5,1},{23,1},{23,15}};PolyBezierTo(dc,arc,3);RoundRect(dc,3,13,9,23,4,4);RoundRect(dc,19,13,25,23,4,4);}
+ else{RoundRect(dc,10,3,18,17,7,7);MoveToEx(dc,6,12,nullptr);POINT arc[]{{6,24},{22,24},{22,12}};PolyBezierTo(dc,arc,3);MoveToEx(dc,14,21,nullptr);LineTo(dc,14,25);MoveToEx(dc,9,25,nullptr);LineTo(dc,19,25);}
+ if(blocked){MoveToEx(dc,3,25,nullptr);LineTo(dc,25,3);}
+ GdiFlush();auto pixels=static_cast<DWORD*>(raw);for(int i=0;i<size*size;++i)if(pixels[i]&0xffffff)pixels[i]|=0xff000000;
+ SelectObject(dc,oldBrush);SelectObject(dc,oldPen);SelectObject(dc,previous);DeleteObject(pen);DeleteDC(dc);
+ auto mask=CreateBitmap(size,size,1,1,nullptr);HDC maskDC=CreateCompatibleDC(nullptr);auto oldMask=SelectObject(maskDC,mask);RECT area{0,0,size,size};FillRect(maskDC,&area,static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH)));SelectObject(maskDC,oldMask);DeleteDC(maskDC);
+ ICONINFO icon{};icon.fIcon=TRUE;icon.hbmColor=bitmap;icon.hbmMask=mask;auto result=CreateIconIndirect(&icon);DeleteObject(bitmap);DeleteObject(mask);return result;
+}
+void audio_tooltip(HWND button){TOOLINFOW tip{};tip.cbSize=sizeof tip;tip.uFlags=TTF_IDISHWND|TTF_SUBCLASS;tip.hwnd=window;tip.uId=reinterpret_cast<UINT_PTR>(button);tip.lpszText=LPSTR_TEXTCALLBACKW;SendMessageW(audio_tooltips,TTM_ADDTOOLW,0,reinterpret_cast<LPARAM>(&tip));}
 HWND combo(int x,int y,int width,int id){return element(L"COMBOBOX",L"",CBS_DROPDOWNLIST|WS_TABSTOP|WS_VSCROLL,x,y,width,220,id);}
 HWND slider(int y,int id,int position){auto h=element(TRACKBAR_CLASSW,L"",TBS_NOTICKS|WS_TABSTOP,170,y,390,28,id);SendMessageW(h,TBM_SETRANGE,TRUE,MAKELONG(0,100));SendMessageW(h,TBM_SETPOS,TRUE,position);mix_controls.push_back(h);return h;}
 void show_page(){const int page=TabCtrl_GetCurSel(tabs);for(int i=0;i<4;++i)for(auto h:pages[i])ShowWindow(h,i==page?SW_SHOW:SW_HIDE);if(page==2&&!advanced)for(auto h:{playback_box,micoutput_box,playback_label,micoutput_label})ShowWindow(h,SW_HIDE);InvalidateRect(window,nullptr,FALSE);}
@@ -135,6 +150,10 @@ void update_cards(){auto settings=state.value("settings",Json::object());
    }
   }
   EnableWindow(card_headphones[slot],online);EnableWindow(card_microphone[slot],online);
+  for(int kind=0;kind<2;++kind){auto button=kind?(slot?mac_deafen:win_deafen):(slot?mac_mute:win_mute);auto key=std::string(slot?"mac":"win")+(kind?"_deafen":"_mute");bool active=boolean(settings,key.c_str());
+   SendMessageW(button,BM_SETIMAGE,IMAGE_ICON,reinterpret_cast<LPARAM>(audio_icons[kind][active?1:0]));
+   auto label=(kind?(active?std::string("Undeafen "):std::string("Deafen ")):(active?std::string("Unmute microphone on "):std::string("Mute microphone on ")))+name;SetWindowTextW(button,utf16(label).c_str());
+  }
   EnableWindow(slot?mac_volume:win_volume,connected&&online);EnableWindow(slot?mac_mute:win_mute,connected&&online);EnableWindow(slot?mac_deafen:win_deafen,connected&&online);
  }
  InvalidateRect(GetDlgItem(window,760),nullptr,FALSE);SetWindowTextW(link_status,!agent_available?L"App connection unavailable":connected?L"Room connected":paired?L"Reconnecting…":L"Create or join a room");InvalidateRect(window,nullptr,FALSE);
@@ -196,6 +215,8 @@ LRESULT CALLBACK proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){switch(msg){
  case WM_CREATE:{window=w;ui_font=CreateFontW(-px(16),0,0,0,FW_NORMAL,FALSE,FALSE,FALSE,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,CLEARTYPE_QUALITY,DEFAULT_PITCH,L"Segoe UI");title_font=CreateFontW(-px(27),0,0,0,FW_SEMIBOLD,FALSE,FALSE,FALSE,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,CLEARTYPE_QUALITY,DEFAULT_PITCH,L"Segoe UI");heading_font=CreateFontW(-px(20),0,0,0,FW_SEMIBOLD,FALSE,FALSE,FALSE,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,CLEARTYPE_QUALITY,DEFAULT_PITCH,L"Segoe UI");
   auto title=element(L"STATIC",L"AudioBridge",0,32,18,700,35,0);SendMessageW(title,WM_SETFONT,reinterpret_cast<WPARAM>(title_font),TRUE);
   tabs=element(WC_TABCONTROLW,L"",WS_TABSTOP,32,62,890,510,180);const wchar_t* labels[]{L"Audio",L"Room",L"Advanced",L"Checks"};for(int i=0;i<4;i++){TCITEMW tab{};tab.mask=TCIF_TEXT;tab.pszText=const_cast<wchar_t*>(labels[i]);TabCtrl_InsertItem(tabs,i,&tab);}
+  audio_tooltips=CreateWindowExW(WS_EX_TOPMOST,TOOLTIPS_CLASSW,nullptr,WS_POPUP|TTS_ALWAYSTIP,CW_USEDEFAULT,CW_USEDEFAULT,CW_USEDEFAULT,CW_USEDEFAULT,w,nullptr,nullptr,nullptr);
+  for(int kind=0;kind<2;++kind)for(int active=0;active<2;++active)audio_icons[kind][active]=audio_icon(kind!=0,active!=0);
   building_page=0;
   element(L"STATIC",L"Two computers linked by this room",SS_OWNERDRAW,60,140,830,95,760);
   link_status=element(L"STATIC",L"Connecting…",SS_CENTER,340,159,270,26,740);
@@ -209,8 +230,9 @@ LRESULT CALLBACK proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){switch(msg){
    SendMessageW(card_headphones[slot],CB_SETDROPPEDWIDTH,px(380),0);SendMessageW(card_microphone[slot],CB_SETDROPPEDWIDTH,px(380),0);
    element(L"STATIC",L"Audio from this computer",0,x,387,360,22,0);
    auto vol=slider(412,slot?420:410,100);position(vol,x-5,410,370,26);if(slot)mac_volume=vol;else win_volume=vol;
-   auto m=element(L"BUTTON",L"Mute voice to this computer",BS_AUTOCHECKBOX|WS_TABSTOP,x,448,360,25,slot?421:411);
-   auto d=element(L"BUTTON",L"Deafen this computer",BS_AUTOCHECKBOX|WS_TABSTOP,x,480,360,25,slot?422:412);
+   auto m=element(L"BUTTON",L"Mute microphone on this computer",BS_AUTOCHECKBOX|BS_PUSHLIKE|BS_ICON|WS_TABSTOP,x,448,44,38,slot?421:411);
+   auto d=element(L"BUTTON",L"Deafen this computer",BS_AUTOCHECKBOX|BS_PUSHLIKE|BS_ICON|WS_TABSTOP,x+52,448,44,38,slot?422:412);
+   SendMessageW(m,BM_SETIMAGE,IMAGE_ICON,reinterpret_cast<LPARAM>(audio_icons[0][0]));SendMessageW(d,BM_SETIMAGE,IMAGE_ICON,reinterpret_cast<LPARAM>(audio_icons[1][0]));audio_tooltip(m);audio_tooltip(d);
    mix_controls.push_back(m);mix_controls.push_back(d);if(slot){mac_mute=m;mac_deafen=d;mac_label=card_name[slot];}else{win_mute=m;win_deafen=d;win_label=card_name[slot];}
   }
   element(L"STATIC",L"Connect your AirPods to the Output Hub in Bluetooth settings. Room connection does not confirm audio readiness.",0,60,542,830,24,0);
@@ -244,7 +266,7 @@ LRESULT CALLBACK proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){switch(msg){
  case WM_DRAWITEM:{auto item=reinterpret_cast<DRAWITEMSTRUCT*>(lp);if(item->CtlID==760){FillRect(item->hDC,&item->rcItem,GetSysColorBrush(COLOR_WINDOW));auto saved=SaveDC(item->hDC);SetMapMode(item->hDC,MM_ANISOTROPIC);SetWindowExtEx(item->hDC,96,96,nullptr);SetViewportExtEx(item->hDC,ui_dpi,ui_dpi,nullptr);SetViewportOrgEx(item->hDC,-px(60),-px(140),nullptr);draw_computers(item->hDC);RestoreDC(item->hDC,saved);return TRUE;}break;}
 
  case WM_CTLCOLORSTATIC:{auto dc=reinterpret_cast<HDC>(wp);SetBkMode(dc,TRANSPARENT);SetTextColor(dc,reinterpret_cast<HWND>(lp)==error_label?RGB(185,40,40):reinterpret_cast<HWND>(lp)==mute_reason?RGB(150,92,20):RGB(30,36,45));return reinterpret_cast<LRESULT>(GetSysColorBrush(COLOR_WINDOW));}
- case WM_NOTIFY:if(reinterpret_cast<NMHDR*>(lp)->hwndFrom==tabs&&reinterpret_cast<NMHDR*>(lp)->code==TCN_SELCHANGE)show_page();return 0;
+ case WM_NOTIFY:if(reinterpret_cast<NMHDR*>(lp)->hwndFrom==audio_tooltips&&reinterpret_cast<NMHDR*>(lp)->code==TTN_GETDISPINFOW){auto tip=reinterpret_cast<NMTTDISPINFOW*>(lp);static wchar_t label[512];GetWindowTextW(reinterpret_cast<HWND>(tip->hdr.idFrom),label,512);tip->lpszText=label;return 0;}if(reinterpret_cast<NMHDR*>(lp)->hwndFrom==tabs&&reinterpret_cast<NMHDR*>(lp)->code==TCN_SELCHANGE)show_page();return 0;
  case WM_COMMAND:{if(updating)return 0;const int id=LOWORD(wp),event=HIWORD(wp);
   if(id>=700&&id<=725){int slot=id>=720?1:0;int action=id-(700+slot*20);
    if(action==2){if(number(state.value("settings",Json::object()),"primary")!=slot)control("primary",slot);}else if(action==4){if(number(state.value("settings",Json::object()),"mic_source",1)!=slot)control("mic_source",slot);}
@@ -285,7 +307,7 @@ LRESULT CALLBACK proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){switch(msg){
  case tray_message:if(lp==WM_LBUTTONDBLCLK)open_window();else if(lp==WM_RBUTTONUP||lp==WM_CONTEXTMENU)tray_menu();return 0;
  case WM_CLOSE:ShowWindow(w,SW_HIDE);return 0;
  case WM_ENDSESSION:if(wp)DestroyWindow(w);return 0;
- case WM_DESTROY:DeleteObject(ui_font);DeleteObject(title_font);DeleteObject(heading_font);KillTimer(w,refresh_timer);Shell_NotifyIconW(NIM_DELETE,&tray);{std::lock_guard lock(queue_mutex);stopping=true;queue.clear();}queue_cv.notify_one();PostQuitMessage(0);return 0;
+ case WM_DESTROY:for(auto& icons:audio_icons)for(auto icon:icons)if(icon)DestroyIcon(icon);DeleteObject(ui_font);DeleteObject(title_font);DeleteObject(heading_font);KillTimer(w,refresh_timer);Shell_NotifyIconW(NIM_DELETE,&tray);{std::lock_guard lock(queue_mutex);stopping=true;queue.clear();}queue_cv.notify_one();PostQuitMessage(0);return 0;
  }return DefWindowProcW(w,msg,wp,lp);}
 }
 int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR command_line,int show){

@@ -1,4 +1,4 @@
-# AudioBridge v0.2.2
+# AudioBridge v0.2.3
 
 AudioBridge mixes audio from a Windows PC and a Mac into headphones connected to
 one computer, and sends a selected physical microphone to voice apps on both.

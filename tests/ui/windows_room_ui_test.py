@@ -84,6 +84,26 @@ try:
  before=len(seen('control'));click(722);time.sleep(.15)
  assert len(seen('control'))==before,'Clicking the current Output Hub must not send a role change'
 
+ # Native icon buttons keep check state, accessible action names and real icons.
+ for button_id,key in [(411,'win_mute'),(412,'win_deafen'),(421,'mac_mute'),(422,'mac_deafen')]:
+  button=get(button_id);assert u.SendMessageW(button,0xF6,1,0),'Audio button has no icon'
+  first_icon=u.SendMessageW(button,0xF6,1,0)
+  click(button_id)
+  wait(lambda:seen('control')[-1].get('key')==key and seen('control')[-1].get('value')==1,'Icon did not enable route gate')
+  wait(lambda:u.SendMessageW(button,0xF0,0,0)==1 and value(button).startswith('Un'),'Active icon state/name missing')
+  assert u.SendMessageW(button,0xF6,1,0)!=first_icon,'Active icon must show the slashed variant'
+  click(button_id)
+  wait(lambda:seen('control')[-1].get('key')==key and seen('control')[-1].get('value')==0,'Icon did not restore route')
+ for base in (700,720):
+  before=[bounds(base+i) for i in (3,5)]
+  saved=json.loads(state.read_text())
+  for device in saved['devices']:
+   for audio in device['audio_devices']:
+    if audio['id']=='test-headphones':audio['name']='Very long physical output device name '+('extension '*12)
+  state.write_text(json.dumps(saved))
+  wait(lambda:value(get(base+3)).startswith('Very long'),'Long device name not displayed')
+  after=[bounds(base+i) for i in (3,5)]
+  assert all((a.left,a.right,a.top)==(b.left,b.right,b.top) for a,b in zip(before,after)),'Long names moved selector bounds'
  page(3)
  click(501);wait(lambda:'Fixture check complete' in value(get(502)),'Readiness checks not rendered')
  assert u.SendMessageW(get(510),0x408,0,0)>0,'Local signal meter missing'

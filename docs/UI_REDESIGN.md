@@ -44,3 +44,20 @@ Use as Input Hub/Use as Output Hub. Input and Output device dropdowns are side
 by side beneath the icon. Selecting the current Windows hub is a no-op, avoiding
 an unnecessary role command and protective mute. The native Windows fixture
 checks role placement, dropdown alignment, independent role changes and labels.
+
+## v0.2.3 compact controls
+
+Input and Output fields retain equal widths when a device name is long. The Mac
+uses bounded native pop-up buttons with tail truncation; full names remain in the
+menu and tooltip. Windows retains its fixed-width native dropdowns.
+
+Each computer now has adjacent microphone and headphones icon buttons for its
+existing mute and deafen controls. Active controls show red slashed icons; native
+button states, accessible action names and tooltips expose their meaning. Input
+Hub and Output Hub controls remain above the computer icons.
+
+Validation: the Mac production build and model/IPC tests passed; its fixture UI
+was visually checked with long names and both icon states. The strict Windows
+build and native GUI fixture tests under Wine passed, including all four button
+actions, acknowledged states, changed icons, and stable long-name field bounds.
+This release changes presentation only; engine, room agent and drivers are unchanged.
