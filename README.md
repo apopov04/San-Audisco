@@ -1,4 +1,4 @@
-# San Audisco v0.2.8
+# San Audisco v0.2.9
 
 San Audisco (formerly AudioBridge) mixes audio from a Windows PC and a Mac into headphones connected to
 one computer, and sends a selected physical microphone to voice apps on both.
@@ -12,6 +12,10 @@ the working audio transport and Wi-Fi buffer settings. The previous version was
 used successfully with Discord on the Mac and Deadlock on Windows; this new
 release has automated and simulated validation, with installation and listening
 acceptance still required on the actual pair. See [v0.2 validation](docs/V02_VALIDATION.md).
+
+Version 0.2.9 adds automatic system playback routing and restoration, and reduces
+Windows redraws. See [routing and update notes](docs/V029_UPDATE.md) and
+[signing and OS permissions](docs/SIGNING.md).
 
 ## Start using a room
 
@@ -31,9 +35,17 @@ acceptance still required on the actual pair. See [v0.2 validation](docs/V02_VAL
 4. Configure Discord and Deadlock once using the table below. Grant the Mac's
    microphone/local-network permissions and the Windows private-network firewall
    prompt locally. OS permission dialogs cannot be approved from the other app.
-5. Start audio, check the connection/readiness and signal meters, then explicitly
+5. Press **Autoconfigure** on either computer to configure both devices and enable
+   automatic system input/output selection. Explicit app device selections are
+   respected. Start audio, check the connection/readiness and signal meters, then explicitly
    unmute. Each device has a quiet two-second test sound button. Test sounds are
    only generated on request and enter the listening bus, never the mic bus.
+
+Once both audio engines are ready, the app switches each computer's default
+playback to its playback cable. Apps following the system default (including a
+normal browser) then enter the mix automatically. Stop audio or Quit restores
+the outputs saved before that session. A manual output change during a session
+is respected. Explicit app output selections still take precedence.
 
 | Application | Output / speaker | Input / microphone |
 |---|---|---|

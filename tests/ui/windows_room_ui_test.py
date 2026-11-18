@@ -69,6 +69,8 @@ try:
  wait(lambda:u.IsWindowEnabled(get(722)),'Acknowledged peer Hub control disabled')
  page(0)
  assert 'Online' in value(get(721)),'Connected peer must be shown online'
+ assert value(get(740))=='Connected','Bridge connection label differs from Mac'
+ click(603);wait(lambda:seen('autoconfigure'),'Autoconfigure request missing')
  before=sum(r.get('command')=='status' for r in seen('status'))
  for _ in range(50):u.SendMessageW(hwnd,0x113,2,0)
  time.sleep(.25)

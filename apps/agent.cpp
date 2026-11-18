@@ -1,5 +1,6 @@
 #include "bridge/agent_platform.hpp"
 #include "bridge/agent_routes.hpp"
+#include "bridge/output_routing.hpp"
 #include "bridge/credentials.hpp"
 #include "bridge/control.hpp"
 #include "bridge/room.hpp"
@@ -74,14 +75,40 @@ class Agent {
  bool wanted_=false,was_connected_=false,engine_synced_=false;uint64_t sequence_=0,peer_sequence_=0,inventory_revision_=0;Clock::time_point refresh_{},advertise_{},retry_{},last_telemetry_{};
  std::map<std::string,Clock::time_point> pending_config_;uint64_t room_generation_=0;
  std::optional<Json> pending_join_;Clock::time_point join_deadline_{};
+ std::unique_ptr<bridge::routing::Backend> output_backend_;
+ std::unique_ptr<bridge::routing::Lease> output_lease_;
+ std::unique_ptr<bridge::routing::Backend> input_backend_;
+ std::unique_ptr<bridge::routing::Lease> input_lease_;
+ bool auto_microphone_=false;
+ Clock::time_point output_check_{},output_unhealthy_{};
+ std::string output_warning_;
+ void update_output(){
+  if(!output_lease_||Clock::now()<output_check_)return;
+  auto now=Clock::now();output_check_=now+std::chrono::seconds(1);
+  auto remote=peer_.value("diagnostics",Json::object());
+  auto local=o_.platform=="windows"?bridge::Device::Windows:bridge::Device::Mac;
+  auto hub=settings_.primary==local?telemetry_:remote;
+  bool ready=engine_.running()&&room_->status().connected&&now-last_telemetry_<std::chrono::seconds(3)
+   &&telemetry_.value("connected",false)&&telemetry_.value("synchronized",false)
+   &&telemetry_.value("playback_ready",false)&&remote.value("connected",false)&&remote.value("synchronized",false)
+   &&remote.value("playback_ready",false)&&hub.value("headphones_ready",false);
+  try {
+   if(ready){output_unhealthy_={};output_lease_->acquire(bridge::agent::playback_output(audio_,routes_["playback_input"],o_.platform));output_warning_=output_lease_->warning();
+    auto source=settings_.microphoneSource==local?telemetry_:remote;
+    if(auto_microphone_&&source.value("microphone_ready",false)&&telemetry_.value("mic_sink_ready",false)&&remote.value("mic_sink_ready",false))input_lease_->acquire(bridge::agent::microphone_input(audio_,routes_["microphone_output"],o_.platform));
+    else input_lease_->restore();
+    if(!input_lease_->warning().empty())output_warning_=input_lease_->warning();}
+   else {if(output_unhealthy_==Clock::time_point{})output_unhealthy_=now;if(now-output_unhealthy_>=std::chrono::seconds(3)){output_lease_->restore();input_lease_->restore();output_warning_=output_lease_->warning();if(!input_lease_->warning().empty())output_warning_=input_lease_->warning();}}
+  }catch(const std::exception&e){output_warning_=e.what();}
+ }
  std::string secret_id()const{return "room-"+credential_->room_id;}
  std::string audio_id()const{return "audio-"+credential_->room_id;}
- void persist(){saved_["version"]=2;saved_["device_id"]=identity_.id;saved_["name"]=identity_.name;saved_["platform"]=identity_.platform;saved_["routes"]=routes_;saved_["wanted_running"]=wanted_;saved_["settings"]=settings_json(settings_);if(credential_){auto&c=*credential_;saved_["room"]={{"id",c.room_id},{"peer_id",c.peer.id},{"peer_name",c.peer.name},{"peer_platform",c.peer.platform},{"address",c.last_address},{"port",c.peer_port}};}else saved_.erase("room");bridge::agent::atomic_write(o_.directory/"state.json",saved_.dump(2)+"\n");}
+ void persist(){saved_["version"]=2;saved_["device_id"]=identity_.id;saved_["name"]=identity_.name;saved_["platform"]=identity_.platform;saved_["routes"]=routes_;saved_["wanted_running"]=wanted_;saved_["auto_microphone"]=auto_microphone_;saved_["settings"]=settings_json(settings_);if(credential_){auto&c=*credential_;saved_["room"]={{"id",c.room_id},{"peer_id",c.peer.id},{"peer_name",c.peer.name},{"peer_platform",c.peer.platform},{"address",c.last_address},{"port",c.peer_port}};}else saved_.erase("room");bridge::agent::atomic_write(o_.directory/"state.json",saved_.dump(2)+"\n");}
  void refresh(){audio_=bridge::enumerate_audio_devices();bridge::agent::auto_routes(routes_,audio_,o_.platform);refresh_=Clock::now()+std::chrono::seconds(5);++inventory_revision_;}
- Json local_info(){Json j={{"id",identity_.id},{"name",identity_.name},{"platform",o_.platform},{"online",true},{"audio_devices",bridge::agent::audio_json(audio_)},{"setup_status",bridge::agent::setup_status(routes_,audio_,o_.platform)},{"capture_authorized",bridge::agent::capture_authorized()},{"media_port",o_.media_port},{"inventory_revision",inventory_revision_},{"diagnostics",telemetry_}};for(auto&[k,v]:routes_)j[k]=v;return j;}
+ Json local_info(){Json j={{"id",identity_.id},{"name",identity_.name},{"platform",o_.platform},{"online",true},{"audio_devices",bridge::agent::audio_json(audio_)},{"setup_status",bridge::agent::setup_status(routes_,audio_,o_.platform)},{"capture_authorized",bridge::agent::capture_authorized()},{"output_routing_warning",output_warning_},{"media_port",o_.media_port},{"inventory_revision",inventory_revision_},{"diagnostics",telemetry_}};for(auto&[k,v]:routes_)j[k]=v;return j;}
  void send(const Json&j){if(!room_->send(j.dump()))throw std::runtime_error("Other device is unavailable; change was not sent");}
  void snapshot(){if(room_->status().connected){Json j={{"type","snapshot"},{"device",local_info()},{"settings",settings_json(settings_)},{"running",engine_.running()},{"diagnostics",telemetry_},{"mute_reason",mute_reason_}};room_->send(j.dump());}advertise_=Clock::now()+std::chrono::seconds(1);}
- void stop_local(bool forget_intent=false){engine_.stop();telemetry_=Json::object();engine_synced_=false;stdout_.clear();if(forget_intent)wanted_=false;}
+ void stop_local(bool forget_intent=false){if(input_lease_)input_lease_->restore();if(output_lease_){output_lease_->restore();output_warning_=output_lease_->warning();}engine_.stop();telemetry_=Json::object();engine_synced_=false;stdout_.clear();if(forget_intent)wanted_=false;}
  void start_local(){
   if(engine_.running())return;if(!credential_||!room_->status().connected||peer_.empty())throw std::runtime_error("Wait for both room devices to connect");
   if(credential_->peer.platform==o_.platform)throw std::runtime_error("This release requires one Windows and one Mac device");
@@ -90,6 +117,7 @@ class Agent {
   auto local=o_.platform=="windows"?bridge::Device::Windows:bridge::Device::Mac;
   if(settings_.primary==local&&!bridge::agent::available(audio_,routes_["headphones_output"],false))throw std::runtime_error("Select available headphones on the Hub");
   if(settings_.microphoneSource==local&&!bridge::agent::available(audio_,routes_["physical_microphone"],true))throw std::runtime_error("Select an available physical microphone on the microphone source");
+  if(output_lease_)output_lease_->begin();if(input_lease_)input_lease_->begin();output_check_={};output_unhealthy_={};
   auto media=peer_.value("media_port",45670);if(media<1||media>65535)throw std::runtime_error("Invalid peer media port");auto address=room_->status().peer_address;in_addr ip{};if(inet_pton(AF_INET,address.c_str(),&ip)!=1)throw std::runtime_error("Authenticated peer address unavailable");
   std::ostringstream config;config<<"device="<<o_.platform<<"\npeer="<<address<<"\nport="<<o_.media_port<<"\npeer_port="<<media<<"\nkey_stdin=1\n";for(auto key:{"playback_input","microphone_output","headphones_output","physical_microphone"})config<<key<<'='<<routes_[key]<<'\n';
   bridge::agent::atomic_write(o_.directory/"engine.conf",config.str());engine_.start(o_.engine,{"run",utf8(o_.directory/"engine.conf")});auto media_key=bridge::room::audio_key(*credential_);auto key_frame=bridge::net::key_to_hex(media_key)+"\n";sodium_memzero(media_key.data(),media_key.size());try{engine_.send(key_frame);}catch(...){sodium_memzero(key_frame.data(),key_frame.size());stop_local();throw;}sodium_memzero(key_frame.data(),key_frame.size());engine_synced_=false;stdout_.clear();telemetry_=Json::object();settings_.globalMute=true;mute_reason_="Audio started or reconnected. Unmute when ready.";message_="Starting audio on both devices…";retry_=Clock::now()+std::chrono::seconds(3);
@@ -101,13 +129,22 @@ class Agent {
  void configure_local(const Json&q){auto next=routes_;std::string name=q.contains("name")?bounded(q,"name",64):identity_.name;if(name.empty())throw std::runtime_error("Device name cannot be empty");refresh();for(auto key:{"playback_input","microphone_output","headphones_output","physical_microphone"})if(q.contains(key)){auto value=bounded(q,key);bridge::agent::validate_route(audio_,key,value);next[key]=value;}
   bridge::agent::validate_independent(audio_,next);bool changed=next!=routes_;if(changed)stop_local();routes_=std::move(next);identity_.name=name;room_->set_local_name(name);++inventory_revision_;persist();if(changed&&wanted_){try{start_local();}catch(const std::exception&e){message_=e.what();}}snapshot();
  }
+ void autoconfigure_local(){
+  refresh();std::map<int,std::string> defaults;try{defaults=output_backend_->defaults();}catch(const std::exception&){}
+  auto next=bridge::agent::recommended_routes(routes_,audio_,o_.platform,defaults);
+  auto local=o_.platform=="windows"?bridge::Device::Windows:bridge::Device::Mac;
+  if(settings_.primary==local&&next["headphones_output"].empty())throw std::runtime_error("Select your headphones, then press Autoconfigure again.");
+  if(settings_.microphoneSource==local&&next["physical_microphone"].empty())throw std::runtime_error("Select your microphone, then press Autoconfigure again.");
+  auto_microphone_=true;Json q=next;configure_local(q);if(output_lease_)output_lease_->begin();if(input_lease_)input_lease_->begin();output_check_={};
+  message_="Audio routes configured. Start audio to send system playback to the Output Hub.";
+ }
  void remote(const Json&j){auto type=bounded(j,"type",32);
   if(type=="snapshot"){
    auto d=j.at("device");if(d.at("id")!=credential_->peer.id||d.at("platform")!=credential_->peer.platform)throw std::runtime_error("Peer identity changed");if(d.dump().size()>45000)throw std::runtime_error("Peer inventory too large");peer_=d;peer_["online"]=true;peer_["running"]=j.value("running",false);peer_["diagnostics"]=j.value("diagnostics",Json::object());
    if(o_.platform=="mac"&&!engine_.running()&&j.contains("settings"))settings_=parse_settings(j.at("settings"));
   }else if(type=="request"){
    auto seq=j.at("sequence").get<uint64_t>();if(seq<=peer_sequence_)return;peer_sequence_=seq;auto q=j.at("body");auto command=bounded(q,"command",32);Json result={{"type","result"},{"sequence",seq},{"ok",true}};
-   try{if(command=="configure")configure_local(q);else if(command=="start"){wanted_=true;start_local();persist();}else if(command=="stop"){stop_local(true);persist();}else if(command=="test_tone"){engine_.send("test_tone\n");}else if(command=="control"){if(o_.platform!="windows")throw std::runtime_error("Mixer coordinator is Windows");apply_control(q);}else throw std::runtime_error("Unsupported remote command");}
+   try{if(command=="configure")configure_local(q);else if(command=="autoconfigure")autoconfigure_local();else if(command=="start"){wanted_=true;start_local();persist();}else if(command=="stop"){stop_local(true);persist();}else if(command=="test_tone"){engine_.send("test_tone\n");}else if(command=="control"){if(o_.platform!="windows")throw std::runtime_error("Mixer coordinator is Windows");apply_control(q);}else throw std::runtime_error("Unsupported remote command");}
    catch(const std::exception&e){result["ok"]=false;result["error"]=e.what();}room_->send(result.dump());snapshot();
   }else if(type=="result"){
    auto seq=std::to_string(j.at("sequence").get<uint64_t>());pending_config_.erase(seq);if(!j.value("ok",false))message_="Other device: "+j.value("error",std::string("request failed"));else message_="Room change acknowledged.";
@@ -135,12 +172,19 @@ public:
 #endif
   if(saved_.contains("settings"))settings_=parse_settings(saved_["settings"]);settings_.globalMute=true;wanted_=saved_.value("wanted_running",false);refresh();bridge::room::Config c;c.local=identity_;c.bind_address=o_.bind;c.port=o_.room_port;c.discovery_port=o_.discovery_port;if(o_.bind=="127.0.0.1")c.discovery_address="127.0.0.1";room_=std::make_unique<bridge::room::Service>(c);
   if(saved_.contains("room")){try{auto r=saved_["room"];bridge::room::Credential key;key.room_id=r.at("id");key.peer={r.at("peer_id"),r.at("peer_name"),r.at("peer_platform")};key.last_address=r.at("address");key.peer_port=r.at("port");key.secret=bridge::credentials::load_key("room-"+key.room_id);credential_=key;room_->restore(key);sodium_memzero(key.secret.data(),key.secret.size());message_="Reconnecting to remembered room…";}catch(const std::exception&e){message_=std::string("Saved room could not be restored: ")+e.what();wanted_=false;if(credential_)sodium_memzero(credential_->secret.data(),credential_->secret.size());credential_.reset();}}
+  output_backend_=bridge::routing::system_backend();
+  output_lease_=std::make_unique<bridge::routing::Lease>(*output_backend_,[this](const Json&j){bridge::agent::atomic_write(o_.directory/"output-restore.json",j.dump(2)+"\n");},read_json(o_.directory/"output-restore.json"));
+  output_lease_->restore();output_warning_=output_lease_->warning();
+  input_backend_=bridge::routing::system_backend(true);
+  input_lease_=std::make_unique<bridge::routing::Lease>(*input_backend_,[this](const Json&j){bridge::agent::atomic_write(o_.directory/"input-restore.json",j.dump(2)+"\n");},read_json(o_.directory/"input-restore.json"));
+  input_lease_->restore();auto_microphone_=saved_.value("auto_microphone",false);
   persist();
  }
  ~Agent(){stop_local();if(credential_)sodium_memzero(credential_->secret.data(),credential_->secret.size());}
  Json status(){auto rs=room_->status();Json ds=Json::array();ds.push_back(local_info());if(!peer_.empty()){auto p=peer_;p["online"]=rs.connected;ds.push_back(p);}else if(credential_)ds.push_back({{"id",credential_->peer.id},{"name",credential_->peer.name},{"platform",credential_->peer.platform},{"online",false},{"audio_devices",Json::array()},{"setup_status","Offline"}});
-  auto role=[&](bridge::Device d){auto p=d==bridge::Device::Windows?"windows":"mac";if(o_.platform==p)return identity_.id;if(credential_&&credential_->peer.platform==p)return credential_->peer.id;return std::string();};Json nearby=Json::array();for(auto&n:room_->nearby())if(n.accepting)nearby.push_back({{"id",n.room_id},{"name",n.device.name},{"address",n.address+":"+std::to_string(n.port)}});auto diagnostics=telemetry_;diagnostics["message"]=bridge::agent::setup_status(routes_,audio_,o_.platform);diagnostics["permission_granted"]=bridge::agent::capture_authorized();
-  return {{"device_id",identity_.id},{"name",identity_.name},{"room_id",rs.room_id},{"room_port",room_->port()},{"invite_code",rs.invitation_code},{"invite_expires_seconds",rs.invitation_seconds},{"paired",credential_.has_value()},{"connected",rs.connected},{"running",engine_.running()},{"wanted_running",wanted_},{"status",rs.error.empty()?message_:rs.error},{"phase",rs.phase},{"mute_reason",mute_reason_},{"hub_device_id",role(settings_.primary)},{"mic_device_id",role(settings_.microphoneSource)},{"devices",ds},{"settings",settings_json(settings_)},{"discovered",nearby},{"diagnostics",diagnostics},{"pending_changes",pending_config_.size()}};
+  auto role=[&](bridge::Device d){auto p=d==bridge::Device::Windows?"windows":"mac";if(o_.platform==p)return identity_.id;if(credential_&&credential_->peer.platform==p)return credential_->peer.id;return std::string();};Json nearby=Json::array();for(auto&n:room_->nearby())if(n.accepting)nearby.push_back({{"id",n.room_id},{"name",n.device.name},{"address",n.address+":"+std::to_string(n.port)}});auto diagnostics=telemetry_;diagnostics["message"]=bridge::agent::setup_status(routes_,audio_,o_.platform);diagnostics["permission_granted"]=bridge::agent::capture_authorized();diagnostics["output_routing_active"]=output_lease_&&output_lease_->active();diagnostics["output_routing_warning"]=output_warning_;diagnostics["input_routing_active"]=input_lease_&&input_lease_->active();if(!output_warning_.empty())diagnostics["message"]=output_warning_;
+  auto displayed=rs.error.empty()?message_:rs.error;if(rs.error.empty()){if(!output_warning_.empty())displayed=output_warning_;else if(!peer_.value("output_routing_warning",std::string()).empty())displayed=peer_.value("name",std::string("Other device"))+": "+peer_.value("output_routing_warning",std::string());}
+  return {{"device_id",identity_.id},{"name",identity_.name},{"room_id",rs.room_id},{"room_port",room_->port()},{"invite_code",rs.invitation_code},{"invite_expires_seconds",rs.invitation_seconds},{"paired",credential_.has_value()},{"connected",rs.connected},{"running",engine_.running()},{"wanted_running",wanted_},{"status",displayed},{"phase",rs.phase},{"mute_reason",mute_reason_},{"hub_device_id",role(settings_.primary)},{"mic_device_id",role(settings_.microphoneSource)},{"devices",ds},{"settings",settings_json(settings_)},{"discovered",nearby},{"diagnostics",diagnostics},{"pending_changes",pending_config_.size()}};
  }
  Json command(const Json&q){auto cmd=bounded(q,"command",32);
   if(cmd=="status"){}
@@ -152,6 +196,7 @@ public:
     bridge::room::normalize_code(bounded(q,"code",16));pending_join_.reset();if(!try_join(q)){auto address=bounded(q,"address",128);if(address.empty())room_->discover();else{auto sep=address.find(':');uint16_t port=45671;if(sep!=address.npos){auto text=address.substr(sep+1);size_t n=0;auto p=std::stoul(text,&n);if(n!=text.size()||!p||p>65535)throw std::runtime_error("Invalid room address port");port=uint16_t(p);address.resize(sep);}room_->discover_at(address,port);}pending_join_=q;join_deadline_=Clock::now()+std::chrono::seconds(6);message_="Finding the room before pairing…";}
   }
   else if(cmd=="configure"){auto id=bounded(q,"device_id",64);if(id.empty()||id==identity_.id)configure_local(q);else if(credential_&&id==credential_->peer.id){remote_request(q);message_="Waiting for the other device to apply setup…";}else throw std::runtime_error("Unknown room device");}
+  else if(cmd=="autoconfigure"){autoconfigure_local();if(room_->status().connected){remote_request({{"command","autoconfigure"}});message_="Configuring audio routes on both computers…";}else message_="This computer is configured. Connect the other computer and run Autoconfigure again.";}
   else if(cmd=="control"){if(o_.platform=="windows")apply_control(q);else{remote_request(q);message_="Waiting for mixer acknowledgement…";}}
   else if(cmd=="test_tone"){auto id=bounded(q,"device_id",64);if(id.empty()||id==identity_.id)engine_.send("test_tone\n");else if(credential_&&id==credential_->peer.id)remote_request(q);else throw std::runtime_error("Unknown room device");message_="Playing a quiet two-second test tone through the Hub headphones.";}
   else if(cmd=="start"){if(!room_->status().connected||peer_.empty())throw std::runtime_error("Wait for both devices to connect");wanted_=true;try{start_local();remote_request({{"command","start"}});persist();}catch(...){wanted_=false;stop_local();persist();throw;}}
@@ -168,7 +213,7 @@ public:
   for(int i=0;i<32;++i){auto s=room_->receive();if(!s)break;try{remote(Json::parse(*s));}catch(const std::exception&e){message_=std::string("Rejected room update: ")+e.what();}}
   if(Clock::now()>=refresh_){refresh();}if(Clock::now()>=advertise_)snapshot();
   if(wanted_&&rs.connected&&!peer_.empty()&&!engine_.running()&&Clock::now()>=retry_){retry_=Clock::now()+std::chrono::seconds(5);try{start_local();}catch(const std::exception&e){message_=e.what();}}
-  handle_telemetry();for(auto it=pending_config_.begin();it!=pending_config_.end();){if(Clock::now()>it->second){message_="Other device did not acknowledge the change. Check its connection and retry.";it=pending_config_.erase(it);}else ++it;}
+  handle_telemetry();update_output();for(auto it=pending_config_.begin();it!=pending_config_.end();){if(Clock::now()>it->second){message_="Other device did not acknowledge the change. Check its connection and retry.";it=pending_config_.erase(it);}else ++it;}
  }
 };
 struct Client {Socket socket;std::string input,output;size_t sent=0;Clock::time_point deadline=Clock::now()+std::chrono::seconds(2);};

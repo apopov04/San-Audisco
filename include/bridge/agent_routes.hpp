@@ -21,6 +21,29 @@ inline void validate_independent(const std::vector<AudioDevice>&ds,const std::ma
 }
 inline Json audio_json(const std::vector<AudioDevice>&ds){Json a=Json::array();for(auto&d:ds)a.push_back({{"id",d.id},{"name",d.name},{"inputs",d.input_channels},{"outputs",d.output_channels},{"rate",d.sample_rate}});return a;}
 inline bool available(const std::vector<AudioDevice>&ds,const std::string&id,bool input){return !id.empty()&&std::any_of(ds.begin(),ds.end(),[&](auto&d){return d.id==id&&(input?d.input_channels:d.output_channels)>0;});}
+inline std::string playback_output(const std::vector<AudioDevice>&ds,const std::string&capture,const std::string&platform){
+ auto input=std::find_if(ds.begin(),ds.end(),[&](auto&d){return d.id==capture&&d.input_channels>0;});
+ if(input==ds.end())return {};
+ if(platform=="mac")return virtual_device(*input)&&input->output_channels>0?input->id:std::string();
+ // These driver endpoints have distinct capture/render IDs. Never select the
+ // microphone cable, an arbitrary physical endpoint, or the 16ch alternative.
+ auto expected=input->name;auto at=expected.find(" Output (");
+ if(at==std::string::npos||expected.find("VB-Audio")==std::string::npos)return {};
+ expected.replace(at,9," Input (");
+ std::string result;
+ for(auto&d:ds)if(d.output_channels>0&&d.name==expected){if(!result.empty())return {};result=d.id;}
+ return result;
+}
+inline std::string microphone_input(const std::vector<AudioDevice>&ds,const std::string&render,const std::string&platform){
+ auto output=std::find_if(ds.begin(),ds.end(),[&](auto&d){return d.id==render&&d.output_channels>0;});
+ if(output==ds.end())return {};
+ if(platform=="mac")return virtual_device(*output)&&output->input_channels>0?output->id:std::string();
+ auto expected=output->name;auto at=expected.find(" Input (");
+ if(at==std::string::npos||expected.find("VB-Audio")==std::string::npos)return {};
+ expected.replace(at,8," Output (");std::string result;
+ for(auto&d:ds)if(d.input_channels>0&&d.name==expected){if(!result.empty())return {};result=d.id;}
+ return result;
+}
 inline void auto_routes(std::map<std::string,std::string>&r,const std::vector<AudioDevice>&ds,const std::string&platform){
  auto fill=[&](const char*key,bool input,auto match){if(available(ds,r[key],input))return;std::vector<std::string> found;for(auto&d:ds)if((input?d.input_channels:d.output_channels)>0&&match(d))found.push_back(d.id);if(found.size()==1)r[key]=found.front();};
  if(platform=="mac"){
@@ -47,5 +70,26 @@ inline void validate_route(const std::vector<AudioDevice>&ds,const std::string&k
  if(physical&&virtual_device(*it))throw std::runtime_error("Choose physical headphones or a physical microphone, not a virtual cable");
  if(!physical&&!virtual_device(*it))throw std::runtime_error("Playback and microphone delivery require virtual audio cables");
  if(id.find_first_of("\r\n")!=std::string::npos)throw std::runtime_error("Invalid device identifier");
+}
+inline std::map<std::string,std::string> recommended_routes(std::map<std::string,std::string> current,const std::vector<AudioDevice>&ds,const std::string&platform,const std::map<int,std::string>&defaults){
+ std::map<std::string,std::string> recommended;auto_routes(recommended,ds,platform);
+ for(auto key:{"playback_input","microphone_output"})if(!recommended[key].empty())current[key]=recommended[key];
+ auto physical=[&](const std::string&id,bool input){auto d=std::find_if(ds.begin(),ds.end(),[&](auto&v){return v.id==id;});return d!=ds.end()&&!virtual_device(*d)&&(input?d->input_channels:d->output_channels)>0;};
+ for(auto key:{"physical_microphone","headphones_output"}){
+  bool input=std::string(key)=="physical_microphone";if(physical(current[key],input))continue;current[key].clear();
+  if(input&&physical(recommended[key],true)){current[key]=recommended[key];continue;}
+  std::vector<std::string> candidates,headphones;
+  for(auto&d:ds){auto name=d.name;std::transform(name.begin(),name.end(),name.begin(),[](unsigned char c){return char(std::tolower(c));});
+   if(!physical(d.id,input)||name.find("hands-free")!=name.npos||(input&&name.find("stereo mix")!=name.npos))continue;
+   candidates.push_back(d.id);if(!input&&name.find("headphone")!=name.npos)headphones.push_back(d.id);
+  }
+  if(!input){for(const auto&[role,id]:defaults){(void)role;if(std::find(candidates.begin(),candidates.end(),id)!=candidates.end()){current[key]=id;break;}}
+   if(current[key].empty()&&headphones.size()==1)current[key]=headphones.front();
+   if(current[key].empty()&&platform=="mac"&&physical("BuiltInSpeakerDevice",false))current[key]="BuiltInSpeakerDevice";
+  }
+  if(current[key].empty()&&candidates.size()==1)current[key]=candidates.front();
+ }
+ for(auto&[key,value]:current)if(key=="playback_input"||key=="microphone_output"||key=="headphones_output"||key=="physical_microphone")validate_route(ds,key,value);
+ validate_independent(ds,current);return current;
 }
 }

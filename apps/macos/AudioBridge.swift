@@ -438,7 +438,7 @@ struct ContentView:View {
   }
  }
  var body:some View {VStack(alignment:.leading,spacing:0){
-  HStack{Text("San Audisco").font(.title2).fontWeight(.semibold);Spacer();Button(m.paired ? "Room settings":"Connect computers"){showRoom=true};Button{showChecks=true}label:{Label("Audio checks",systemImage:"waveform.path.ecg")}}.padding(.bottom,22)
+  HStack{Text("San Audisco").font(.title2).fontWeight(.semibold);Spacer();Button("Autoconfigure"){m.send(["command":"autoconfigure"])}.disabled(!m.available || m.busy).help("Set up audio routes on both connected computers. Keeps your selected physical input and output.");Button(m.paired ? "Room settings":"Connect computers"){showRoom=true};Button{showChecks=true}label:{Label("Audio checks",systemImage:"waveform.path.ecg")}}.padding(.bottom,22)
   ScrollView{VStack(spacing:18){
    HStack(alignment:.center,spacing:20){computer(0);VStack(spacing:8){BridgeConnectionView(connected:m.connected && m.available);Text(linkLabel).font(.caption).foregroundColor(.secondary)}.frame(width:160);computer(1)}
    HStack(alignment:.top,spacing:32){routes(0);Divider();routes(1)}

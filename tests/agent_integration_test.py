@@ -39,6 +39,8 @@ with tempfile.TemporaryDirectory(prefix='audiobridge-agent-test-') as temp:
         win=Instance(root/'win','windows',wp,wm,mp);instances.append(win)
         mac=Instance(root/'mac','mac',mp,mm,wp);instances.append(mac)
         assert not win.state()['running'] and not mac.state()['running']
+        assert not win.state()['diagnostics']['output_routing_active']
+        assert not mac.state()['diagnostics']['output_routing_active']
         assert win.state()['devices'][0]['setup_status']=='Ready'
         duplicate=subprocess.run([str(agent),'ensure',*win.args],capture_output=True,text=True,timeout=10)
         assert json.loads(duplicate.stdout)['ok']
@@ -55,8 +57,19 @@ with tempfile.TemporaryDirectory(prefix='audiobridge-agent-test-') as temp:
         wait(lambda:mac.state()['name']=='Laptop from Windows','remote rename')
         rejected=win.call('configure',device_id=wid,physical_microphone='win-mic-sink')
         assert not rejected['ok']
+        assert mac.call('autoconfigure')['ok']
+        wait(lambda:mac.state()['pending_changes']==0,'room-wide Autoconfigure acknowledgement')
         assert win.call('start')['ok']
         wait(lambda:win.state()['diagnostics'].get('synchronized') and mac.state()['diagnostics'].get('synchronized'),'engine synchronized')
+        wait(lambda:win.state()['diagnostics']['output_routing_active'] and mac.state()['diagnostics']['output_routing_active'],'automatic output takeover after both engines ready')
+        wait(lambda:win.state()['diagnostics']['input_routing_active'] and mac.state()['diagnostics']['input_routing_active'],'Autoconfigure enables shared default microphone')
+        for device,target in [(win,'win-mic-capture'),(mac,'mac-mic-sink')]:
+            journal=json.loads((device.root/'input-restore.json').read_text())
+            assert {r['target'] for r in journal['entries']}=={target}
+        for device,target in [(win,'win-playback-render'),(mac,'mac-playback')]:
+            journal=json.loads((device.root/'output-restore.json').read_text())
+            assert {r['target'] for r in journal['entries']}=={target}
+            assert {r['before'] for r in journal['entries']}=={'test-speakers','test-headphones','test-calls'}
         time.sleep(1.2)
         assert mac.call('control',key='mute',value=0)['ok']
         wait(lambda:not win.state()['diagnostics'].get('muted',True) and not mac.state()['diagnostics'].get('muted',True),'remote unmute')
@@ -73,6 +86,9 @@ with tempfile.TemporaryDirectory(prefix='audiobridge-agent-test-') as temp:
         mac.call('quit');mac.process.wait(timeout=5)
         assert mac.call('quit')['ok']  # Idempotent Quit when no daemon holds its lock.
         wait(lambda:not win.state()['connected'],'disconnect detected',seconds=20)
+        for device in (win,mac):
+            assert json.loads((device.root/'output-restore.json').read_text())['entries']==[], 'Disconnect/quit must restore outputs'
+            assert json.loads((device.root/'input-restore.json').read_text())['entries']==[], 'Disconnect/quit must restore inputs'
         mac.start()
         wait(lambda:win.state()['connected'] and mac.state()['connected'],'saved room reconnect',seconds=20)
         wait(lambda:win.state()['diagnostics'].get('synchronized') and mac.state()['diagnostics'].get('synchronized'),'audio resumes',seconds=20)
@@ -81,6 +97,11 @@ with tempfile.TemporaryDirectory(prefix='audiobridge-agent-test-') as temp:
         print('PASS saved credential reconnect, remembered start intent, explicit protective mute reason')
         assert mac.call('stop')['ok']
         wait(lambda:not win.state()['running'] and not mac.state()['running'],'room-wide stop')
+        for device in (win,mac):
+            assert not device.state()['diagnostics']['output_routing_active']
+            assert json.loads((device.root/'output-restore.json').read_text())['entries']==[]
+            assert json.loads((device.root/'input-restore.json').read_text())['entries']==[]
+        print('PASS automatic render takeover, saved original defaults, disconnect/quit and room-wide stop restoration')
         # Plaintext state must not contain invitation or cryptographic secrets.
         for device in (win,mac):
             state=json.loads((device.root/'state.json').read_text())
