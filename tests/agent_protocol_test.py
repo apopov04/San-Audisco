@@ -14,6 +14,46 @@ def peers(root, legacy=False):
     wait(lambda:a.state()['connected'] and b.state()['connected'],'paired')
     return a,b
 
+with tempfile.TemporaryDirectory(prefix='san-concurrent-') as temp:
+    a,b=peers(pathlib.Path(temp))
+    try:
+        from concurrent.futures import ThreadPoolExecutor
+        wait(lambda:a.state()['shared_ready'] and b.state()['shared_ready'],'ready for concurrent controls')
+        before=a.state()['settings_revision']
+        def controls(instance,key):
+            for i in range(20):
+                assert instance.call('control',key=key,value=(i+1)/25)['ok']
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            tasks=[pool.submit(controls,a,'master'),pool.submit(controls,b,'balance')]
+            for task in tasks:task.result()
+        wait(lambda:all(x.state()['settings_revision']==before+40 for x in (a,b)),
+             'every concurrent control receives one revision')
+        wait(lambda:a.state()['settings']==b.state()['settings'],'concurrent settings converge')
+        state=a.state()
+        assert abs(state['settings']['master']-.8)<.001 and abs(state['settings']['balance']-.8)<.001
+
+        # An authenticated duplicate request must not gain a new revision or
+        # replace a later value. Use an isolated room so this synthetic sequence
+        # cannot interfere with subsequent real UI requests.
+        message={'type':'request','sequence':10000,'body':{'command':'control',
+                 'authority_epoch':state['authority_epoch'],'key':'master','value':.37}}
+        assert b.call('test_peer_message',message=message)['ok']
+        wait(lambda:all(x.state()['settings_revision']==before+41 for x in (a,b)),
+             'first uniquely sequenced request')
+        message['body']['value']=.99
+        assert b.call('test_peer_message',message=message)['ok']
+        message['sequence']=9999
+        assert b.call('test_peer_message',message=message)['ok']
+        message['sequence']=10001;message['body']['authority_epoch']=state['authority_epoch']-1
+        assert b.call('test_peer_message',message=message)['ok']
+        time.sleep(.3)
+        for instance in (a,b):
+            current=instance.state()
+            assert current['settings_revision']==before+41,'Duplicate or stale request gained a revision'
+            assert abs(current['settings']['master']-.37)<.001,'Duplicate or stale request changed settings'
+        print('PASS concurrent controls converge; duplicate, reordered and stale-authority requests cannot revert settings')
+    finally:a.close();b.close()
+
 with tempfile.TemporaryDirectory(prefix='san-protocol-') as temp:
     a,b=peers(pathlib.Path(temp))
     try:

@@ -11,6 +11,10 @@ intact during this verification.
   device classification, Windows–Mac, Windows–Windows and Mac–Mac room cases.
 - Final targeted handover, migration and malformed-protocol regression checks
   passed after the last agent changes.
+- A final agent-level test sends 40 concurrent controls from both devices and
+  verifies one revision per accepted change and convergence. Duplicate request
+  IDs, reordered requests and stale-authority requests leave the accepted state
+  and revision unchanged. This added test passed on the Mac with isolated agents.
 - All four Input/Output Hub combinations are exercised using two real agent
   processes and the production engine with synthetic audio endpoints.
 - Handover tests interrupt each of five transfer stages, restart the affected
@@ -77,7 +81,23 @@ hardware-validated, unlock the Mac and connect the AirPods, then verify:
 5. Stop/quit restores the previous OS default devices; reconnect does not select
    a fallback speaker automatically.
 
-A short synthetic benchmark measured about 1.9% and 2.3% of one CPU core for the
-two engine processes on this Mac, with about 6.8 MiB peak RSS each. This excludes
-native audio drivers, the GUIs, Bluetooth and the game; it is not a PC performance
-or end-to-end latency measurement.
+## Performance comparison
+
+The previous version (commit `dca251f`) was rebuilt from its source archive with
+the same Release compiler settings and Opus/libsodium libraries. Each version
+ran sequentially on this Mac with synthetic audio for 20 seconds, with Mac as
+Output Hub. CPU accounting includes each process's startup and shutdown.
+
+| Engine process | Previous CPU, % of one core | 0.3 CPU, % of one core | Previous peak RSS | 0.3 peak RSS |
+|---|---:|---:|---:|---:|
+| Windows participant simulation | 4.06% | 4.07% | 6.88 MiB | 6.84 MiB |
+| Mac participant simulation | 4.71% | 4.67% | 6.91 MiB | 6.88 MiB |
+
+Both versions reported 1,536 network-buffer frames, 480 listening-buffer frames,
+and zero queue drops at the end of the runs. The historical 10-second baseline
+and an initial 5-second new-build run used less CPU on this host; the fresh
+comparison avoids treating those different runtime conditions as a regression.
+These single runs are a regression smoke check, not a statistical performance
+guarantee. They exclude native audio drivers, the GUIs, Bluetooth and the game;
+they are not a PC performance or end-to-end latency measurement. Reports are
+included in the release's `evidence` directory.
