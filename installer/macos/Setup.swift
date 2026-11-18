@@ -84,7 +84,7 @@ struct SetupManifest: Decodable { let files: [PayloadFile] }
         let two = inventory(2), sixteen = inventory(16)
         ready2 = two.0; ready16 = sixteen.0
         installedApp = ["AudioBridge","bridge-engine","bridge-agent"].allSatisfy{FileManager.default.isExecutableFile(atPath:destination.appendingPathComponent("Contents/MacOS/"+$0).path)}
-        rows = [two.1,sixteen.1,installedApp ? "Golden Gate Audio: installed in ~/Applications" : "Golden Gate Audio: ready to install in ~/Applications"]
+        rows = [two.1,sixteen.1,installedApp ? "San Audisco: installed in ~/Applications" : "San Audisco: ready to install in ~/Applications"]
         if restartPending {rows.append("A driver was installed this boot. Restart when convenient, then reopen setup.")}
         saveState()
     }
@@ -118,7 +118,7 @@ struct SetupManifest: Decodable { let files: [PayloadFile] }
         do {
             let running = NSWorkspace.shared.runningApplications.contains{ $0.bundleIdentifier == "local.audiobridge.desktop" }
             let agent = try run("/usr/bin/pgrep",["-x","bridge-agent"]).0 == 0
-            guard !running && !agent else { throw NSError(domain:"Quit Golden Gate Audio and its background agent before updating. Setup will not stop live audio.",code:1) }
+            guard !running && !agent else { throw NSError(domain:"Quit San Audisco and its background agent before updating. Setup will not stop live audio.",code:1) }
             let fm = FileManager.default
             try fm.createDirectory(at:destination.deletingLastPathComponent(),withIntermediateDirectories:true)
             let temporary = destination.deletingLastPathComponent().appendingPathComponent("AudioBridge-install-"+UUID().uuidString+".app")
@@ -130,11 +130,11 @@ struct SetupManifest: Decodable { let files: [PayloadFile] }
                 try fm.moveItem(at:destination,to:backup)
                 do {try fm.moveItem(at:temporary,to:destination)} catch {
                     let installError = error
-                    do {try fm.moveItem(at:backup,to:destination)} catch {throw NSError(domain:"Update failed and the previous app could not be restored automatically. It remains at \(backup.path). Restore it before launching Golden Gate Audio.",code:1)}
+                    do {try fm.moveItem(at:backup,to:destination)} catch {throw NSError(domain:"Update failed and the previous app could not be restored automatically. It remains at \(backup.path). Restore it before launching San Audisco.",code:1)}
                     throw installError
                 }
             } else {try fm.moveItem(at:temporary,to:destination)}
-            message = "Golden Gate Audio installed. Open it when both audio components are ready. Existing settings and drivers were retained."
+            message = "San Audisco installed. Open it when both audio components are ready. Existing settings and drivers were retained."
         } catch {message = error.localizedDescription}
         busy = false;refresh()
     }
@@ -143,7 +143,7 @@ struct SetupView:View {
     @StateObject var model = SetupModel()
     var body:some View {
         VStack(alignment:.leading,spacing:18) {
-            Text("Golden Gate Audio Setup").font(.largeTitle)
+            Text("San Audisco Setup").font(.largeTitle)
             Text("Private build · macOS · Existing audio drivers are preserved")
             ForEach(model.rows,id:\.self){Text($0)}
             HStack {
@@ -151,9 +151,9 @@ struct SetupView:View {
                 Button("Install BlackHole 16ch"){model.installDriver(16)}.disabled(!model.verified || model.ready16 || model.busy)
             }
             HStack {
-                Button("Install / update Golden Gate Audio"){model.installApp()}.disabled(!model.verified || model.busy)
+                Button("Install / update San Audisco"){model.installApp()}.disabled(!model.verified || model.busy)
                 Button("Check again"){model.refresh()}.disabled(model.busy)
-                Button("Open Golden Gate Audio"){NSWorkspace.shared.open(model.destination)}.disabled(!model.installedApp || !model.ready2 || !model.ready16 || model.restartPending || model.busy)
+                Button("Open San Audisco"){NSWorkspace.shared.open(model.destination)}.disabled(!model.installedApp || !model.ready2 || !model.ready16 || model.restartPending || model.busy)
             }
             Text(model.message).textSelection(.enabled).fixedSize(horizontal:false,vertical:true)
             Text("BlackHole by Existential Audio. Vendor packages and notices are included unchanged. OS installer and microphone permission prompts remain necessary. Setup never restarts your Mac.").font(.caption).foregroundColor(.secondary)
@@ -161,4 +161,4 @@ struct SetupView:View {
         }.padding(28).frame(width:660).onAppear{model.verify()}
     }
 }
-@main struct SetupApp:App {var body:some Scene {Window("Golden Gate Audio Setup",id:"setup"){SetupView()}}}
+@main struct SetupApp:App {var body:some Scene {Window("San Audisco Setup",id:"setup"){SetupView()}}}

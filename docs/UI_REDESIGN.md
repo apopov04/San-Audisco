@@ -100,3 +100,12 @@ room data remain compatible. The installer updates the existing application; a
 new pairing or duplicate background service is not required for this display rename.
 Mac visual checks cover connected, stopped-but-connected and disconnected states.
 The Mac model suite and Windows native GUI fixture suite under Wine pass.
+
+## v0.2.6 San Audisco
+
+San Audisco is the chosen display name across the Mac and Windows app, menus,
+permission guidance and installer. The Golden Gate bridge graphic and its
+connection states remain unchanged. Existing AudioBridge installation paths,
+executables, bundle identifiers and pairing data are retained for compatibility.
+This release changes naming only. Both native apps and installers build; the
+Mac signature/disk image and Windows installer payload are verified.

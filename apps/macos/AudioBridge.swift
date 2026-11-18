@@ -56,7 +56,7 @@ final class BridgeModel: ObservableObject {
  @Published var available=false
  @Published var busy=false
  @Published var permissionPending=false
- @Published var status="Connecting to Golden Gate Audio…"
+ @Published var status="Connecting to San Audisco…"
  @Published var error=""
  @Published var muteReason=""
  @Published var diagnosticMessage=""
@@ -107,11 +107,11 @@ final class BridgeModel: ObservableObject {
   try? input.fileHandleForWriting.close()
   if finished.wait(timeout:.now()+15) == .timedOut {
    p.terminate();if finished.wait(timeout:.now()+1) == .timedOut {kill(p.processIdentifier,SIGKILL);_ = finished.wait(timeout:.now()+1)}
-   throw NSError(domain:"AudioBridge",code:1,userInfo:[NSLocalizedDescriptionKey:"Golden Gate Audio did not respond. Open the app again to reconnect; audio may still be running."])
+   throw NSError(domain:"AudioBridge",code:1,userInfo:[NSLocalizedDescriptionKey:"San Audisco did not respond. Open the app again to reconnect; audio may still be running."])
   }
   guard drained.wait(timeout:.now()+2) == .success else {throw NSError(domain:"AudioBridge",code:4,userInfo:[NSLocalizedDescriptionKey:"The agent response stream did not close."])}
   lock.lock();let result=bytes;let tooLarge=oversized;lock.unlock()
-  guard !tooLarge else {throw NSError(domain:"AudioBridge",code:2,userInfo:[NSLocalizedDescriptionKey:"Golden Gate Audio returned an oversized response."])}
+  guard !tooLarge else {throw NSError(domain:"AudioBridge",code:2,userInfo:[NSLocalizedDescriptionKey:"San Audisco returned an oversized response."])}
   if arguments.first == "ensure" && p.terminationStatus==0 {return [:]}
   guard let object=(try? JSONSerialization.jsonObject(with:result)) as? [String:Any] else {
    throw NSError(domain:"AudioBridge",code:3,userInfo:[NSLocalizedDescriptionKey:"Could not read the background agent response."])
@@ -127,7 +127,7 @@ final class BridgeModel: ObservableObject {
     DispatchQueue.main.async {
      self.polling=false;if !quiet {self.busy=false}
      if let state=response["state"] as? [String:Any] {self.apply(state)}
-     if response["ok"] as? Bool == false {self.error=response["error"] as? String ?? "Golden Gate Audio could not apply the change."}
+     if response["ok"] as? Bool == false {self.error=response["error"] as? String ?? "San Audisco could not apply the change."}
      else {self.available=true;completion?()}
     }
    }catch {DispatchQueue.main.async{self.polling=false;if !quiet{self.busy=false};self.available=false;self.error=error.localizedDescription}}
@@ -163,7 +163,7 @@ final class BridgeModel: ObservableObject {
  func toggle(_ key:String)->Binding<Bool> {Binding(get:{self.number(key) != 0},set:{self.control(key,$0 ? 1:0)})}
  func role(_ key:String)->Binding<Int> {Binding(get:{Int(self.number(key))},set:{self.control(key,Double($0))})}
  var formattedInvite:String {invite.count==8 ? String(invite.prefix(4))+"-"+String(invite.suffix(4)) : invite}
- func setLogin(_ enabled:Bool) {do{if enabled{try SMAppService.mainApp.register()}else{try SMAppService.mainApp.unregister()};startAtLogin=SMAppService.mainApp.status == .enabled;if enabled && !startAtLogin{error="Approve Golden Gate Audio in System Settings → General → Login Items."}}catch{self.error=error.localizedDescription;startAtLogin=SMAppService.mainApp.status == .enabled}}
+ func setLogin(_ enabled:Bool) {do{if enabled{try SMAppService.mainApp.register()}else{try SMAppService.mainApp.unregister()};startAtLogin=SMAppService.mainApp.status == .enabled;if enabled && !startAtLogin{error="Approve San Audisco in System Settings → General → Login Items."}}catch{self.error=error.localizedDescription;startAtLogin=SMAppService.mainApp.status == .enabled}}
  func isOnline(_ device:RoomDevice)->Bool {available && device.online && (device.id==localID || connected)}
  func level(_ device:RoomDevice,_ key:String)->Double {let source=device.id==localID ? diagnostics : device.diagnostics;let value=(source[key] as? NSNumber)?.doubleValue ?? 0;return value.isFinite ? min(1,max(0,value)):0}
  func create(){send(["command":"create","name":deviceName])}
@@ -176,11 +176,11 @@ final class BridgeModel: ObservableObject {
    permissionPending=true;error="";status="Waiting for macOS microphone permission…"
    AVCaptureDevice.requestAccess(for:.audio){[weak self] granted in DispatchQueue.main.async{self?.finishPermission(granted,id:requestID)}}
   case .denied,.restricted:
-   permissionRequestID=nil;error="Allow Golden Gate Audio in System Settings → Privacy & Security → Microphone, then start audio again. Virtual cable capture also needs this permission."
+   permissionRequestID=nil;error="Allow San Audisco in System Settings → Privacy & Security → Microphone, then start audio again. Virtual cable capture also needs this permission."
   @unknown default:permissionRequestID=nil;error="Microphone permission is unavailable on this Mac."
   }
  }
- private func finishPermission(_ granted:Bool,id:UUID){guard permissionRequestID==id else{return};permissionRequestID=nil;permissionPending=false;guard granted else{error="Microphone access was not granted. Enable Golden Gate Audio in System Settings → Privacy & Security → Microphone.";return};send(["command":"start"])}
+ private func finishPermission(_ granted:Bool,id:UUID){guard permissionRequestID==id else{return};permissionRequestID=nil;permissionPending=false;guard granted else{error="Microphone access was not granted. Enable San Audisco in System Settings → Privacy & Security → Microphone.";return};send(["command":"start"])}
  func cancelPermission(){permissionRequestID=nil;permissionPending=false;status="Start cancelled"}
  func quit(){cancelPermission();send(["command":"quit"],completion:{NSApp.terminate(nil)})}
 }
@@ -284,7 +284,7 @@ struct RoomSettingsView:View {
   ScrollView{VStack(alignment:.leading,spacing:20){
    HStack{TextField("This computer’s name",text:$m.deviceName);Button("Save name"){m.send(["command":"configure","device_id":m.localID,"name":m.deviceName])}.disabled(m.busy || m.localID.isEmpty)}
    if !m.paired {
-    Text("Open Golden Gate Audio on both computers using the same Wi-Fi or local network.").foregroundColor(.secondary)
+    Text("Open San Audisco on both computers using the same Wi-Fi or local network.").foregroundColor(.secondary)
     if m.invite.isEmpty {Button("Create a room"){m.create()}.disabled(m.busy || !m.available)}else{
      Text("Enter this code on your other computer").font(.headline)
      HStack{Text(m.formattedInvite).font(.system(size:32,weight:.semibold,design:.monospaced)).textSelection(.enabled);Button("Copy"){NSPasteboard.general.clearContents();NSPasteboard.general.setString(m.formattedInvite,forType:.string)}}
@@ -299,8 +299,8 @@ struct RoomSettingsView:View {
     DisclosureGroup("Mix balance") {VStack(alignment:.leading,spacing:8){HStack{Text("Windows");Slider(value:m.scalar("balance"),in:-1...1).accessibilityLabel("Windows to Mac audio balance");Text("Mac")};Button("Center balance"){m.control("balance",0)}}.padding(.top,8)}.disabled(m.busy || !m.connected)
     Button("Forget this pairing…",role:.destructive){forget=true}
    }
-   Divider();Toggle("Start Golden Gate Audio at login",isOn:Binding(get:{m.startAtLogin},set:{m.setLogin($0)})).disabled(m.busy || !m.available)
-   Text("Closing the window keeps audio running. Quit Golden Gate Audio from its menu-bar icon to stop this computer.").font(.caption).foregroundColor(.secondary)
+   Divider();Toggle("Start San Audisco at login",isOn:Binding(get:{m.startAtLogin},set:{m.setLogin($0)})).disabled(m.busy || !m.available)
+   Text("Closing the window keeps audio running. Quit San Audisco from its menu-bar icon to stop this computer.").font(.caption).foregroundColor(.secondary)
    if !m.error.isEmpty{Text(m.error).foregroundColor(.red).textSelection(.enabled)}
   }}
  }.padding(24).frame(width:540,height:520).alert("Forget this pairing?",isPresented:$forget){Button("Cancel",role:.cancel){};Button("Forget",role:.destructive){m.send(["command":"forget"])}}message:{Text("Audio will stop on this computer. Forget the pairing on the other computer as well before creating a new room.")}}
@@ -404,7 +404,7 @@ struct ContentView:View {
   }
  }
  var body:some View {VStack(alignment:.leading,spacing:0){
-  HStack{Text("Golden Gate Audio").font(.title2).fontWeight(.semibold);Spacer();Button(m.paired ? "Room settings":"Connect computers"){showRoom=true};Button{showChecks=true}label:{Label("Audio checks",systemImage:"waveform.path.ecg")}}.padding(.bottom,22)
+  HStack{Text("San Audisco").font(.title2).fontWeight(.semibold);Spacer();Button(m.paired ? "Room settings":"Connect computers"){showRoom=true};Button{showChecks=true}label:{Label("Audio checks",systemImage:"waveform.path.ecg")}}.padding(.bottom,22)
   ScrollView{VStack(spacing:18){
    HStack(alignment:.center,spacing:20){computer(0);VStack(spacing:8){GoldenGateBridge().stroke(m.connected && m.available ? Color(red:0.75,green:0.26,blue:0.17):Color.secondary,style:StrokeStyle(lineWidth:1.8,lineCap:.round,lineJoin:.round)).frame(height:80).accessibilityHidden(true);Text(linkLabel).font(.caption).foregroundColor(.secondary)}.frame(width:160);computer(1)}
    HStack(alignment:.top,spacing:32){routes(0);Divider();routes(1)}
@@ -423,7 +423,7 @@ struct ContentView:View {
     if m.busy{ProgressView().controlSize(.small)}
     Button(m.permissionPending ? "Cancel start":((m.running || m.wantedRunning) ? "Stop audio":"Start audio")){if m.permissionPending{m.cancelPermission()}else if m.running || m.wantedRunning{m.send(["command":"stop"])}else{m.start()}}.disabled(m.busy || (!m.connected && !m.running && !m.wantedRunning)).keyboardShortcut(.defaultAction).help("Start or stop playback and microphone relay on both connected computers. Your room stays paired.")
    }
-   Text(!m.available ? "Golden Gate Audio is unavailable. Open Audio checks to reconnect.":(m.permissionPending ? "Waiting for microphone permission…":m.status)).font(.caption).foregroundColor(.secondary).fixedSize(horizontal:false,vertical:true)
+   Text(!m.available ? "San Audisco is unavailable. Open Audio checks to reconnect.":(m.permissionPending ? "Waiting for microphone permission…":m.status)).font(.caption).foregroundColor(.secondary).fixedSize(horizontal:false,vertical:true)
   }
  }.padding(28).frame(minWidth:840,minHeight:720).onAppear{m.open()}
  .sheet(isPresented:$showRoom){RoomSettingsView(m:m)}.sheet(isPresented:$showChecks){AudioChecksView(m:m)}
@@ -440,13 +440,13 @@ final class AppDelegate:NSObject,NSApplicationDelegate {
 struct MenuControls:View {
  @EnvironmentObject var model:BridgeModel
  @Environment(\.openWindow) private var openWindow
- var body:some View {Button("Open Golden Gate Audio"){openWindow(id:"main");NSApp.activate(ignoringOtherApps:true);model.poll()};Divider();Button("Quit Golden Gate Audio"){model.quit()}}
+ var body:some View {Button("Open San Audisco"){openWindow(id:"main");NSApp.activate(ignoringOtherApps:true);model.poll()};Divider();Button("Quit San Audisco"){model.quit()}}
 }
 @main struct AudioBridgeApp:App {
  @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
  @StateObject private var model=BridgeModel()
  var body:some Scene {
-  WindowGroup("Golden Gate Audio",id:"main"){ContentView().environmentObject(model)}.commands{CommandGroup(replacing:.appTermination){Button("Quit Golden Gate Audio"){model.quit()}.keyboardShortcut("q")}}
-  MenuBarExtra("Golden Gate Audio",systemImage:"waveform"){MenuControls().environmentObject(model)}
+  WindowGroup("San Audisco",id:"main"){ContentView().environmentObject(model)}.commands{CommandGroup(replacing:.appTermination){Button("Quit San Audisco"){model.quit()}.keyboardShortcut("q")}}
+  MenuBarExtra("San Audisco",systemImage:"waveform"){MenuControls().environmentObject(model)}
  }
 }

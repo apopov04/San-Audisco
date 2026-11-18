@@ -79,7 +79,7 @@ Json invoke(const wchar_t* argument,const Json* request=nullptr){
   if(WaitForSingleObject(process.value,20)==WAIT_OBJECT_0){finished=true;DWORD remaining=0;if(PeekNamedPipe(out_read.value,nullptr,0,nullptr,&remaining,nullptr)&&remaining)continue;break;}
   if(GetTickCount64()>=deadline)break;
  }
- if(!finished){TerminateProcess(process.value,1);WaitForSingleObject(process.value,1000);throw std::runtime_error("Golden Gate Audio did not respond; the background audio may still be running");}
+ if(!finished){TerminateProcess(process.value,1);WaitForSingleObject(process.value,1000);throw std::runtime_error("San Audisco did not respond; the background audio may still be running");}
  DWORD code=1;GetExitCodeProcess(process.value,&code);
  if(std::wstring(argument)==L"ensure"&&code==0)return Json::object();
  auto result=Json::parse(output,nullptr,false);if(result.is_discarded()||!result.is_object())throw std::runtime_error("The background agent returned an unreadable response");return result;
@@ -228,12 +228,12 @@ void startup(bool enabled){HKEY raw{};if(RegCreateKeyExW(HKEY_CURRENT_USER,L"Sof
 }
 bool startup_enabled(){wchar_t value[32768];DWORD size=sizeof(value),type=0;if(RegGetValueW(HKEY_CURRENT_USER,L"Software\\Microsoft\\Windows\\CurrentVersion\\Run",L"AudioBridge",RRF_RT_REG_SZ,&type,value,&size)!=ERROR_SUCCESS)return false;return std::wstring(value)==L"\""+executable_path()+L"\" --background";}
 void open_window(){ShowWindow(window,SW_RESTORE);SetForegroundWindow(window);request({{"command","status"}},true);}
-void tray_menu(){HMENU menu=CreatePopupMenu();AppendMenuW(menu,MF_STRING,tray_open,L"Open Golden Gate Audio");AppendMenuW(menu,MF_STRING,tray_quit,L"Quit Golden Gate Audio");POINT point;GetCursorPos(&point);SetForegroundWindow(window);auto command=TrackPopupMenu(menu,TPM_RETURNCMD|TPM_RIGHTBUTTON,point.x,point.y,0,window,nullptr);DestroyMenu(menu);if(command==tray_open)open_window();else if(command==tray_quit){quitting=true;request({{"command","quit"}},false,true);}}
+void tray_menu(){HMENU menu=CreatePopupMenu();AppendMenuW(menu,MF_STRING,tray_open,L"Open San Audisco");AppendMenuW(menu,MF_STRING,tray_quit,L"Quit San Audisco");POINT point;GetCursorPos(&point);SetForegroundWindow(window);auto command=TrackPopupMenu(menu,TPM_RETURNCMD|TPM_RIGHTBUTTON,point.x,point.y,0,window,nullptr);DestroyMenu(menu);if(command==tray_open)open_window();else if(command==tray_quit){quitting=true;request({{"command","quit"}},false,true);}}
 void choose_configured_device(){auto selected=SendMessageW(computer_box,CB_GETCURSEL,0,0);if(selected>=0&&static_cast<size_t>(selected)<devices.size()){configured_id=string_value(devices[selected],"id");device_dirty=false;applied_device_signature.clear();populate_audio();}}
 void apply_devices(){if(configured_id.empty())return;request({{"command","configure"},{"device_id",configured_id},{"headphones_output",selected_id(headphones_box,audio_ids[0])},{"physical_microphone",selected_id(microphone_box,audio_ids[1])},{"playback_input",selected_id(playback_box,audio_ids[2])},{"microphone_output",selected_id(micoutput_box,audio_ids[3])}});device_dirty=false;applied_device_signature.clear();}
 LRESULT CALLBACK proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){switch(msg){
  case WM_CREATE:{window=w;ui_font=CreateFontW(-px(16),0,0,0,FW_NORMAL,FALSE,FALSE,FALSE,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,CLEARTYPE_QUALITY,DEFAULT_PITCH,L"Segoe UI");title_font=CreateFontW(-px(27),0,0,0,FW_SEMIBOLD,FALSE,FALSE,FALSE,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,CLEARTYPE_QUALITY,DEFAULT_PITCH,L"Segoe UI");heading_font=CreateFontW(-px(20),0,0,0,FW_SEMIBOLD,FALSE,FALSE,FALSE,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,CLEARTYPE_QUALITY,DEFAULT_PITCH,L"Segoe UI");
-  auto title=element(L"STATIC",L"Golden Gate Audio",0,32,18,700,35,0);SendMessageW(title,WM_SETFONT,reinterpret_cast<WPARAM>(title_font),TRUE);
+  auto title=element(L"STATIC",L"San Audisco",0,32,18,700,35,0);SendMessageW(title,WM_SETFONT,reinterpret_cast<WPARAM>(title_font),TRUE);
   tabs=element(WC_TABCONTROLW,L"",WS_TABSTOP,32,62,890,510,180);const wchar_t* labels[]{L"Audio",L"Room",L"Advanced",L"Checks"};for(int i=0;i<4;i++){TCITEMW tab{};tab.mask=TCIF_TEXT;tab.pszText=const_cast<wchar_t*>(labels[i]);TabCtrl_InsertItem(tabs,i,&tab);}
   audio_tooltips=CreateWindowExW(WS_EX_TOPMOST,TOOLTIPS_CLASSW,nullptr,WS_POPUP|TTS_ALWAYSTIP,CW_USEDEFAULT,CW_USEDEFAULT,CW_USEDEFAULT,CW_USEDEFAULT,w,nullptr,nullptr,nullptr);
   for(int kind=0;kind<2;++kind)for(int active=0;active<2;++active){audio_icons[kind][active]=audio_icon(kind!=0,active!=0);hub_icons[kind][active]=audio_icon(kind!=0,active!=0,true);}
@@ -262,12 +262,12 @@ LRESULT CALLBACK proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){switch(msg){
   element(L"STATIC",L"Room code",0,38,238,145,22,0);code_edit=element(L"EDIT",L"",WS_BORDER|ES_AUTOHSCROLL|WS_TABSTOP|ES_UPPERCASE,190,233,425,29,204);SendMessageW(code_edit,EM_SETLIMITTEXT,16,0);join_button=element(L"BUTTON",L"Join room",WS_TABSTOP,630,233,160,30,205);
   element(L"STATIC",L"Nearby rooms",0,38,286,145,22,0);nearby_box=combo(190,281,425,206);element(L"BUTTON",L"Find rooms",WS_TABSTOP,630,281,160,30,207);
   element(L"STATIC",L"Manual address",0,38,334,145,22,0);address_edit=element(L"EDIT",L"",WS_BORDER|ES_AUTOHSCROLL|WS_TABSTOP,190,329,600,29,208);SendMessageW(address_edit,EM_SETCUEBANNER,TRUE,reinterpret_cast<LPARAM>(L"Optional: use if discovery is blocked"));
-  login_check=element(L"BUTTON",L"Start Golden Gate Audio at login",BS_AUTOCHECKBOX|WS_TABSTOP,38,382,420,28,209);SendMessageW(login_check,BM_SETCHECK,startup_enabled()?BST_CHECKED:BST_UNCHECKED,0);
-  forget_button=element(L"BUTTON",L"Forget this pairing…",WS_TABSTOP,38,430,185,30,210);element(L"STATIC",L"Closing the window keeps audio running.\nOpen or quit Golden Gate Audio from its notification-area icon.",0,250,428,540,46,0);
+  login_check=element(L"BUTTON",L"Start San Audisco at login",BS_AUTOCHECKBOX|WS_TABSTOP,38,382,420,28,209);SendMessageW(login_check,BM_SETCHECK,startup_enabled()?BST_CHECKED:BST_UNCHECKED,0);
+  forget_button=element(L"BUTTON",L"Forget this pairing…",WS_TABSTOP,38,430,185,30,210);element(L"STATIC",L"Closing the window keeps audio running.\nOpen or quit San Audisco from its notification-area icon.",0,250,428,540,46,0);
   building_page=2;element(L"STATIC",L"Configure computer",0,38,96,160,22,0);computer_box=combo(215,91,575,301);element(L"STATIC",L"Output",0,38,146,165,22,0);headphones_box=combo(215,141,575,302);element(L"STATIC",L"Input",0,38,196,165,22,0);microphone_box=combo(215,191,575,303);
   setup_label=element(L"STATIC",L"Checking audio components…",0,38,240,750,52,0);advanced_button=element(L"BUTTON",L"Show advanced routes",WS_TABSTOP,38,301,200,30,304);
   playback_label=element(L"STATIC",L"Playback cable capture",0,38,354,175,22,0);playback_box=combo(215,349,575,305);micoutput_label=element(L"STATIC",L"Shared mic output",0,38,400,175,22,0);micoutput_box=combo(215,395,575,306);
-  element(L"STATIC",L"Connect AirPods to the Output Hub in Bluetooth settings.\nGolden Gate Audio does not move their Bluetooth connection.",0,38,460,560,44,0);apply_button=element(L"BUTTON",L"Apply devices",WS_TABSTOP,630,461,160,32,307);
+  element(L"STATIC",L"Connect AirPods to the Output Hub in Bluetooth settings.\nSan Audisco does not move their Bluetooth connection.",0,38,460,560,44,0);apply_button=element(L"BUTTON",L"Apply devices",WS_TABSTOP,630,461,160,32,307);
   element(L"STATIC",L"Balance: Windows / Mac",0,38,530,190,22,0);balance=slider(525,430,50);position(balance,230,525,560,28);
   // Compatibility role controls are hidden: the main screen associates roles with each device.
   building_page=-1;hub_box=combo(0,0,1,401);mic_source=combo(0,0,1,402);ShowWindow(hub_box,SW_HIDE);ShowWindow(mic_source,SW_HIDE);fill_roles();
@@ -285,7 +285,7 @@ LRESULT CALLBACK proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){switch(msg){
   run_button=element(L"BUTTON",L"Start audio",WS_TABSTOP,745,698,175,34,601);element(L"BUTTON",L"Quit",WS_TABSTOP,750,20,170,30,602);
   audio_tooltip(master);audio_tooltip(run_button);
   for(auto h:mix_controls)EnableWindow(h,FALSE);for(auto h:card_hub)EnableWindow(h,FALSE);for(auto h:card_source)EnableWindow(h,FALSE);EnableWindow(run_button,FALSE);EnableWindow(apply_button,FALSE);show_page();
-  tray.cbSize=sizeof(tray);tray.hWnd=w;tray.uID=1;tray.uFlags=NIF_MESSAGE|NIF_ICON|NIF_TIP;tray.uCallbackMessage=tray_message;tray.hIcon=LoadIconW(nullptr,IDI_APPLICATION);wcscpy_s(tray.szTip,L"Golden Gate Audio — audio continues when the window closes");Shell_NotifyIconW(NIM_ADD,&tray);
+  tray.cbSize=sizeof(tray);tray.hWnd=w;tray.uID=1;tray.uFlags=NIF_MESSAGE|NIF_ICON|NIF_TIP;tray.uCallbackMessage=tray_message;tray.hIcon=LoadIconW(nullptr,IDI_APPLICATION);wcscpy_s(tray.szTip,L"San Audisco — audio continues when the window closes");Shell_NotifyIconW(NIM_ADD,&tray);
   start_worker();request({{"command","status"}},true);SetTimer(w,refresh_timer,1000,nullptr);return 0;}
  case WM_DRAWITEM:{auto item=reinterpret_cast<DRAWITEMSTRUCT*>(lp);if(item->CtlID==760){FillRect(item->hDC,&item->rcItem,GetSysColorBrush(COLOR_WINDOW));auto saved=SaveDC(item->hDC);SetMapMode(item->hDC,MM_ANISOTROPIC);SetWindowExtEx(item->hDC,96,96,nullptr);SetViewportExtEx(item->hDC,ui_dpi,ui_dpi,nullptr);SetViewportOrgEx(item->hDC,-px(60),-px(140),nullptr);draw_computers(item->hDC);RestoreDC(item->hDC,saved);return TRUE;}break;}
 
@@ -327,7 +327,7 @@ LRESULT CALLBACK proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){switch(msg){
  case response_message:{std::unique_ptr<Response> result(reinterpret_cast<Response*>(lp));{std::lock_guard lock(queue_mutex);if(result->quiet)status_queued=false;else if(outstanding)--outstanding;}
   if(result->transport_failure){agent_available=false;connected=false;SetWindowTextW(status_label,L"Background app unavailable. Audio may still be running; reconnect from Checks.");for(auto h:mix_controls)EnableWindow(h,FALSE);for(auto h:{run_button,apply_button,headphones_box,microphone_box,playback_box,micoutput_box,create_button,join_button,forget_button})EnableWindow(h,FALSE);for(auto h:tone_buttons)EnableWindow(h,FALSE);update_cards();}
   if(result->value.contains("state")&&result->value["state"].is_object())apply_state(result->value["state"]);
-  if(!boolean(result->value,"ok")){SetWindowTextW(error_label,utf16(string_value(result->value,"error","Golden Gate Audio could not apply the request")).c_str());if(result->exit_after)quitting=false;}
+  if(!boolean(result->value,"ok")){SetWindowTextW(error_label,utf16(string_value(result->value,"error","San Audisco could not apply the request")).c_str());if(result->exit_after)quitting=false;}
   else if(result->exit_after){DestroyWindow(w);}
   return 0;}
  case WM_TIMER:if(IsWindowVisible(w)&&!quitting){std::lock_guard lock(queue_mutex);if(!outstanding&&!status_queued&&!stopping){status_queued=true;queue.push_back({Json{{"command","status"}},true,false});queue_cv.notify_one();}}return 0;
@@ -342,7 +342,7 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR command_line,int show){
  WNDCLASSW cls{};cls.lpfnWndProc=proc;cls.hInstance=instance;cls.lpszClassName=L"AudioBridgeRoomWindow";cls.hCursor=LoadCursorW(nullptr,IDC_ARROW);cls.hbrBackground=reinterpret_cast<HBRUSH>(COLOR_WINDOW+1);RegisterClassW(&cls);
  // One visible control window per session; the agent independently enforces one engine owner.
  auto existing=FindWindowW(cls.lpszClassName,nullptr);if(existing){if(!command_line||!wcsstr(command_line,L"--background")){ShowWindow(existing,SW_RESTORE);SetForegroundWindow(existing);}return 0;}
- HWND w=CreateWindowExW(0,cls.lpszClassName,L"Golden Gate Audio",WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX,CW_USEDEFAULT,CW_USEDEFAULT,px(970),px(780),nullptr,nullptr,instance,nullptr);if(!w)return 1;
+ HWND w=CreateWindowExW(0,cls.lpszClassName,L"San Audisco",WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX,CW_USEDEFAULT,CW_USEDEFAULT,px(970),px(780),nullptr,nullptr,instance,nullptr);if(!w)return 1;
  if(!command_line||!wcsstr(command_line,L"--background"))ShowWindow(w,show);
  MSG m;while(GetMessageW(&m,nullptr,0,0)>0){if(!IsDialogMessageW(w,&m)){TranslateMessage(&m);DispatchMessageW(&m);}}
  if(worker.joinable())worker.join();while(PeekMessageW(&m,nullptr,response_message,response_message,PM_REMOVE))delete reinterpret_cast<Response*>(m.lParam);return 0;

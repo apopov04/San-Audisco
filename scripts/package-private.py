@@ -38,7 +38,7 @@ def build_mac(args, lock, scratch):
         if not (app / 'Contents/MacOS' / executable).is_file():
             raise ValueError(f'Missing app executable: {executable}')
     run(['/usr/bin/codesign', '--verify', '--deep', '--strict', app])
-    setup = scratch / 'Golden Gate Audio Setup.app'
+    setup = scratch / 'San Audisco Setup.app'
     contents = setup / 'Contents'
     resources = contents / 'Resources'
     (contents / 'MacOS').mkdir(parents=True)
@@ -54,7 +54,7 @@ def build_mac(args, lock, scratch):
     rows = [{'path':p.relative_to(resources).as_posix(), 'sha256':hashlib.sha256(p.read_bytes()).hexdigest()} for p in files_under(resources)]
     write_manifest(resources / 'manifest.json', {'schema':1, 'private_only':True, 'files':rows})
     with (contents / 'Info.plist').open('wb') as f:
-        plistlib.dump({'CFBundleIdentifier':'local.audiobridge.setup', 'CFBundleExecutable':'AudioBridgeSetup', 'CFBundleName':'Golden Gate Audio Setup', 'CFBundleVersion':'7', 'CFBundleShortVersionString':'0.2.5', 'LSMinimumSystemVersion':'13.0', 'NSHighResolutionCapable':True}, f)
+        plistlib.dump({'CFBundleIdentifier':'local.audiobridge.setup', 'CFBundleExecutable':'AudioBridgeSetup', 'CFBundleName':'San Audisco Setup', 'CFBundleVersion':'8', 'CFBundleShortVersionString':'0.2.6', 'LSMinimumSystemVersion':'13.0', 'NSHighResolutionCapable':True}, f)
     run(['clang++', '-target', 'arm64-apple-macos13.0', '-std=c++20', '-O2', '-c', ROOT/'installer/setup_policy.cpp', '-o',scratch/'setup_policy.o'])
     run(['swiftc', '-target', 'arm64-apple-macos13.0', '-O', '-parse-as-library', ROOT / 'installer/macos/Setup.swift', scratch/'setup_policy.o', '-o', contents / 'MacOS/AudioBridgeSetup', '-framework', 'SwiftUI', '-framework', 'AppKit', '-framework', 'CoreAudio', '-framework', 'CryptoKit'])
     run(['/usr/bin/codesign', '--force', '--sign', '-', setup])
@@ -66,7 +66,7 @@ def build_mac(args, lock, scratch):
     disk = scratch / 'disk'; disk.mkdir()
     shutil.copytree(setup, disk / setup.name)
     shutil.copy2(ROOT / 'PRIVATE_SETUP.md', disk / 'READ-ME.txt')
-    run(['/usr/bin/hdiutil', 'create', '-volname', 'Golden Gate Audio Setup', '-srcfolder', disk, '-format', 'UDZO', artifact])
+    run(['/usr/bin/hdiutil', 'create', '-volname', 'San Audisco Setup', '-srcfolder', disk, '-format', 'UDZO', artifact])
     return artifact
 
 
