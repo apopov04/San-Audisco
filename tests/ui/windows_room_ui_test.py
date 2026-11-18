@@ -84,6 +84,13 @@ try:
  before=len(seen('control'));click(722);time.sleep(.15)
  assert len(seen('control'))==before,'Clicking the current Output Hub must not send a role change'
 
+ assert value(get(753))=='Global audio'
+ for i in [702,704,722,724]:
+  assert u.SendMessageW(get(i),0xF6,1,0),'Hub selector has no crowned icon'
+  r=bounds(i);assert r.right-r.left==r.bottom-r.top,'Hub selector must be square'
+ # Remove the protective global mute before exercising individual route controls.
+ if u.SendMessageW(get(440),0xF0,0,0):click(440)
+ wait(lambda:u.IsWindowEnabled(get(411)) and u.SendMessageW(get(411),0xF0,0,0)==0,'Global unmute not reflected')
  # Native icon buttons keep check state, accessible action names and real icons.
  for button_id,key in [(411,'win_mute'),(412,'win_deafen'),(421,'mac_mute'),(422,'mac_deafen')]:
   button=get(button_id);assert u.SendMessageW(button,0xF6,1,0),'Audio button has no icon'
@@ -94,6 +101,22 @@ try:
   assert u.SendMessageW(button,0xF6,1,0)!=first_icon,'Active icon must show the slashed variant'
   click(button_id)
   wait(lambda:seen('control')[-1].get('key')==key and seen('control')[-1].get('value')==0,'Icon did not restore route')
+  wait(lambda:u.SendMessageW(button,0xF0,0,0)==0,'Restored icon not reflected')
+ # Global gates display effective states without overwriting individual preferences.
+ click(411);wait(lambda:u.SendMessageW(get(411),0xF0,0,0)==1,'Local mute missing')
+ click(441)
+ wait(lambda:all(u.SendMessageW(get(i),0xF0,0,0)==1 and not u.IsWindowEnabled(get(i)) for i in [411,412,421,422,440]),'Global deafen must block and mark every route')
+ saved=json.loads(state.read_text())['settings']
+ assert saved['win_mute']==1 and not saved.get('mac_mute',0) and not saved.get('win_deafen',0) and not saved.get('mac_deafen',0),'Global gate overwrote local settings'
+ assert 'Global audio' in value(get(412)),'Inherited state explanation missing'
+ click(441)
+ wait(lambda:all(u.IsWindowEnabled(get(i)) for i in [411,412,421,422,440]),'Undeafen did not restore controls')
+ assert u.SendMessageW(get(411),0xF0,0,0)==1 and all(u.SendMessageW(get(i),0xF0,0,0)==0 for i in [412,421,422]),'Local preferences not restored'
+ click(411);wait(lambda:u.SendMessageW(get(411),0xF0,0,0)==0,'Local mute did not clear')
+ click(440)
+ wait(lambda:all(u.SendMessageW(get(i),0xF0,0,0)==1 and not u.IsWindowEnabled(get(i)) for i in [411,421]),'Global mute must mark both microphones')
+ assert all(u.SendMessageW(get(i),0xF0,0,0)==0 and u.IsWindowEnabled(get(i)) for i in [412,422]),'Global mute incorrectly deafened output'
+ click(440);wait(lambda:u.IsWindowEnabled(get(411)) and u.IsWindowEnabled(get(421)),'Global unmute did not restore controls')
  for base in (700,720):
   before=[bounds(base+i) for i in (3,5)]
   saved=json.loads(state.read_text())
@@ -133,6 +156,6 @@ try:
  assert p.poll() is None and not seen('quit'),'Close stopped background app'
  u.ShowWindow(hwnd,9);click(602);p.wait(timeout=12)
  assert p.returncode==0 and seen('quit'),'Explicit quit did not stop agent and exit'
- print(json.dumps({'passed':True,'scope':'real Win32 GUI + fixture IPC; no audio or real credentials','checks':['startup state','two-device main screen','main control bounds','physical selector filtering','peer connection state','disabled unpaired roles','create invite','discovery selection','code validation and normalization','join acknowledgement','start acknowledgement','remote device configuration','Hub and microphone source selection','readiness diagnostics','local and remote signal meters','explicit remote test sound','cancel pending restart','explicit agent reconnect','failed status and transport recovery','close keeps running','explicit quit']}))
+ print(json.dumps({'passed':True,'scope':'real Win32 GUI + fixture IPC; no audio or real credentials','checks':['startup state','two-device main screen','main control bounds','physical selector filtering','peer connection state','disabled unpaired roles','create invite','discovery selection','code validation and normalization','join acknowledgement','start acknowledgement','remote device configuration','crowned square hub selectors','individual icon buttons','effective global mute/deafen and preference restoration','long-name alignment','readiness diagnostics','local and remote signal meters','explicit remote test sound','cancel pending restart','explicit agent reconnect','failed status and transport recovery','close keeps running','explicit quit']}))
 finally:
  if p.poll() is None:p.kill();p.wait()

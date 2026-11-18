@@ -32,7 +32,7 @@ int ui_dpi=96;
 int px(int value){return MulDiv(value,ui_dpi,96);}
 void position(HWND h,int x,int y,int width,int height){SetWindowPos(h,nullptr,px(x),px(y),px(width),px(height),SWP_NOZORDER);}
 HFONT ui_font{},title_font{},heading_font{};
-HICON audio_icons[2][2]{};HWND audio_tooltips{};
+HICON audio_icons[2][2]{},hub_icons[2][2]{};HWND audio_tooltips{};
 HWND card_name[2]{},card_status[2]{},card_headphones[2]{},card_microphone[2]{},card_hub[2]{},card_source[2]{},link_status{};
 std::string card_id[2],card_signature[2];std::vector<std::string> card_routes[2][2];
 HWND window{},tabs{},status_label{},error_label{},mute_reason{},run_button{};
@@ -106,14 +106,15 @@ void start_worker(){worker=std::thread([]{
 });}
 void control(const char* key,double value){request({{"command","control"},{"key",key},{"value",value}});}
 HWND element(const wchar_t* cls,const wchar_t* caption,DWORD style,int x,int y,int width,int height,int id){auto h=CreateWindowExW(0,cls,caption,WS_CHILD|WS_VISIBLE|style,px(x),px(y),px(width),px(height),window,reinterpret_cast<HMENU>(static_cast<INT_PTR>(id)),nullptr,nullptr);SendMessageW(h,WM_SETFONT,reinterpret_cast<WPARAM>(ui_font),TRUE);if(building_page>=0)pages[building_page].push_back(h);return h;}
-HICON audio_icon(bool headphones,bool blocked){
- int size=px(28);BITMAPINFO info{};info.bmiHeader.biSize=sizeof(BITMAPINFOHEADER);info.bmiHeader.biWidth=size;info.bmiHeader.biHeight=-size;info.bmiHeader.biPlanes=1;info.bmiHeader.biBitCount=32;info.bmiHeader.biCompression=BI_RGB;
+HICON audio_icon(bool headphones,bool blocked,bool crowned=false){
+ int size=px(crowned?32:28);BITMAPINFO info{};info.bmiHeader.biSize=sizeof(BITMAPINFOHEADER);info.bmiHeader.biWidth=size;info.bmiHeader.biHeight=-size;info.bmiHeader.biPlanes=1;info.bmiHeader.biBitCount=32;info.bmiHeader.biCompression=BI_RGB;
  void* raw=nullptr;HDC dc=CreateCompatibleDC(nullptr);auto bitmap=CreateDIBSection(dc,&info,DIB_RGB_COLORS,&raw,nullptr,0);if(!dc||!bitmap||!raw){if(bitmap)DeleteObject(bitmap);if(dc)DeleteDC(dc);return nullptr;}
  std::fill_n(static_cast<DWORD*>(raw),size*size,0);auto previous=SelectObject(dc,bitmap);SetMapMode(dc,MM_ANISOTROPIC);SetWindowExtEx(dc,28,28,nullptr);SetViewportExtEx(dc,size,size,nullptr);
- auto ink=blocked?RGB(190,45,50):GetSysColor(COLOR_BTNTEXT);if(!ink)ink=RGB(1,1,1);auto pen=CreatePen(PS_SOLID,2,ink);auto oldPen=SelectObject(dc,pen),oldBrush=SelectObject(dc,GetStockObject(NULL_BRUSH));
+ auto ink=blocked?(crowned?RGB(30,110,220):RGB(190,45,50)):GetSysColor(COLOR_BTNTEXT);if(!ink)ink=RGB(1,1,1);auto pen=CreatePen(PS_SOLID,2,ink);auto oldPen=SelectObject(dc,pen),oldBrush=SelectObject(dc,GetStockObject(NULL_BRUSH));
+ if(crowned){POINT crown[]{{8,7},{6,1},{11,4},{14,1},{17,4},{22,1},{20,7},{8,7}};Polyline(dc,crown,8);SetViewportExtEx(dc,px(24),px(24),nullptr);SetViewportOrgEx(dc,px(4),px(10),nullptr);}
  if(headphones){MoveToEx(dc,5,15,nullptr);POINT arc[]{{5,1},{23,1},{23,15}};PolyBezierTo(dc,arc,3);RoundRect(dc,3,13,9,23,4,4);RoundRect(dc,19,13,25,23,4,4);}
  else{RoundRect(dc,10,3,18,17,7,7);MoveToEx(dc,6,12,nullptr);POINT arc[]{{6,24},{22,24},{22,12}};PolyBezierTo(dc,arc,3);MoveToEx(dc,14,21,nullptr);LineTo(dc,14,25);MoveToEx(dc,9,25,nullptr);LineTo(dc,19,25);}
- if(blocked){MoveToEx(dc,3,25,nullptr);LineTo(dc,25,3);}
+ if(blocked&&!crowned){MoveToEx(dc,3,25,nullptr);LineTo(dc,25,3);}
  GdiFlush();auto pixels=static_cast<DWORD*>(raw);for(int i=0;i<size*size;++i)if(pixels[i]&0xffffff)pixels[i]|=0xff000000;
  SelectObject(dc,oldBrush);SelectObject(dc,oldPen);SelectObject(dc,previous);DeleteObject(pen);DeleteDC(dc);
  auto mask=CreateBitmap(size,size,1,1,nullptr);HDC maskDC=CreateCompatibleDC(nullptr);auto oldMask=SelectObject(maskDC,mask);RECT area{0,0,size,size};FillRect(maskDC,&area,static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH)));SelectObject(maskDC,oldMask);DeleteDC(maskDC);
@@ -150,11 +151,17 @@ void update_cards(){auto settings=state.value("settings",Json::object());
    }
   }
   EnableWindow(card_headphones[slot],online);EnableWindow(card_microphone[slot],online);
-  for(int kind=0;kind<2;++kind){auto button=kind?(slot?mac_deafen:win_deafen):(slot?mac_mute:win_mute);auto key=std::string(slot?"mac":"win")+(kind?"_deafen":"_mute");bool active=boolean(settings,key.c_str());
+  for(int kind=0;kind<2;++kind){auto button=kind?(slot?mac_deafen:win_deafen):(slot?mac_mute:win_mute);auto prefix=std::string(slot?"mac":"win");auto key=prefix+(kind?"_deafen":"_mute");
+   bool inherited=boolean(settings,"deafen")||(!kind&&(boolean(settings,"mute")||boolean(settings,(prefix+"_deafen").c_str())));
+   bool active=inherited||boolean(settings,key.c_str());
+   SendMessageW(button,BM_SETCHECK,active?BST_CHECKED:BST_UNCHECKED,0);
    SendMessageW(button,BM_SETIMAGE,IMAGE_ICON,reinterpret_cast<LPARAM>(audio_icons[kind][active?1:0]));
-   auto label=(kind?(active?std::string("Undeafen "):std::string("Deafen ")):(active?std::string("Unmute microphone on "):std::string("Mute microphone on ")))+name;SetWindowTextW(button,utf16(label).c_str());
+   auto label=(kind?(active?std::string("Undeafen "):std::string("Deafen ")):(active?std::string("Unmute microphone on "):std::string("Mute microphone on ")))+name;
+   if(inherited)label=(kind?std::string("Deafened "):std::string("Microphone muted on "))+name+": "+(boolean(settings,"deafen")?"Deafen is on in Global audio. Turn it off there first.":boolean(settings,"mute")?"Microphone is muted in Global audio. Unmute it there first.":"This computer is deafened. Undeafen it first.");
+   SetWindowTextW(button,utf16(label).c_str());EnableWindow(button,connected&&online&&!inherited);
   }
-  EnableWindow(slot?mac_volume:win_volume,connected&&online);EnableWindow(slot?mac_mute:win_mute,connected&&online);EnableWindow(slot?mac_deafen:win_deafen,connected&&online);
+  for(int kind=0;kind<2;++kind){bool selected=number(settings,kind?"primary":"mic_source",kind?0:1)==slot;SendMessageW(kind?card_hub[slot]:card_source[slot],BM_SETIMAGE,IMAGE_ICON,reinterpret_cast<LPARAM>(hub_icons[kind][selected?1:0]));}
+  EnableWindow(slot?mac_volume:win_volume,connected&&online);
  }
  InvalidateRect(GetDlgItem(window,760),nullptr,FALSE);SetWindowTextW(link_status,!agent_available?L"App connection unavailable":connected?L"Room connected":paired?L"Reconnecting…":L"Create or join a room");InvalidateRect(window,nullptr,FALSE);
 }
@@ -184,6 +191,10 @@ void apply_state(const Json& s){updating=true;if(!agent_available){SetWindowText
   if(GetCapture()!=balance)SendMessageW(balance,TBM_SETPOS,TRUE,static_cast<LPARAM>((number(settings,"balance")+1)*50));
  }
  SetWindowTextW(win_label,platform_name(true).c_str());SetWindowTextW(mac_label,platform_name(false).c_str());for(auto h:mix_controls)EnableWindow(h,connected);
+ for(int kind=0;kind<2;++kind){auto button=kind?deafen:mute;bool inherited=!kind&&boolean(settings,"deafen"),active=inherited||boolean(settings,kind?"deafen":"mute");
+  SendMessageW(button,BM_SETCHECK,active?BST_CHECKED:BST_UNCHECKED,0);SendMessageW(button,BM_SETIMAGE,IMAGE_ICON,reinterpret_cast<LPARAM>(audio_icons[kind][active?1:0]));
+  SetWindowTextW(button,inherited?L"Microphone blocked by global deafen. Undeafen both first.":kind?(active?L"Undeafen both computers":L"Deafen both computers"):(active?L"Unmute microphone everywhere":L"Mute microphone everywhere"));EnableWindow(button,connected&&!inherited);
+ }
  std::wstring checks;
  for(const auto& d:devices){checks+=utf16(string_value(d,"name"))+L" — "+(boolean(d,"online")?L"Online":L"Offline")+L"\r\n";checks+=utf16(string_value(d,"setup_status"))+L"\r\n\r\n";}
  auto diagnostic=s.value("diagnostics",Json::object());if(diagnostic.is_object()){
@@ -216,15 +227,16 @@ LRESULT CALLBACK proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){switch(msg){
   auto title=element(L"STATIC",L"AudioBridge",0,32,18,700,35,0);SendMessageW(title,WM_SETFONT,reinterpret_cast<WPARAM>(title_font),TRUE);
   tabs=element(WC_TABCONTROLW,L"",WS_TABSTOP,32,62,890,510,180);const wchar_t* labels[]{L"Audio",L"Room",L"Advanced",L"Checks"};for(int i=0;i<4;i++){TCITEMW tab{};tab.mask=TCIF_TEXT;tab.pszText=const_cast<wchar_t*>(labels[i]);TabCtrl_InsertItem(tabs,i,&tab);}
   audio_tooltips=CreateWindowExW(WS_EX_TOPMOST,TOOLTIPS_CLASSW,nullptr,WS_POPUP|TTS_ALWAYSTIP,CW_USEDEFAULT,CW_USEDEFAULT,CW_USEDEFAULT,CW_USEDEFAULT,w,nullptr,nullptr,nullptr);
-  for(int kind=0;kind<2;++kind)for(int active=0;active<2;++active)audio_icons[kind][active]=audio_icon(kind!=0,active!=0);
+  for(int kind=0;kind<2;++kind)for(int active=0;active<2;++active){audio_icons[kind][active]=audio_icon(kind!=0,active!=0);hub_icons[kind][active]=audio_icon(kind!=0,active!=0,true);}
   building_page=0;
   element(L"STATIC",L"Two computers linked by this room",SS_OWNERDRAW,60,140,830,95,760);
   link_status=element(L"STATIC",L"Connecting…",SS_CENTER,340,159,270,26,740);
   for(int slot=0;slot<2;++slot){int x=slot?530:60;int base=700+slot*20;
    card_name[slot]=element(L"STATIC",slot?L"Mac":L"Windows PC",SS_CENTER|SS_ENDELLIPSIS,x,244,360,28,base);SendMessageW(card_name[slot],WM_SETFONT,reinterpret_cast<WPARAM>(heading_font),TRUE);
    card_status[slot]=element(L"STATIC",L"Waiting for connection",SS_CENTER,x,276,360,22,base+1);
-   card_source[slot]=element(L"BUTTON",L"Use as Input Hub",BS_RADIOBUTTON|WS_TABSTOP,x,103,175,25,base+4);
-   card_hub[slot]=element(L"BUTTON",L"Use as Output Hub",BS_RADIOBUTTON|WS_TABSTOP,x+185,103,175,25,base+2);
+   card_source[slot]=element(L"BUTTON",L"Use as Input Hub",BS_CHECKBOX|BS_PUSHLIKE|BS_ICON|WS_TABSTOP,x+134,98,40,40,base+4);
+   card_hub[slot]=element(L"BUTTON",L"Use as Output Hub",BS_CHECKBOX|BS_PUSHLIKE|BS_ICON|WS_TABSTOP,x+186,98,40,40,base+2);
+   audio_tooltip(card_source[slot]);audio_tooltip(card_hub[slot]);
    element(L"STATIC",L"Input",0,x,313,175,22,base+6);card_microphone[slot]=combo(x,337,175,base+5);
    element(L"STATIC",L"Output",0,x+185,313,175,22,base+7);card_headphones[slot]=combo(x+185,337,175,base+3);
    SendMessageW(card_headphones[slot],CB_SETDROPPEDWIDTH,px(380),0);SendMessageW(card_microphone[slot],CB_SETDROPPEDWIDTH,px(380),0);
@@ -256,9 +268,11 @@ LRESULT CALLBACK proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){switch(msg){
   element(L"STATIC",L"Test sounds play through the Output Hub. Meters show signal activity; listen to confirm.",0,38,430,750,25,0);
   element(L"STATIC",L"Deadlock: output CABLE Input; mic Hi-Fi Cable Output.\nDiscord on Mac: speaker BlackHole 2ch; mic BlackHole 16ch.",0,38,470,750,46,0);
   building_page=-1;
-  mute=element(L"BUTTON",L"Mute microphone everywhere",BS_AUTOCHECKBOX|WS_TABSTOP,40,581,330,26,440);deafen=element(L"BUTTON",L"Deafen both",BS_AUTOCHECKBOX|WS_TABSTOP,385,581,170,26,441);
+  element(L"STATIC",L"Global audio",0,40,589,140,24,753);
+  mute=element(L"BUTTON",L"Mute microphone everywhere",BS_AUTOCHECKBOX|BS_PUSHLIKE|BS_ICON|WS_TABSTOP,190,578,40,40,440);deafen=element(L"BUTTON",L"Deafen both",BS_AUTOCHECKBOX|BS_PUSHLIKE|BS_ICON|WS_TABSTOP,242,578,40,40,441);
+  audio_tooltip(mute);audio_tooltip(deafen);
   element(L"STATIC",L"Overall volume",0,580,584,140,22,0);master=slider(578,431,100);position(master,720,579,200,28);mix_controls.push_back(mute);mix_controls.push_back(deafen);
-  status_label=element(L"STATIC",L"Connecting to background agent…",SS_ENDELLIPSIS,40,616,880,23,750);mute_reason=element(L"STATIC",L"",SS_ENDELLIPSIS,40,642,880,23,751);error_label=element(L"STATIC",L"",SS_LEFT,40,668,650,40,752);
+  status_label=element(L"STATIC",L"Connecting to background agent…",SS_ENDELLIPSIS,40,624,880,23,750);mute_reason=element(L"STATIC",L"",SS_ENDELLIPSIS,40,650,880,23,751);error_label=element(L"STATIC",L"",SS_LEFT,40,676,650,40,752);
   run_button=element(L"BUTTON",L"Start audio",WS_TABSTOP,745,698,175,34,601);element(L"BUTTON",L"Quit AudioBridge",WS_TABSTOP,750,20,170,30,602);
   for(auto h:mix_controls)EnableWindow(h,FALSE);for(auto h:card_hub)EnableWindow(h,FALSE);for(auto h:card_source)EnableWindow(h,FALSE);EnableWindow(run_button,FALSE);EnableWindow(apply_button,FALSE);show_page();
   tray.cbSize=sizeof(tray);tray.hWnd=w;tray.uID=1;tray.uFlags=NIF_MESSAGE|NIF_ICON|NIF_TIP;tray.uCallbackMessage=tray_message;tray.hIcon=LoadIconW(nullptr,IDI_APPLICATION);wcscpy_s(tray.szTip,L"AudioBridge — audio continues when the window closes");Shell_NotifyIconW(NIM_ADD,&tray);
@@ -307,7 +321,7 @@ LRESULT CALLBACK proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){switch(msg){
  case tray_message:if(lp==WM_LBUTTONDBLCLK)open_window();else if(lp==WM_RBUTTONUP||lp==WM_CONTEXTMENU)tray_menu();return 0;
  case WM_CLOSE:ShowWindow(w,SW_HIDE);return 0;
  case WM_ENDSESSION:if(wp)DestroyWindow(w);return 0;
- case WM_DESTROY:for(auto& icons:audio_icons)for(auto icon:icons)if(icon)DestroyIcon(icon);DeleteObject(ui_font);DeleteObject(title_font);DeleteObject(heading_font);KillTimer(w,refresh_timer);Shell_NotifyIconW(NIM_DELETE,&tray);{std::lock_guard lock(queue_mutex);stopping=true;queue.clear();}queue_cv.notify_one();PostQuitMessage(0);return 0;
+ case WM_DESTROY:for(auto& icons:hub_icons)for(auto icon:icons)if(icon)DestroyIcon(icon);for(auto& icons:audio_icons)for(auto icon:icons)if(icon)DestroyIcon(icon);DeleteObject(ui_font);DeleteObject(title_font);DeleteObject(heading_font);KillTimer(w,refresh_timer);Shell_NotifyIconW(NIM_DELETE,&tray);{std::lock_guard lock(queue_mutex);stopping=true;queue.clear();}queue_cv.notify_one();PostQuitMessage(0);return 0;
  }return DefWindowProcW(w,msg,wp,lp);}
 }
 int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR command_line,int show){

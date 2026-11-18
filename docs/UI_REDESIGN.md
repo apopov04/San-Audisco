@@ -61,3 +61,23 @@ was visually checked with long names and both icon states. The strict Windows
 build and native GUI fixture tests under Wine passed, including all four button
 actions, acknowledged states, changed icons, and stable long-name field bounds.
 This release changes presentation only; engine, room agent and drivers are unchanged.
+
+## v0.2.4 hub and global controls
+
+Two compact crowned icons above each computer select its Input Hub (microphone)
+and Output Hub (headphones) roles. Selected roles are blue; hover descriptions
+explain each role. The bottom section is labeled Global audio and uses the same
+microphone/headphones controls as the device sections.
+
+Device icons show effective control state: global deafen marks both headphones
+and microphones as blocked, global mute marks both microphones, and a device's
+deafen also marks its own microphone. An inherited block disables its subordinate
+button with an explanation of which control to release. Individual preferences
+are preserved when global gates are removed. This changes UI state projection,
+not engine settings or the meaning of mute/deafen.
+
+The Windows GUI fixture suite verifies crowned square hub buttons, global gate
+propagation, unchanged individual preferences, restoration, and the existing
+room/route behavior. Mac visual checks exercise the same global propagation and
+independent hub selections; its model/IPC test and both production builds pass.
+Windows GUI validation uses Wine, not the physical gaming PC.

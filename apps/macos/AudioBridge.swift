@@ -219,6 +219,20 @@ struct AudioDevicePicker:NSViewRepresentable {
  }
 }
 
+struct AudioControlIcon:View {
+ let headphones:Bool
+ var blocked=false
+ var crowned=false
+ var body:some View {
+  VStack(spacing:0){
+   if crowned {Image(systemName:"crown.fill").font(.system(size:9,weight:.semibold))}
+   Image(systemName:headphones ? "headphones":(blocked ? "mic.slash":"mic"))
+    .font(.system(size:16,weight:.medium)).frame(width:22,height:22)
+    .overlay{if headphones && blocked{Rectangle().frame(width:25,height:2).rotationEffect(.degrees(-45))}}
+  }.frame(width:20,height:36).accessibilityHidden(true)
+ }
+}
+
 struct DeviceRouteView:View {
  @ObservedObject var model:BridgeModel
  let device:RoomDevice
@@ -237,15 +251,15 @@ struct DeviceRouteView:View {
  }
  private func audioButton(deafen:Bool)->some View {
   let key=prefix+(deafen ? "_deafen":"_mute")
-  let active=model.number(key) != 0
+  let inherited=model.number("deafen") != 0 || (!deafen && (model.number("mute",default:1) != 0 || model.number(prefix+"_deafen") != 0))
+  let active=inherited || model.number(key) != 0
   let action=deafen ? (active ? "Undeafen":"Deafen"):(active ? "Unmute microphone on":"Mute microphone on")
+  let hint=inherited ? (model.number("deafen") != 0 ? "Deafen is on in Global audio. Turn it off there first.":model.number("mute",default:1) != 0 ? "Microphone is muted in Global audio. Unmute it there first.":"This computer is deafened. Undeafen it first.") : "\(action) \(device.name)"
   return Button{model.control(key,active ? 0:1)}label:{
-   Image(systemName:deafen ? "headphones":(active ? "mic.slash":"mic"))
-    .font(.system(size:16,weight:.medium)).frame(width:22,height:22)
-    .overlay{if deafen && active{Rectangle().frame(width:25,height:2).rotationEffect(.degrees(-45))}}
-    .foregroundColor(active ? .red:.primary)
-  }.buttonStyle(.bordered).help("\(action) \(device.name)")
-   .accessibilityLabel("\(action) \(device.name)").accessibilityValue(active ? "On":"Off")
+   AudioControlIcon(headphones:deafen,blocked:active).foregroundColor(active ? .red:.primary)
+  }.buttonStyle(.bordered).help(hint).disabled(inherited)
+   .accessibilityLabel(inherited ? "\(deafen ? "Deafened":"Microphone muted on") \(device.name). \(hint)":"\(action) \(device.name)").accessibilityValue(active ? "On":"Off")
+
  }
 
  var body:some View {VStack(alignment:.leading,spacing:14){
@@ -332,16 +346,29 @@ struct ContentView:View {
   let selected=Int(m.number(key,default:input ? 1:0))==role
   let d=device(role)
   let hasEndpoint=d?.audio.contains(where:{a in !a.isVirtual && (input ? (a.id==d?.microphone && a.inputs>0):(a.id==d?.headphones && a.outputs>0))}) ?? false
-  if selected && m.paired {
-   Label(title,systemImage:"checkmark").font(.caption).fontWeight(.medium).foregroundColor(online(d) ? .blue:.secondary).frame(maxWidth:.infinity)
-  }else{
-   Button("Use as \(title)"){m.control(key,Double(role))}.controlSize(.small).disabled(!online(d) || !m.connected || m.busy || !hasEndpoint).frame(maxWidth:.infinity)
-  }
+  let active=selected && m.paired
+  let label=active ? "\(title) · \(d?.name ?? "This computer")":"Use \(d?.name ?? "this computer") as \(title)"
+  Button{if !selected{m.control(key,Double(role))}}label:{
+   AudioControlIcon(headphones:!input,crowned:true).foregroundColor(active ? .blue:.primary)
+  }.buttonStyle(.bordered).tint(active ? .blue:nil)
+   .disabled(!online(d) || !m.connected || m.busy || (!active && !hasEndpoint))
+   .help("\(label). \(input ? "Supplies the microphone to both computers.":"Plays the combined audio through its output.")")
+   .accessibilityLabel(label).accessibilityValue(active ? "Selected":"Not selected")
+
+ }
+ private func globalAudioButton(deafen:Bool)->some View {
+  let inherited = !deafen && m.number("deafen") != 0
+  let active=inherited || m.number(deafen ? "deafen":"mute",default:deafen ? 0:1) != 0
+  let label=inherited ? "Microphone blocked by global deafen. Undeafen both first.":deafen ? (active ? "Undeafen both computers":"Deafen both computers"):(active ? "Unmute microphone everywhere":"Mute microphone everywhere")
+  return Button{m.control(deafen ? "deafen":"mute",active ? 0:1)}label:{
+   AudioControlIcon(headphones:deafen,blocked:active).foregroundColor(active ? .red:.primary)
+  }.buttonStyle(.bordered).help(label).accessibilityLabel(label).accessibilityValue(active ? "On":"Off")
+   .disabled(!m.connected || m.busy || inherited)
  }
  @ViewBuilder private func computer(_ role:Int)->some View {
   let d=device(role);let ready=online(d)
   VStack(spacing:12){
-   HStack(spacing:8){hubChoice(role,input:true);hubChoice(role,input:false)}.frame(height:28)
+   HStack(spacing:8){hubChoice(role,input:true);hubChoice(role,input:false)}.frame(height:44)
    Image(systemName:role==0 ? "desktopcomputer":"laptopcomputer").font(.system(size:68,weight:.light)).foregroundColor(ready ? .blue:.secondary).frame(height:84).accessibilityHidden(true)
    Text(d?.name ?? (role==0 ? "Windows PC":"MacBook")).font(.title3).fontWeight(.semibold).lineLimit(2)
    HStack(spacing:5){Circle().fill(ready ? Color.blue:Color.secondary).frame(width:6,height:6);Text(ready ? ((d?.id==m.localID) ? "This computer · available":"Connected"):(m.paired ? "Offline":"Not connected"))}.font(.caption).foregroundColor(.secondary)
@@ -361,11 +388,12 @@ struct ContentView:View {
   }.padding(.vertical,6)}
   Divider().padding(.vertical,16)
   VStack(alignment:.leading,spacing:12){
+   Text("Global audio").font(.headline)
    if !m.error.isEmpty {HStack(alignment:.top){Image(systemName:"exclamationmark.triangle");Text(m.error).textSelection(.enabled);Spacer();Button("Check setup"){showChecks=true}}.foregroundColor(.red)}
    if m.running && micBlocked {HStack(alignment:.top){Image(systemName:"mic.slash");Text(m.number("deafen") != 0 ? "Both computers are deafened. Listening and microphone delivery are off.":(m.muteReason.isEmpty ? "Microphone is blocked. Check audio readiness before speaking.":m.muteReason)).font(.callout);Spacer()}.foregroundColor(.orange)}
    HStack(spacing:16){
-    Button{m.control("mute",m.number("mute",default:1)==0 ? 1:0)}label:{Label(m.number("mute",default:1)==0 ? "Mute microphone":"Unmute microphone",systemImage:m.number("mute",default:1)==0 ? "mic":"mic.slash")}.disabled(!m.connected || m.busy)
-    Toggle("Deafen both",isOn:m.toggle("deafen")).disabled(!m.connected || m.busy)
+    globalAudioButton(deafen:false)
+    globalAudioButton(deafen:true)
     Spacer()
     HStack(spacing:8){Text("Volume").font(.caption).foregroundColor(.secondary);Slider(value:m.scalar("master",default:1),in:0...1).accessibilityLabel("Overall listening volume").frame(width:110)}.disabled(!m.connected || m.busy)
     if m.busy{ProgressView().controlSize(.small)}
