@@ -235,7 +235,9 @@ void draw_computers(HDC dc,bool static_art=true,bool traffic=true){
  appearance::graphics_ready();if(!appearance::palette.backgroundBrush)appearance::refresh();
  // Honor the caller's GDI mapping so the same vectors serve the display and
  // screenshot renderer at every DPI, without bitmap icon scaling artifacts.
- POINT points[]{{0,0},{1000,1000}};LPtoDP(dc,points,2);int savedDC=SaveDC(dc);SetMapMode(dc,MM_TEXT);SetWindowOrgEx(dc,0,0,nullptr);SetViewportOrgEx(dc,0,0,nullptr);{Gdiplus::Graphics g(dc);g.TranslateTransform(float(points[0].x),float(points[0].y));g.ScaleTransform((points[1].x-points[0].x)/1000.f,(points[1].y-points[0].y)/1000.f);g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+ POINT points[]{{0,0},{1000,1000}};LPtoDP(dc,points,2);int savedDC=SaveDC(dc);SetMapMode(dc,MM_TEXT);SetWindowOrgEx(dc,0,0,nullptr);SetViewportOrgEx(dc,0,0,nullptr);{Gdiplus::Graphics g(dc);float sx=(points[1].x-points[0].x)/1000.f,sy=(points[1].y-points[0].y)/1000.f;
+ // Width changes move the three anchors; artwork scales uniformly with DPI.
+ auto anchor=[&](float center){g.ResetTransform();g.TranslateTransform(float(points[0].x)+center*(sx-sy),float(points[0].y));g.ScaleTransform(sy,sy);};anchor(485);g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
  auto& theme=appearance::palette;COLORREF gray=theme.secondary,blue=theme.accent;
  Gdiplus::Pen bridge(appearance::color(connected&&agent_available?(theme.highContrast?theme.accent:RGB(191,66,43)):gray),1.7f);bridge.SetStartCap(Gdiplus::LineCapRound);bridge.SetEndCap(Gdiplus::LineCapRound);
  auto point=[](float x,float y){return Gdiplus::PointF{397+x*1.1f,143+y};};
@@ -252,7 +254,7 @@ void draw_computers(HDC dc,bool static_art=true,bool traffic=true){
   auto saved=g.Save();g.SetClip(Gdiplus::RectF(399,202,172,8));
   for(int lane=0;lane<2;++lane)for(int dot=0;dot<3;++dot){double journey=travel+dot/3.0,progress=std::fmod(journey,1.0);float x=2+float(156*(lane==0?progress:1-progress));auto a=point(x-3,float(59+lane*4));appearance::rounded(g,a.X,a.Y,7.7f,2.5f,1,colors[(lane*3+dot+static_cast<unsigned long long>(journey))%6]);}g.Restore(saved);
  }
- if(static_art)for(int slot=0;slot<2;++slot){auto d=slot_device(slot);bool online=agent_available&&!d.empty()&&boolean(d,"online")&&(string_value(d,"id")==string_value(state,"device_id")||connected);float center=slot?763.f:207.f;auto ink=online?blue:gray;auto kind=string_value(d,"kind","desktop");
+ if(static_art)for(int slot=0;slot<2;++slot){auto d=slot_device(slot);bool online=agent_available&&!d.empty()&&boolean(d,"online")&&(string_value(d,"id")==string_value(state,"device_id")||connected);float center=slot?763.f:207.f;anchor(center);auto ink=online?blue:gray;auto kind=string_value(d,"kind","desktop");
   Gdiplus::Pen stroke(appearance::color(ink),4.4f);stroke.SetStartCap(Gdiplus::LineCapRound);stroke.SetEndCap(Gdiplus::LineCapRound);stroke.SetLineJoin(Gdiplus::LineJoinRound);
   if(kind=="server"){for(int row=0;row<3;++row){float y=148+row*25.f;appearance::outline(g,center-35,y,70,19,4,ink,3);Gdiplus::SolidBrush dot(appearance::color(ink));g.FillEllipse(&dot,center-27,y+7,5.f,5.f);g.DrawLine(&stroke,center-10,y+9,center+25,y+9);}}
   else if(kind=="laptop"){appearance::outline(g,center-37,156,74,53,4,ink,4);g.DrawLine(&stroke,center-47,217.f,center+47,217.f);g.DrawLine(&stroke,center-37,210.f,center-47,217.f);g.DrawLine(&stroke,center+37,210.f,center+47,217.f);}
@@ -356,14 +358,15 @@ void layout_window(HWND target){
  HDWP batch=BeginDeferWindowPos(static_cast<int>(layout_items.size()));
  for(auto&item:layout_items){if(item.page!=page||!IsWindow(item.handle))continue;
   int x=item.x,y=item.y,w=item.width,h=item.height,id=GetDlgCtrlID(item.handle);
-  if(!page){double ratio=width/970.0;bool fixed=(id==702||id==704||id==722||id==724||id==411||id==412||id==421||id==422||id==440||id==441);x=static_cast<int>(std::lround(x*ratio));w=fixed?w:static_cast<int>(std::lround(w*ratio));if(id==412||id==422||id==441||id==702||id==722)x=static_cast<int>(std::lround((item.x-52)*ratio))+52;}
+  if(!page){double ratio=width/970.0;bool fixed=(id==702||id==704||id==722||id==724||id==411||id==412||id==421||id==422||id==440||id==441);x=static_cast<int>(std::lround(x*ratio));w=fixed?w:static_cast<int>(std::lround(w*ratio));if(id==412||id==422||id==441)x=static_cast<int>(std::lround((item.x-52)*ratio))+52;
+   if(id==702||id==704||id==722||id==724)x=static_cast<int>(std::lround((id>=720?763:207)*ratio))+((id==704||id==724)?-48:4);}
   else if(width>840){w=static_cast<int>(std::lround(w*width/840.0));x=static_cast<int>(std::lround(x*width/840.0));}
   SetPropW(item.handle,L"SanAudisco.Dpi",reinterpret_cast<HANDLE>(INT_PTR(dpi)));
   wchar_t cls[64]{};GetClassNameW(item.handle,cls,64);if(std::wstring(cls)==L"ComboBox"){SendMessageW(item.handle,CB_SETITEMHEIGHT,WPARAM(-1),scale(24));SendMessageW(item.handle,CB_SETITEMHEIGHT,0,scale(28));}
   auto font=fonts[id==100?1:(id==700||id==720||(id>=661&&id<=663))?2:id==753?4:(id==701||id==721||id==740||id==754||id==750||id==755||id==606||id==607)?3:0];if(reinterpret_cast<HFONT>(SendMessageW(item.handle,WM_GETFONT,0,0))!=font)SendMessageW(item.handle,WM_SETFONT,reinterpret_cast<WPARAM>(font),FALSE);
-  batch=DeferWindowPos(batch,item.handle,nullptr,scale(x)-scroll_x[page],scale(y)-scroll_y[page],scale(w),scale(h),SWP_NOZORDER|SWP_NOACTIVATE);
+  batch=DeferWindowPos(batch,item.handle,nullptr,scale(x)-scroll_x[page],scale(y)-scroll_y[page],scale(w),scale(h),SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOCOPYBITS);
  }
- if(batch)EndDeferWindowPos(batch);laying_out=false;InvalidateRect(target,nullptr,TRUE);
+ if(batch)EndDeferWindowPos(batch);laying_out=false;RedrawWindow(target,nullptr,nullptr,RDW_INVALIDATE|RDW_ERASE|RDW_ALLCHILDREN);
 }
 LRESULT CALLBACK focus_proc(HWND control,UINT message,WPARAM wp,LPARAM lp,UINT_PTR,DWORD_PTR){
  if(message==WM_SETFOCUS){auto parent=GetParent(control);if(IsWindowVisible(parent)){RECT r{},client{};GetWindowRect(control,&r);MapWindowPoints(nullptr,parent,reinterpret_cast<POINT*>(&r),2);GetClientRect(parent,&client);int dx=r.left<8?r.left-8:r.right>client.right-8?r.right-client.right+8:0,dy=r.top<8?r.top-8:r.bottom>client.bottom-8?r.bottom-client.bottom+8:0;

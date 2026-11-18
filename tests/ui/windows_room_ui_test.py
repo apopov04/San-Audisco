@@ -258,10 +258,23 @@ try:
    u.SendMessageW(hwnd,0x8000+40,panel_index,0)
    artifact=exe.parent/f'dpi-{dpi}-panel-{panel_index}.bmp'
    wait(lambda:artifact.exists() and artifact.stat().st_size>1000,'DPI screenshot missing')
+ # Repeat native maximize/restore transitions; each resize must repaint all
+ # children, keep the graphic above its label, and retain icon button geometry.
+ page(0)
+ for iteration in range(3):
+  for mode,label in ((3,'maximized'),(9,'restored')):
+   u.ShowWindow(hwnd,mode);time.sleep(.15)
+   assert bounds(760).bottom<=bounds(740).top,'Resize put bridge over connection text'
+   for base in (700,720):assert abs((bounds(base+4).left+bounds(base+2).right)-(bounds(base).left+bounds(base).right))<=max(2,round(2*(dpi or 96)/96)),'Resize moved hub buttons off the device center'
+   assert len({dimensions(i) for i in (411,412,421,422,440,441)})==1,'Resize changed audio icon button sizes'
+   if dpi and iteration==2:
+    u.SendMessageW(hwnd,0x8000+40,0,0)
+    source=exe.parent/f'dpi-{dpi}-panel-0.bmp'
+    (exe.parent/f'dpi-{dpi}-{label}.bmp').write_bytes(source.read_bytes())
  u.SendMessageW(hwnd,0x10,0,0);wait(lambda:not u.IsWindowVisible(hwnd),'Close did not hide to tray')
  assert p.poll() is None and not seen('quit'),'Close stopped background app'
  u.ShowWindow(hwnd,9);u.SendMessageW(hwnd,0x112,0xE100,0);p.wait(timeout=12)
  assert p.returncode==0 and seen('quit'),'Explicit quit did not stop agent and exit'
- print(json.dumps({'passed':True,'theme':theme or 'system','dpi':dpi or 'native','scope':'real Win32 GUI + fixture IPC; no audio or real credentials','checks':['startup state','matching audio button sizes/gaps','header/footer divider bounds','local light/dark/system appearance','native Space-key toggle','native settings/checks panels','device profile override','same-platform participants','non-overlapping header and bridge label','small-window scrolling','two-device main screen','animation timer does not poll agent','main control bounds','physical selector filtering','peer connection state','disabled unpaired roles','create invite','discovery selection','code validation and normalization','join acknowledgement','start acknowledgement','remote device configuration','crowned square hub selectors','individual icon buttons','effective global mute/deafen and preference restoration','long-name alignment','readiness diagnostics','local and remote signal meters','explicit remote test sound','cancel pending restart','explicit agent reconnect','failed status and transport recovery','close keeps running','explicit quit']}))
+ print(json.dumps({'passed':True,'theme':theme or 'system','dpi':dpi or 'native','scope':'real Win32 GUI + fixture IPC; no audio or real credentials','checks':['startup state','matching audio button sizes/gaps','header/footer divider bounds','local light/dark/system appearance','native Space-key toggle','native settings/checks panels','device profile override','same-platform participants','non-overlapping header and bridge label','small-window scrolling','repeated maximize/restore','two-device main screen','animation timer does not poll agent','main control bounds','physical selector filtering','peer connection state','disabled unpaired roles','create invite','discovery selection','code validation and normalization','join acknowledgement','start acknowledgement','remote device configuration','crowned square hub selectors','individual icon buttons','effective global mute/deafen and preference restoration','long-name alignment','readiness diagnostics','local and remote signal meters','explicit remote test sound','cancel pending restart','explicit agent reconnect','failed status and transport recovery','close keeps running','explicit quit']}))
 finally:
  if p.poll() is None:p.kill();p.wait()

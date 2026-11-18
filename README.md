@@ -1,4 +1,4 @@
-# San Audisco v0.3.1
+# San Audisco v0.3.2
 
 San Audisco (formerly AudioBridge) mixes audio from two Windows or Mac computers into headphones connected to
 one computer, and sends a selected physical microphone to voice apps on both.
@@ -22,6 +22,13 @@ rounded selectors and icon buttons, matching device/global mute and deafen pairs
 and light/dark appearance. It keeps native Windows controls and system graphics
 libraries. Choose **Room settings → Appearance → System, Light, or Dark**.
 See [Windows appearance and validation](docs/WINDOWS_APPEARANCE.md).
+
+Version 0.3.2 fixes stretched/stale Windows artwork on maximize and restores
+normal audio when quitting. Quit stops both connected computers, waits for the
+peer's acknowledgement, and leaves the other app open with audio stopped. When
+an old cable selection has no restore record, recovery uses the explicitly
+selected physical device. Unavailable devices produce an actionable error.
+See [quit and resize validation](docs/V032_FIXES.md).
 
 ## Start using a room
 
@@ -50,7 +57,8 @@ See [Windows appearance and validation](docs/WINDOWS_APPEARANCE.md).
 Once both audio engines are ready, the app switches each computer's default
 playback to its playback cable. Apps following the system default (including a
 normal browser) then enter the mix automatically. Stop audio or Quit restores
-the outputs saved before that session. A manual output change during a session
+the outputs saved before that session (or the selected physical devices when
+recovering an older cable selection with no saved record). A manual output change during a session
 is respected. Explicit app output selections still take precedence.
 
 | Application | Output / speaker | Input / microphone |
@@ -86,7 +94,8 @@ Balance is available in Room settings on Mac and Advanced on Windows.
 - **Deafen** stops listening and microphone delivery globally or for that device.
 - **Stop audio** stops both engines when both devices are reachable. Closing the
   window keeps audio running; use the menu-bar/notification-area icon to reopen it.
-- **Quit San Audisco** stops the app and agent on that computer. Optional login
+- **Quit San Audisco** stops the shared audio session and closes the app/agent on
+  that computer; the other app stays open. Optional login
   startup is controlled locally on each computer. No login item is enabled by default.
 
 Startup, reconnect, and audio role changes protectively mute the microphone. The

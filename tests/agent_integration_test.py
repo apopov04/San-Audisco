@@ -75,8 +75,10 @@ with tempfile.TemporaryDirectory(prefix='san-audisco-agent-test-') as temp:
                 assert win.call('control',device_id=mid,key='volume',value=.63)['ok']
                 wait(lambda:all(abs(next(d['mix']['volume'] for d in x.state()['devices'] if d['id']==mid)-.63)<.001 for x in (win,mac)),'controls follow new coordinator')
         print('PASS all four output/input role assignments, live handover, source routing and settings authority on either participant')
-        # Restart an agent with saved state, preserving pairing and explicit start intent.
-        mac.call('quit');mac.process.wait(timeout=5)
+        # Explicit Quit stops the shared session and clears restart intent on both.
+        assert mac.call('quit')['ok'];mac.process.wait(timeout=5)
+        wait(lambda:not win.state()['running'] and not win.state()['wanted_running'],'Quit acknowledged peer stop')
+        for device in (win,mac):assert not json.loads((device.root/'state.json').read_text())['wanted_running']
         assert mac.call('quit')['ok']  # Idempotent Quit when no daemon holds its lock.
         wait(lambda:not win.state()['connected'],'disconnect detected',seconds=20)
         for device in (win,mac):
@@ -84,10 +86,14 @@ with tempfile.TemporaryDirectory(prefix='san-audisco-agent-test-') as temp:
             assert json.loads((device.root/'input-restore.json').read_text())['entries']==[], 'Disconnect/quit must restore inputs'
         mac.start()
         wait(lambda:win.state()['connected'] and mac.state()['connected'],'saved room reconnect',seconds=20)
-        wait(lambda:win.state()['diagnostics'].get('synchronized') and mac.state()['diagnostics'].get('synchronized'),'audio resumes',seconds=20)
+        time.sleep(1.5)
+        assert all(not x.state()['running'] and not x.state()['wanted_running'] for x in (win,mac))
+        wait(lambda:win.state()['shared_ready'] and mac.state()['shared_ready'],'room synchronized after reopen')
+        assert win.call('start')['ok']
+        wait(lambda:win.state()['diagnostics'].get('synchronized') and mac.state()['diagnostics'].get('synchronized'),'explicit audio restart',seconds=20)
         assert win.state()['diagnostics']['muted'] and mac.state()['diagnostics']['muted']
         assert win.state()['mute_reason']
-        print('PASS saved credential reconnect, remembered start intent, explicit protective mute reason')
+        print('PASS acknowledged room-wide Quit, saved credential reconnect without automatic restart, explicit protective mute reason')
         assert mac.call('stop')['ok']
         wait(lambda:not win.state()['running'] and not mac.state()['running'],'room-wide stop')
         assert 'Audio bridge active' not in win.state()['status'], 'Remote Stop left stale active status'

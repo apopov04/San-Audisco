@@ -27,6 +27,9 @@ public:
  Lease(Backend& backend,std::function<void(const nlohmann::json&)> save,const nlohmann::json& journal);
  void begin();
  void acquire(const std::string& target);
+ // Recover a known app cable selected before takeover, using an explicitly
+ // configured physical endpoint. Never replaces an existing recovery record.
+ void adopt_existing(const std::string& target,const std::string& physical);
  void restore() noexcept;
  const std::string& warning()const{return warning_;}
  bool active()const{return !entries_.empty();}

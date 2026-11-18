@@ -93,6 +93,25 @@ Json request(const Options&o,const Json&q){auto e=read_json(o.directory/"endpoin
  auto wire=Json{{"token",token},{"request",q}}.dump()+"\n";size_t at=0;auto end=Clock::now()+std::chrono::seconds(4);while(at<wire.size()&&Clock::now()<end){if(!wait_socket(socket.s,true,100))continue;auto n=send(socket.s,wire.data()+at,int(wire.size()-at),0);if(n<=0)throw std::runtime_error("Agent is unavailable");at+=size_t(n);}std::string result;while(Clock::now()<end){if(!wait_socket(socket.s,false,100))continue;char b[8192];auto n=recv(socket.s,b,sizeof b,0);if(n<=0)break;result.append(b,size_t(n));if(result.size()>131072)throw std::runtime_error("Agent response too large");if(result.find('\n')!=result.npos)return Json::parse(result.substr(0,result.find('\n')));}throw std::runtime_error("Agent response timed out");}
 Json settings_json(const bridge::Settings&s){Json j;std::istringstream in(bridge::control::snapshot(s));std::string k;double v;while(in>>k>>v)j[k]=v;return j;}
 bridge::Settings parse_settings(const Json&j){bridge::Settings s;if(!j.is_object())throw std::runtime_error("Invalid saved settings");for(auto it=j.begin();it!=j.end();++it)if(!it.value().is_number()||!bridge::control::update(s,it.key(),it.value().get<float>()))throw std::runtime_error("Invalid saved control value");return s;}
+// Only an explicitly selected, currently available physical endpoint may be
+// used when an older/manual cable selection has no write-ahead restore record.
+std::string physical_fallback(const std::vector<bridge::AudioDevice>& audio,const std::map<std::string,std::string>& routes,bool input){
+ auto it=routes.find(input?"physical_microphone":"headphones_output");if(it==routes.end())return {};
+ for(const auto& d:audio)if(d.id==it->second&&!bridge::agent::virtual_device(d)&&(input?d.input_channels:d.output_channels)>0)return d.id;
+ return {};
+}
+void recover_saved_audio(const Options& o){
+ auto saved=read_json(o.directory/"state.json");auto routes=saved.value("routes",std::map<std::string,std::string>{});auto audio=bridge::enumerate_audio_devices();std::string warning;
+ for(bool input:{false,true}){
+  auto backend=bridge::routing::system_backend(input);auto file=o.directory/(input?"input-restore.json":"output-restore.json");
+  bridge::routing::Lease lease(*backend,[&](const Json& j){bridge::agent::atomic_write(file,j.dump(2)+"\n");},read_json(file));
+  auto target=input?bridge::agent::microphone_input(audio,routes["microphone_output"],o.platform):bridge::agent::playback_output(audio,routes["playback_input"],o.platform);
+  lease.adopt_existing(target,physical_fallback(audio,routes,input));lease.restore();if(lease.active())warning+=lease.warning()+" ";
+  if(!input&&!target.empty())for(const auto&[role,id]:backend->defaults())if(id==target&&!lease.active()){warning+="Reconnect or select the physical Output on this computer. ";break;}
+ }
+ if(!saved.empty()){saved["wanted_running"]=false;bridge::agent::atomic_write(o.directory/"state.json",saved.dump(2)+"\n");}
+ if(!warning.empty())throw std::runtime_error("Audio stopped, but normal device restoration needs attention: "+warning);
+}
 class Agent {
  bridge::device::Profile profile_;std::string kind_override_="auto";bool name_automatic_=true;
  Options o_;Json saved_,peer_=Json::object(),telemetry_=Json::object();bridge::room::Device identity_;std::unique_ptr<bridge::room::Service> room_;std::optional<bridge::room::Credential> credential_;
@@ -107,7 +126,7 @@ class Agent {
  std::unique_ptr<bridge::routing::Lease> output_lease_;
  std::unique_ptr<bridge::routing::Backend> input_backend_;
  std::unique_ptr<bridge::routing::Lease> input_lease_;
- bool auto_microphone_=false;
+ bool auto_microphone_=false,shutting_down_=false;std::string quit_sequence_,quit_peer_error_;
  Clock::time_point output_check_{},output_unhealthy_{};
  std::string output_warning_;
  bridge::Device local_slot()const{return credential_&&identity_.id>credential_->peer.id?bridge::Device::B:bridge::Device::A;}
@@ -203,6 +222,7 @@ class Agent {
   }else throw std::runtime_error("Unexpected handover step");
  }
  void resume_room(bool notify){
+  if(shutting_down_)throw std::runtime_error("Audio is stopping; wait for Quit to finish");
   if(!peer_compatible_||!shared_ready_||!room_->status().connected)throw std::runtime_error("Wait for both compatible computers to synchronize");
   if(!transfer_.empty())throw std::runtime_error("Wait for hub switching to finish");
   if(recovery_required_){recovery_required_=false;persist();}
@@ -227,7 +247,7 @@ class Agent {
     if(auto_microphone_&&source.value("microphone_ready",false)&&telemetry_.value("mic_sink_ready",false)&&remote.value("mic_sink_ready",false))input_lease_->acquire(bridge::agent::microphone_input(audio_,routes_["microphone_output"],o_.platform));
     else input_lease_->restore();
     if(!input_lease_->warning().empty())output_warning_=input_lease_->warning();}
-   else {if(output_unhealthy_==Clock::time_point{})output_unhealthy_=now;if(now-output_unhealthy_>=std::chrono::seconds(3)){output_lease_->restore();input_lease_->restore();output_warning_=output_lease_->warning();if(!input_lease_->warning().empty())output_warning_=input_lease_->warning();}}
+   else {if(output_unhealthy_==Clock::time_point{})output_unhealthy_=now;if(now-output_unhealthy_>=std::chrono::seconds(3)){restore_audio();}}
   }catch(const std::exception&e){output_warning_=e.what();}
  }
  std::string secret_id()const{return "room-"+credential_->room_id;}
@@ -241,7 +261,30 @@ class Agent {
   if(auto version=std::getenv("BRIDGE_TEST_PROTOCOL_VERSION"))protocol=std::stoi(version);
 #endif
   if(room_->status().connected){Json j={{"type","snapshot"},{"protocol_version",protocol},{"shared",shared_state()},{"transfer_pending",!transfer_.empty()||recovery_required_},{"recovery_required",recovery_required_},{"recovery_epoch",recovery_epoch_},{"recovery_revision",recovery_revision_},{"migration_pending",migration_pending_},{"device",local_info()},{"settings",settings_json(settings_)},{"running",engine_.running()},{"diagnostics",telemetry_},{"mute_reason",mute_reason_}};room_->send(j.dump());}advertise_=Clock::now()+std::chrono::seconds(1);}
- void stop_local(bool forget_intent=false){if(input_lease_)input_lease_->restore();if(output_lease_){output_lease_->restore();output_warning_=output_lease_->warning();}engine_.stop();telemetry_=Json::object();engine_synced_=false;stdout_.clear();if(forget_intent)wanted_=false;}
+ void restore_audio(){
+  output_warning_.clear();
+  for(bool input:{false,true}){auto* lease=input?input_lease_.get():output_lease_.get();if(!lease)continue;
+   try{auto target=input?bridge::agent::microphone_input(audio_,routes_["microphone_output"],o_.platform):bridge::agent::playback_output(audio_,routes_["playback_input"],o_.platform);lease->adopt_existing(target,physical_fallback(audio_,routes_,input));}catch(const std::exception&e){output_warning_+=e.what();}
+   lease->restore();
+   if(!input&&!lease->active()){auto target=bridge::agent::playback_output(audio_,routes_["playback_input"],o_.platform);try{if(!target.empty())for(const auto&[role,id]:output_backend_->defaults())if(id==target){output_warning_+="Reconnect or select the physical Output on this computer.";break;}}catch(const std::exception&e){output_warning_+=e.what();}}
+   if(!lease->warning().empty()){if(!output_warning_.empty())output_warning_+="; ";output_warning_+=lease->warning();}
+  }
+ }
+ void stop_local(bool forget_intent=false){engine_.stop();restore_audio();telemetry_=Json::object();engine_synced_=false;stdout_.clear();if(forget_intent)wanted_=false;}
+ void quit_room(){
+  shutting_down_=true;wanted_=false;quit_sequence_.clear();quit_peer_error_.clear();persist();
+  if(room_->status().connected){try{quit_sequence_=std::to_string(remote_request({{"command","stop"}}));}catch(const std::exception&e){quit_peer_error_=e.what();}}
+  stop_local(true);persist();auto until=Clock::now()+std::chrono::milliseconds(2000);
+  while(!quit_sequence_.empty()&&pending_config_.contains(quit_sequence_)&&Clock::now()<until){
+   room_->poll();for(int i=0;i<32;++i){auto wire=room_->receive();if(!wire)break;try{remote(Json::parse(*wire));}catch(const std::exception&e){message_=e.what();}}
+   if(!room_->status().connected)break;std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+  shutting_down_=false;
+  if(!output_warning_.empty())throw std::runtime_error("Audio stopped, but normal devices could not be restored: "+output_warning_);
+  if(!quit_peer_error_.empty())throw std::runtime_error("Audio stopped here, but the other computer needs attention: "+quit_peer_error_);
+  if(!quit_sequence_.empty()&&pending_config_.contains(quit_sequence_)&&room_->status().connected)throw std::runtime_error("Audio stopped here. The other computer has not confirmed restoration; retry Quit.");
+  quitting=true;message_="Audio stopped and normal devices restored. The other app stays open.";
+ }
  void start_local(){
   if(engine_.running())return;if(!credential_||!room_->status().connected||peer_.empty())throw std::runtime_error("Wait for both room devices to connect");
   if(!peer_compatible_||!shared_ready_)throw std::runtime_error("Update San Audisco on both computers and wait for room settings to synchronize");
@@ -299,13 +342,13 @@ class Agent {
   }else if(type=="handover"){receive_handover(j);
   }else if(type=="request"){
    auto seq=counter(j,"sequence");if(seq<=peer_sequence_)return;peer_sequence_=seq;auto q=j.at("body");auto command=bounded(q,"command",32);Json result={{"type","result"},{"sequence",seq},{"ok",true}};
-   try{if(command=="configure")configure_local(q);else if(command=="autoconfigure")autoconfigure_local();else if(command=="start"){require_epoch(q);resume_room(is_coordinator());}else if(command=="stop"){stop_local(true);message_="Audio stopped on this computer.";persist();}else if(command=="test_tone"){engine_.send("test_tone\n");}else if(command=="control"){require_epoch(q);apply_control(q);}else if(command=="set_role"){require_epoch(q);begin_handover(q);}else if(command=="protect_mic"){if(is_coordinator()){settings_.globalMute=true;settings_revision_=next_counter(settings_revision_);persist();send_engine_state();snapshot();}}else throw std::runtime_error("Unsupported remote command");}
+   try{if(command=="configure")configure_local(q);else if(command=="autoconfigure")autoconfigure_local();else if(command=="start"){require_epoch(q);resume_room(is_coordinator());}else if(command=="stop"){stop_local(true);message_="Audio stopped on this computer.";persist();if(!output_warning_.empty())throw std::runtime_error(output_warning_);}else if(command=="test_tone"){engine_.send("test_tone\n");}else if(command=="control"){require_epoch(q);apply_control(q);}else if(command=="set_role"){require_epoch(q);begin_handover(q);}else if(command=="protect_mic"){if(is_coordinator()){settings_.globalMute=true;settings_revision_=next_counter(settings_revision_);persist();send_engine_state();snapshot();}}else throw std::runtime_error("Unsupported remote command");}
    catch(const std::exception&e){result["ok"]=false;result["error"]=e.what();}room_->send(result.dump());snapshot();
   }else if(type=="result"){
-   auto seq=std::to_string(j.at("sequence").get<uint64_t>());pending_config_.erase(seq);if(!j.value("ok",false))message_="Other device: "+j.value("error",std::string("request failed"));else message_="Room change acknowledged.";
+   auto seq=std::to_string(j.at("sequence").get<uint64_t>());pending_config_.erase(seq);if(seq==quit_sequence_&&!j.value("ok",false))quit_peer_error_=j.value("error",std::string("Restoration failed"));if(!j.value("ok",false))message_="Other device: "+j.value("error",std::string("request failed"));else message_="Room change acknowledged.";
   }
  }
- void remote_request(Json q){q["authority_epoch"]=authority_epoch_;auto seq=++sequence_;send({{"type","request"},{"sequence",seq},{"body",q}});pending_config_[std::to_string(seq)]=Clock::now()+std::chrono::seconds(8);}
+ uint64_t remote_request(Json q){q["authority_epoch"]=authority_epoch_;auto seq=++sequence_;send({{"type","request"},{"sequence",seq},{"body",q}});pending_config_[std::to_string(seq)]=Clock::now()+std::chrono::seconds(8);return seq;}
  bool try_join(const Json&q){auto address=bounded(q,"address",128),id=bounded(q,"room_id",64);std::vector<bridge::room::Nearby> candidates;for(auto&n:room_->nearby())if(n.accepting&&(id.empty()||id==n.room_id)&&(address.empty()||address==n.address||address==n.address+":"+std::to_string(n.port)))candidates.push_back(n);
   if(candidates.size()>1)throw std::runtime_error("Several rooms are nearby. Select the room to join.");if(candidates.empty())return false;
   room_->join(candidates.front(),bounded(q,"code",16));message_="Pairing securely…";return true;
@@ -336,7 +379,7 @@ if(saved_.contains("routes"))routes_=saved_["routes"].get<std::map<std::string,s
   output_lease_->restore();output_warning_=output_lease_->warning();
   input_backend_=bridge::routing::system_backend(true);
   input_lease_=std::make_unique<bridge::routing::Lease>(*input_backend_,[this](const Json&j){bridge::agent::atomic_write(o_.directory/"input-restore.json",j.dump(2)+"\n");},read_json(o_.directory/"input-restore.json"));
-  input_lease_->restore();auto_microphone_=saved_.value("auto_microphone",false);
+  input_lease_->restore();restore_audio();auto_microphone_=saved_.value("auto_microphone",false);
   if(saved_.contains("room")){try{auto r=saved_["room"];bridge::room::Credential key;key.room_id=r.at("id");key.peer={r.at("peer_id"),r.at("peer_name"),r.at("peer_platform")};key.last_address=r.at("address");key.peer_port=r.at("port");
 #ifdef BRIDGE_AGENT_FAKE
    if(auto fail=std::getenv("BRIDGE_TEST_CREDENTIAL_FAILURE");fail&&std::string(fail)=="1")throw std::runtime_error("Synthetic credential access failure");
@@ -373,7 +416,7 @@ if(saved_.contains("routes"))routes_=saved_["routes"].get<std::map<std::string,s
   else if(cmd=="start"){if(!peer_compatible_||!shared_ready_||!room_->status().connected)throw std::runtime_error("Update San Audisco on both computers and wait for synchronized room settings");if(is_coordinator())resume_room(true);else{remote_request({{"command","start"}});message_="Waiting for the Output Hub to start audio…";}}
   else if(cmd=="stop"){if(room_->status().connected)remote_request({{"command","stop"}});stop_local(true);message_="Audio stopped on this device; stop sent to the room.";persist();}
   else if(cmd=="forget"){stop_local(true);pending_join_.reset();if(credential_){bridge::credentials::delete_key(secret_id());bridge::credentials::delete_key(audio_id());sodium_memzero(credential_->secret.data(),credential_->secret.size());credential_.reset();}room_->forget();peer_=Json::object();pending_config_.clear();transfer_=Json::object();recovery_required_=false;membership_ready_=false;peer_compatible_=shared_ready_=authority_ready_=false;authority_epoch_=settings_revision_=1;settings_=bridge::Settings{};settings_.globalMute=true;message_="Room forgotten on this device.";persist();}
-  else if(cmd=="quit"){stop_local();quitting=true;message_="San Audisco stopped on this computer.";}
+  else if(cmd=="quit"){quit_room();}
   else throw std::runtime_error("Unknown agent command");return status();
  }
  void poll(){room_->poll();if(pending_join_){try{if(try_join(*pending_join_))pending_join_.reset();else if(Clock::now()>join_deadline_){pending_join_.reset();message_="Room not found. Check both devices are on the same network and allow San Audisco through the private-network firewall.";}}catch(const std::exception&e){pending_join_.reset();message_=e.what();}}while(auto key=room_->take_credential()){
@@ -415,6 +458,6 @@ int main(int argc,char**argv){try{
  if(cmd=="ensure"){std::optional<Json> existing;try{existing=request(o,{{"command","status"}});}catch(...){}
   if(existing&&existing->value("ok",false)){if(existing->at("state").value("protocol_version",0)!=3)throw std::runtime_error("An older local San Audisco agent is still running. Quit San Audisco completely, then reopen it to finish the update.");std::cout<<"{\"ok\":true}\n";return 0;}
   bridge::agent::private_directory(o.directory);std::vector<std::string> args{"serve"};args.insert(args.end(),o.forwarded.begin(),o.forwarded.end());bridge::agent::detach(bridge::agent::executable_path(),args);auto end=Clock::now()+std::chrono::seconds(6);while(Clock::now()<end){std::this_thread::sleep_for(std::chrono::milliseconds(100));try{auto r=request(o,{{"command","status"}});if(r.value("ok",false)){std::cout<<"{\"ok\":true}\n";return 0;}}catch(...){}}throw std::runtime_error("Background agent could not start. Check whether the room port is already in use.");}
- if(cmd=="request"){std::string input;char c;while(std::cin.get(c)&&c!='\n'){input+=c;if(input.size()>60000)throw std::runtime_error("Request too large");}auto q=Json::parse(input);Json response;try{response=request(o,q);}catch(...){if(q.value("command",std::string())!="quit")throw;bridge::agent::private_directory(o.directory);bridge::agent::InstanceLock absent(o.directory);response={{"ok",true},{"state",{{"running",false},{"status","San Audisco is already stopped on this computer."}}}};}std::cout<<response.dump()<<'\n';return response.value("ok",false)?0:1;}
+ if(cmd=="request"){std::string input;char c;while(std::cin.get(c)&&c!='\n'){input+=c;if(input.size()>60000)throw std::runtime_error("Request too large");}auto q=Json::parse(input);Json response;try{response=request(o,q);}catch(...){if(q.value("command",std::string())!="quit")throw;bridge::agent::private_directory(o.directory);bridge::agent::InstanceLock absent(o.directory);recover_saved_audio(o);response={{"ok",true},{"state",{{"running",false},{"status","San Audisco is already stopped on this computer."}}}};}std::cout<<response.dump()<<'\n';return response.value("ok",false)?0:1;}
  throw std::runtime_error("Unknown command");
  }catch(const std::exception&e){std::cout<<Json{{"ok",false},{"error",e.what()}}.dump()<<'\n';return 1;}}

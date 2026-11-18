@@ -34,6 +34,13 @@ void Lease::acquire(const std::string& target){
   catch(...){restore();throw;}
  }
 }
+void Lease::adopt_existing(const std::string& target,const std::string& physical){
+ if(target.empty()||physical.empty()||physical==target)return;
+ for(const auto&[role,id]:backend_.defaults())if(id==target&&!entries_.contains(role)&&!overridden_.contains(role)){
+  entries_[role]={physical,target};
+  try{persist();}catch(...){entries_.erase(role);throw;}
+ }
+}
 void Lease::restore() noexcept {
  try {
   if(entries_.empty())return;

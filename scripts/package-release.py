@@ -29,10 +29,10 @@ try:
 except (subprocess.CalledProcessError, FileNotFoundError):
     commit, dirty = None, None
 manifest = {
-    'version': '0.3.1', 'source_commit': commit, 'source_dirty': dirty,
+    'version': '0.3.2', 'source_commit': commit, 'source_dirty': dirty,
     'packaged_at_utc': datetime.now(timezone.utc).isoformat(),
     'binary_sha256': {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in artifacts.items()},
-    'validation': 'See docs/WINDOWS_APPEARANCE.md for the 0.3.1 UI validation and docs/V03_VALIDATION.md for inherited core validation. The engine, agent and audio routing are unchanged; UI tests do not measure physical Bluetooth audio.',
+    'validation': 'See docs/V032_FIXES.md for resize and audio restoration checks, including legacy cable defaults and acknowledged room-wide Quit. Physical AirPods listening acceptance is deferred at the user request.',
 }
 (dist/'BUILD_INFO.json').write_text(json.dumps(manifest, indent=2)+'\n')
 with zipfile.ZipFile(dist/'San Audisco-Windows-x64.zip','w',zipfile.ZIP_DEFLATED) as z:

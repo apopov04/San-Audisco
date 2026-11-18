@@ -29,6 +29,11 @@ int main(){try{
  lease.begin();lease.acquire("cable");Lease afterCrash(backend,save,journal);afterCrash.restore();require(backend.values[0]=="speakers","crash recovery failed");
  // A device unplugged during restoration keeps the journal for a later retry.
  Lease disconnected(backend,save,journal);disconnected.begin();disconnected.acquire("cable");backend.unplugged=true;disconnected.restore();require(disconnected.active()&&!disconnected.warning().empty(),"unplugged original lost recovery state");backend.unplugged=false;disconnected.restore();require(!disconnected.active(),"restore retry failed");
+ // Legacy/manual defaults already set to our cable still need a physical exit.
+ backend.values={{0,"cable"},{1,"manual"},{2,"cable"}};journal=Json::object();Lease legacy(backend,save,journal);
+ legacy.adopt_existing("cable","selected-headphones");require(journal["entries"].size()==2,"Existing cable defaults were not journaled");
+ legacy.adopt_existing("cable","other-device");legacy.restore();require(backend.values[0]=="selected-headphones"&&backend.values[2]=="selected-headphones"&&backend.values[1]=="manual","Legacy recovery changed a manual output or replaced original recovery target");
+ backend.values[0]="cable";Lease noFallback(backend,save,Json::object());noFallback.adopt_existing("cable","");noFallback.restore();require(backend.values[0]=="cable","Recovery guessed an output without an explicit physical selection");
  // Never modify OS output when write-ahead storage fails.
  int writes=backend.writes;Lease noDisk(backend,[](const Json&){throw std::runtime_error("disk full");},Json::object());
  try{noDisk.acquire("cable");}catch(...){}require(backend.writes==writes,"switched without recovery journal");

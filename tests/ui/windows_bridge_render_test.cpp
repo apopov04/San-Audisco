@@ -29,11 +29,11 @@ int wmain(){
   require(!GetUpdateRect(GetDlgItem(window,760),nullptr,FALSE),"Telemetry repainted static bridge");
   sample["settings"]["master"]=0.7;apply_state(sample);require(writes>0&&SendMessageW(master,TBM_GETPOS,0,0)==70,"Changed control was not updated");
   devices.clear();
-  auto frame=[&](bool cached=false){
-   BITMAPINFO info{};info.bmiHeader.biSize=sizeof(BITMAPINFOHEADER);info.bmiHeader.biWidth=830;info.bmiHeader.biHeight=-95;info.bmiHeader.biPlanes=1;info.bmiHeader.biBitCount=32;
+  auto frame=[&](bool cached=false,int width=830){
+   BITMAPINFO info{};info.bmiHeader.biSize=sizeof(BITMAPINFOHEADER);info.bmiHeader.biWidth=width;info.bmiHeader.biHeight=-95;info.bmiHeader.biPlanes=1;info.bmiHeader.biBitCount=32;
    void* raw=nullptr;auto dc=CreateCompatibleDC(nullptr);auto bitmap=CreateDIBSection(dc,&info,DIB_RGB_COLORS,&raw,nullptr,0);require(dc&&bitmap&&raw,"DIB allocation failed");auto previous=SelectObject(dc,bitmap);
-   RECT area{0,0,830,95};appearance::graphics_ready();if(!appearance::palette.backgroundBrush)appearance::refresh();FillRect(dc,&area,appearance::palette.backgroundBrush);if(cached){DRAWITEMSTRUCT item{};item.hDC=dc;item.rcItem=area;paint_computers(item);}else{SetViewportOrgEx(dc,-60,-140,nullptr);draw_computers(dc);}GdiFlush();
-   std::vector<DWORD> pixels(static_cast<DWORD*>(raw),static_cast<DWORD*>(raw)+830*95);SelectObject(dc,previous);DeleteObject(bitmap);DeleteDC(dc);return pixels;
+   RECT area{0,0,width,95};appearance::graphics_ready();if(!appearance::palette.backgroundBrush)appearance::refresh();FillRect(dc,&area,appearance::palette.backgroundBrush);if(cached){DRAWITEMSTRUCT item{};item.hDC=dc;item.rcItem=area;paint_computers(item);}else{SetMapMode(dc,MM_ANISOTROPIC);SetWindowExtEx(dc,830,95,nullptr);SetViewportExtEx(dc,width,95,nullptr);SetWindowOrgEx(dc,60,140,nullptr);draw_computers(dc);}GdiFlush();
+   std::vector<DWORD> pixels(static_cast<DWORD*>(raw),static_cast<DWORD*>(raw)+width*95);SelectObject(dc,previous);DeleteObject(bitmap);DeleteDC(dc);return pixels;
   };
   auto dashes=[](const auto& pixels){return std::count_if(pixels.begin(),pixels.end(),[](DWORD v){switch(v&0xffffff){case 0x46cdeb:case 0x66e0a9:case 0xf9d358:case 0xb99af7:case 0x6ca3ff:case 0xe9f0f7:return true;default:return false;}});};
   agent_available=true;connected=false;auto a=frame();Sleep(180);require(a==frame(),"Disconnected bridge changed");require(dashes(a)==0,"Disconnected bridge has traffic");
@@ -46,6 +46,12 @@ int wmain(){
   connected=false;require(frame()==frame(true),"Cached static artwork differs from direct renderer");auto builds=diagram_cache_builds;for(int i=0;i<20;++i)frame(true);require(diagram_cache_builds==builds,"Unchanged frames rebuilt static artwork");
   connected=true;require(dashes(frame(true))>0,"Cached animation lost traffic");require(diagram_cache_builds==builds+1,"Connection did not invalidate static cache");builds=diagram_cache_builds;frame(true);require(diagram_cache_builds==builds,"Animation rebuilt static artwork");
   appearance::testTheme=appearance::palette.dark?0:1;appearance::refresh();frame(true);require(diagram_cache_builds==builds+1,"Theme did not invalidate static cache");
+  // Enlarging the window changes anchor positions, never artwork aspect ratio.
+  connected=true;state["device_id"]="first";
+  auto inkBounds=[&](const std::vector<DWORD>& pixels,int width,int slot){int lo=width,hi=-1,count=0;auto ink=appearance::palette.accent;DWORD rgb=(GetRValue(ink)<<16)|(GetGValue(ink)<<8)|GetBValue(ink);for(int y=0;y<95;++y)for(int x=slot?width*2/3:0;x<(slot?width:width/3);++x)if((pixels[y*width+x]&0xffffff)==rgb){lo=std::min(lo,x);hi=std::max(hi,x);++count;}return std::pair{hi-lo+1,count};};
+  auto normal=frame(true,830),wide=frame(true,1660),restored=frame(true,830);
+  for(int slot=0;slot<2;++slot){auto a=inkBounds(normal,830,slot),b=inkBounds(wide,1660,slot),c=inkBounds(restored,830,slot);require(a.first>50&&a==b&&a==c,"Resize stretched or duplicated device artwork");}
+  connected=false;require(frame(true,1660)==frame(false,1660),"Wide cached artwork differs from direct renderer");
   diagram_background.reset();diagram_frame.reset();diagram_cache_key.clear();
   connected=false;ShowWindow(window,SW_SHOW);sync_bridge_animation();require(!bridge_timer_running,"Disconnected window kept animation timer");DestroyWindow(window);
   std::cout<<"PASS unchanged status controls do not repaint; changed controls update; cached artwork matches direct rendering and invalidates on state/theme changes; actual Windows bridge renderer: connected dashes, motion preference, static disconnected frame; timer stops when hidden, minimized or disconnected. Animation enabled="<<effects<<"\n";return 0;
