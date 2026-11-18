@@ -343,7 +343,7 @@ struct GoldenGateBridge:Shape {
    if x>115 {let u=(158-x)/43;return 12+42*(1-u*u)}
    let u=(x-80)/35;return 12+32*(1-u*u)
   }
-  line(2,58,158,58);line(2,62,158,62)
+  line(2,58,158,58);line(2,66,158,66)
   p.move(to:point(2,cable(2)))
   for x in stride(from:CGFloat(4),through:158,by:2){p.addLine(to:point(x,cable(x)))}
   for x in stride(from:CGFloat(10),through:150,by:10){line(x,cable(x),x,58)}
@@ -353,6 +353,31 @@ struct GoldenGateBridge:Shape {
    line(x-7,73,x+7,73)
   }
   return p
+ }
+}
+
+struct BridgeConnectionView:View {
+ let connected:Bool
+ @Environment(\.accessibilityReduceMotion) private var reduceMotion
+ @Environment(\.scenePhase) private var scenePhase
+ var body:some View {
+  ZStack {
+   GoldenGateBridge().stroke(connected ? Color(red:0.75,green:0.26,blue:0.17):Color.secondary,style:StrokeStyle(lineWidth:1.8,lineCap:.round,lineJoin:.round))
+   if connected {
+    TimelineView(.animation(minimumInterval:1.0/30,paused:reduceMotion || scenePhase != .active)){timeline in
+     Canvas{context,size in
+      let phase=reduceMotion ? 0:timeline.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy:6)/6
+      for lane in 0..<2 {for dot in 0..<3 {
+       let progress=(phase+Double(dot)/3).truncatingRemainder(dividingBy:1)
+       let x=2+156*(lane==0 ? progress:1-progress)
+       let rect=CGRect(x:(x-3.5)*size.width/160,y:CGFloat(59+lane*4)*size.height/80,width:7*size.width/160,height:2*size.height/80)
+       var stroke=context;stroke.opacity=min(1,min((x-2)/10,(158-x)/10))
+       stroke.fill(Path(roundedRect:rect,cornerRadius:size.height/80),with:.color(Color(red:1,green:0.65,blue:0.38)))
+      }}
+     }
+    }
+   }
+  }.frame(height:80).accessibilityHidden(true)
  }
 }
 
@@ -406,7 +431,7 @@ struct ContentView:View {
  var body:some View {VStack(alignment:.leading,spacing:0){
   HStack{Text("San Audisco").font(.title2).fontWeight(.semibold);Spacer();Button(m.paired ? "Room settings":"Connect computers"){showRoom=true};Button{showChecks=true}label:{Label("Audio checks",systemImage:"waveform.path.ecg")}}.padding(.bottom,22)
   ScrollView{VStack(spacing:18){
-   HStack(alignment:.center,spacing:20){computer(0);VStack(spacing:8){GoldenGateBridge().stroke(m.connected && m.available ? Color(red:0.75,green:0.26,blue:0.17):Color.secondary,style:StrokeStyle(lineWidth:1.8,lineCap:.round,lineJoin:.round)).frame(height:80).accessibilityHidden(true);Text(linkLabel).font(.caption).foregroundColor(.secondary)}.frame(width:160);computer(1)}
+   HStack(alignment:.center,spacing:20){computer(0);VStack(spacing:8){BridgeConnectionView(connected:m.connected && m.available);Text(linkLabel).font(.caption).foregroundColor(.secondary)}.frame(width:160);computer(1)}
    HStack(alignment:.top,spacing:32){routes(0);Divider();routes(1)}
    Text("Connect headphones to the Output Hub. The Input Hub supplies your microphone to both computers.").font(.caption).foregroundColor(.secondary).frame(maxWidth:.infinity,alignment:.leading)
   }.padding(.vertical,6)}

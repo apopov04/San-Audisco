@@ -69,6 +69,11 @@ try:
  wait(lambda:u.IsWindowEnabled(get(722)),'Acknowledged peer Hub control disabled')
  page(0)
  assert 'Online' in value(get(721)),'Connected peer must be shown online'
+ before=sum(r.get('command')=='status' for r in seen('status'))
+ for _ in range(50):u.SendMessageW(hwnd,0x113,2,0)
+ time.sleep(.25)
+ assert len(seen('status'))-before<=2,'Animation timer must not send IPC status polls'
+
  click(601);wait(lambda:value(get(601))=='Stop audio','Start not reflected')
  # Configure the remote computer directly below its icon.
  u.SendMessageW(get(725),0x14E,0,0);u.SendMessageW(hwnd,0x111,725|(1<<16),get(725))
@@ -156,6 +161,6 @@ try:
  assert p.poll() is None and not seen('quit'),'Close stopped background app'
  u.ShowWindow(hwnd,9);click(602);p.wait(timeout=12)
  assert p.returncode==0 and seen('quit'),'Explicit quit did not stop agent and exit'
- print(json.dumps({'passed':True,'scope':'real Win32 GUI + fixture IPC; no audio or real credentials','checks':['startup state','two-device main screen','main control bounds','physical selector filtering','peer connection state','disabled unpaired roles','create invite','discovery selection','code validation and normalization','join acknowledgement','start acknowledgement','remote device configuration','crowned square hub selectors','individual icon buttons','effective global mute/deafen and preference restoration','long-name alignment','readiness diagnostics','local and remote signal meters','explicit remote test sound','cancel pending restart','explicit agent reconnect','failed status and transport recovery','close keeps running','explicit quit']}))
+ print(json.dumps({'passed':True,'scope':'real Win32 GUI + fixture IPC; no audio or real credentials','checks':['startup state','two-device main screen','animation timer does not poll agent','main control bounds','physical selector filtering','peer connection state','disabled unpaired roles','create invite','discovery selection','code validation and normalization','join acknowledgement','start acknowledgement','remote device configuration','crowned square hub selectors','individual icon buttons','effective global mute/deafen and preference restoration','long-name alignment','readiness diagnostics','local and remote signal meters','explicit remote test sound','cancel pending restart','explicit agent reconnect','failed status and transport recovery','close keeps running','explicit quit']}))
 finally:
  if p.poll() is None:p.kill();p.wait()

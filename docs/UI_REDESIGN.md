@@ -109,3 +109,23 @@ connection states remain unchanged. Existing AudioBridge installation paths,
 executables, bundle identifiers and pairing data are retained for compatibility.
 This release changes naming only. Both native apps and installers build; the
 Mac signature/disk image and Windows installer payload are verified.
+
+## v0.2.7 bridge traffic
+
+Short horizontal dashes travel in both directions along the bridge roadway while
+the room is connected. They disappear when disconnected; the bridge remains gray
+and retains its status label. This is connection activity, not an audio meter.
+
+The native animation targets 30 frames per second and respects the OS animation
+preference (static dashes with reduced motion). Mac redraws only the small Canvas
+inside the bridge and pauses its timeline when the scene is inactive. Windows
+uses a separate presentation timer, invalidates only the roadway, buffers the
+small graphic, and stops its timer when disconnected, hidden, minimized or on
+another tab. No extra agent polling or audio processing is scheduled by animation.
+
+Validation: native Mac screenshot sequences confirmed opposite travel directions
+and a stationary disconnected bridge. The actual Windows renderer test under Wine
+confirmed moving connected frames, no disconnected dashes, OS animation preference,
+and timer suspension. The Win32 GUI regression suite passed, including a check
+that repeated animation ticks do not trigger IPC polling. Both production builds
+passed; physical Windows performance/listening was not retested for this UI change.

@@ -1,4 +1,4 @@
-# San Audisco v0.2.6
+# San Audisco v0.2.7
 
 San Audisco (formerly AudioBridge) mixes audio from a Windows PC and a Mac into headphones connected to
 one computer, and sends a selected physical microphone to voice apps on both.
