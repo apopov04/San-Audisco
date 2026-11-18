@@ -1,4 +1,4 @@
-# AudioBridge v0.2 architecture
+# San Audisco v0.2 architecture
 
 ## Processes and ownership
 
@@ -31,7 +31,7 @@ Each device has four possible endpoints:
 Local playback reaches the Hub's listening mixer directly; satellite playback
 crosses the network and joins that mixer. The selected physical microphone reaches
 both cable microphone outputs, subject to the destination/global gates. Diagnostic
-tones enter playback only. AudioBridge does not open the AirPods microphone when
+tones enter playback only. San Audisco does not open the AirPods microphone when
 the MacBook microphone is selected, preserving the stereo Bluetooth playback path.
 
 Codec frames, listening queues, clock correction and conservative Wi-Fi reserves

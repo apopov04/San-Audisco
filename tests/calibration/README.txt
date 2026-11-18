@@ -1,4 +1,4 @@
-AudioBridge routing-tone calibration (optional, explicit test utility)
+San Audisco routing-tone calibration (optional, explicit test utility)
 
 The original 400/600/1000/1200 Hz set produces false isolation failures under
 the existing 48 kbps microphone Opus codec with allowed clock drift. This was
@@ -38,7 +38,7 @@ is below unchanged 0.008. Smallest injected amplitude 0.012668721 is above 0.008
 Smallest wanted amplitude 0.119628689 is above unchanged 0.04. Silence threshold
 0.002 is unchanged; this non-silence matrix does not separately test that gate.
 
-Run from the AudioBridge repository root with an installed libopus prefix:
+Run from the San Audisco repository root with an installed libopus prefix:
  python3 tests/calibration/run_calibration.py --opus-prefix /path/to/opus-prefix --output /path/to/fresh-output
 
 For the existing Mac build workspace (fresh output required):

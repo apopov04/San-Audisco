@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
-  <assemblyIdentity version="0.2.8.0" processorArchitecture="*" name="AudioBridge.Desktop" type="win32"/>
-  <description>AudioBridge</description>
+  <assemblyIdentity version="0.2.10.0" processorArchitecture="*" name="SanAudisco.Desktop" type="win32"/>
+  <description>San Audisco</description>
   <dependency><dependentAssembly>
     <assemblyIdentity type="win32" name="Microsoft.Windows.Common-Controls" version="6.0.0.0" processorArchitecture="*" publicKeyToken="6595b64144ccf1df" language="*"/>
   </dependentAssembly></dependency>

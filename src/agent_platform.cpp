@@ -68,9 +68,9 @@ void atomic_write(const std::filesystem::path&p,const std::string&s){auto tmp=p;
 }
 InstanceLock::InstanceLock(const std::filesystem::path&p){
 #ifdef _WIN32
- auto file=p/L"agent.lock";HANDLE h=CreateFileW(file.c_str(),GENERIC_READ|GENERIC_WRITE,0,nullptr,OPEN_ALWAYS,FILE_ATTRIBUTE_NORMAL,nullptr);if(h==INVALID_HANDLE_VALUE)throw std::runtime_error("AudioBridge agent is already running");handle_=reinterpret_cast<std::intptr_t>(h);
+ auto file=p/L"agent.lock";HANDLE h=CreateFileW(file.c_str(),GENERIC_READ|GENERIC_WRITE,0,nullptr,OPEN_ALWAYS,FILE_ATTRIBUTE_NORMAL,nullptr);if(h==INVALID_HANDLE_VALUE)throw std::runtime_error("San Audisco agent is already running");handle_=reinterpret_cast<std::intptr_t>(h);
 #else
- auto file=p/"agent.lock";int f=::open(file.c_str(),O_RDWR|O_CREAT|O_CLOEXEC|O_NOFOLLOW,0600);if(f<0)throw std::runtime_error("Cannot open agent lock");if(flock(f,LOCK_EX|LOCK_NB)){::close(f);throw std::runtime_error("AudioBridge agent is already running");}handle_=f;
+ auto file=p/"agent.lock";int f=::open(file.c_str(),O_RDWR|O_CREAT|O_CLOEXEC|O_NOFOLLOW,0600);if(f<0)throw std::runtime_error("Cannot open agent lock");if(flock(f,LOCK_EX|LOCK_NB)){::close(f);throw std::runtime_error("San Audisco agent is already running");}handle_=f;
 #endif
 }
 InstanceLock::~InstanceLock(){if(handle_!=-1){

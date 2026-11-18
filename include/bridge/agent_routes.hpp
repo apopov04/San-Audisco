@@ -57,8 +57,8 @@ inline void auto_routes(std::map<std::string,std::string>&r,const std::vector<Au
 }
 inline std::string setup_status(const std::map<std::string,std::string>&r,const std::vector<AudioDevice>&ds,const std::string&platform){
  auto get=[&](const char*k){auto it=r.find(k);return it==r.end()?std::string():it->second;};
- if(!available(ds,get("playback_input"),true)||!available(ds,get("microphone_output"),false))return "Required audio components missing or unavailable. Run AudioBridge Setup, then Refresh devices.";
- if(platform=="windows")for(auto&d:ds)if(d.name.find("Hi-Fi Cable")!=d.name.npos&&d.sample_rate!=48000)return "Hi-Fi Cable must use 48000 Hz on both endpoints. Run AudioBridge Setup to finish configuration.";
+ if(!available(ds,get("playback_input"),true)||!available(ds,get("microphone_output"),false))return "Required audio components missing or unavailable. Run San Audisco Setup, then Refresh devices.";
+ if(platform=="windows")for(auto&d:ds)if(d.name.find("Hi-Fi Cable")!=d.name.npos&&d.sample_rate!=48000)return "Hi-Fi Cable must use 48000 Hz on both endpoints. Run San Audisco Setup to finish configuration.";
  return "Ready";
 }
 inline void validate_route(const std::vector<AudioDevice>&ds,const std::string&key,const std::string&id){

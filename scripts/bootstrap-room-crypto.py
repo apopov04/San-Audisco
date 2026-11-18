@@ -2,7 +2,7 @@
 """Fetch a pinned BoringSSL source archive and build only its static crypto target.
 
 Usage: bootstrap-room-crypto.py PREFIX [--toolchain LLVM_MINGW_ROOT] [--cmake PATH]
-The prefix is build-only; no network access or extra runtime is needed by AudioBridge.
+The prefix is build-only; no network access or extra runtime is needed by San Audisco.
 """
 import argparse
 import hashlib

@@ -4,6 +4,7 @@
 #include <windows.h>
 #include <shellapi.h>
 #include <shlobj.h>
+#include <propkey.h>
 #include <mmdeviceapi.h>
 #include <audioclient.h>
 #include <functiondiscoverykeys_devpkey.h>
@@ -116,7 +117,7 @@ void readBoot(){
  if(installationBoot&&!restartPending){installationBoot=0;rememberBoot();}
 }
 
-bool appAvailable(){return fs::is_regular_file(appDir/L"AudioBridgeApp.exe")&&fs::is_regular_file(appDir/L"audiobridge.exe")&&fs::is_regular_file(appDir/L"bridge-agent.exe");}
+bool appAvailable(){return fs::is_regular_file(appDir/L"SanAudisco.exe")&&fs::is_regular_file(appDir/L"san-audisco.exe")&&fs::is_regular_file(appDir/L"bridge-agent.exe");}
 
 void saveState(){
  fs::create_directories(base);auto temp=base/L"setup-v2.json.tmp";std::ofstream out(temp);std::wstring msg;{std::lock_guard<std::mutex> lock(messageMutex);msg=message;}
@@ -132,24 +133,45 @@ void refresh(){
  try{saveState();}catch(...){}
 }
 void installApp(){
- if(processRunning(L"AudioBridgeApp.exe")||processRunning(L"audiobridge.exe")||processRunning(L"bridge-agent.exe"))fail("Quit San Audisco and its background agent before updating. Setup will not interrupt live audio.");
+ if(processRunning(L"SanAudisco.exe")||processRunning(L"san-audisco.exe")||processRunning(L"AudioBridgeApp.exe")||processRunning(L"audiobridge.exe")||processRunning(L"bridge-agent.exe"))fail("Quit San Audisco and its background agent before updating. Setup will not interrupt live audio.");
  auto candidate=base/L"app-v0.2-new";std::error_code ec;fs::remove_all(candidate,ec);extract(L"app",candidate);
  auto backup=base/(L"app-backup-"+std::to_wstring(GetTickCount64()));
  if(fs::exists(appDir))fs::rename(appDir,backup);
+ fs::create_directories(appDir.parent_path());
  try{fs::rename(candidate,appDir);}catch(...){if(fs::exists(backup)&&!fs::exists(appDir))fs::rename(backup,appDir);throw;}
  wchar_t programs[MAX_PATH]{};
  if(SUCCEEDED(SHGetFolderPathW(nullptr,CSIDL_PROGRAMS,nullptr,SHGFP_TYPE_CURRENT,programs))){IShellLinkW* shortcut=nullptr;if(SUCCEEDED(CoCreateInstance(CLSID_ShellLink,nullptr,CLSCTX_INPROC_SERVER,IID_IShellLinkW,reinterpret_cast<void**>(&shortcut)))){
-  shortcut->SetPath((appDir/L"AudioBridgeApp.exe").c_str());shortcut->SetWorkingDirectory(appDir.c_str());IPersistFile* persist=nullptr;if(SUCCEEDED(shortcut->QueryInterface(IID_IPersistFile,reinterpret_cast<void**>(&persist)))){persist->Save((fs::path(programs)/L"AudioBridge.lnk").c_str(),TRUE);persist->Release();}shortcut->Release();}}
+  shortcut->SetPath((appDir/L"SanAudisco.exe").c_str());shortcut->SetWorkingDirectory(appDir.c_str());shortcut->SetDescription(L"San Audisco");shortcut->SetIconLocation((appDir/L"SanAudisco.exe").c_str(),0);IPropertyStore* properties=nullptr;if(SUCCEEDED(shortcut->QueryInterface(IID_IPropertyStore,reinterpret_cast<void**>(&properties)))){PROPVARIANT identity{};identity.vt=VT_LPWSTR;identity.pwszVal=const_cast<LPWSTR>(L"SanAudisco.Desktop");properties->SetValue(PKEY_AppUserModel_ID,identity);properties->Commit();properties->Release();}IPersistFile* persist=nullptr;if(SUCCEEDED(shortcut->QueryInterface(IID_IPersistFile,reinterpret_cast<void**>(&persist)))){persist->Save((fs::path(programs)/L"San Audisco.lnk").c_str(),TRUE);persist->Release();}shortcut->Release();}}
+ // Retire only this app's known old shortcut and migrate its login command.
+ auto legacy=base/L"app";auto legacyExe=legacy/L"AudioBridgeApp.exe";
+ if(SUCCEEDED(SHGetFolderPathW(nullptr,CSIDL_PROGRAMS,nullptr,SHGFP_TYPE_CURRENT,programs))){
+  auto oldLink=fs::path(programs)/L"AudioBridge.lnk";IShellLinkW* link=nullptr;
+  if(SUCCEEDED(CoCreateInstance(CLSID_ShellLink,nullptr,CLSCTX_INPROC_SERVER,IID_IShellLinkW,reinterpret_cast<void**>(&link)))){
+   IPersistFile* file=nullptr;if(SUCCEEDED(link->QueryInterface(IID_IPersistFile,reinterpret_cast<void**>(&file)))){
+    wchar_t target[32768]{};if(SUCCEEDED(file->Load(oldLink.c_str(),STGM_READ))&&SUCCEEDED(link->GetPath(target,32768,nullptr,SLGP_RAWPATH))&&fs::path(target)==legacyExe)fs::remove(oldLink,ec);
+    file->Release();
+   }link->Release();
+  }
+ }
+ HKEY run=nullptr;
+ if(RegOpenKeyExW(HKEY_CURRENT_USER,L"Software\\Microsoft\\Windows\\CurrentVersion\\Run",0,KEY_QUERY_VALUE|KEY_SET_VALUE,&run)==ERROR_SUCCESS){
+  wchar_t value[32768]{};DWORD size=sizeof value,type=0;
+  if(RegQueryValueExW(run,L"AudioBridge",nullptr,&type,reinterpret_cast<BYTE*>(value),&size)==ERROR_SUCCESS&&type==REG_SZ&&std::wstring(value)==L"\""+legacyExe.wstring()+L"\" --background"){
+   auto replacement=L"\""+(appDir/L"SanAudisco.exe").wstring()+L"\" --background";
+   if(RegSetValueExW(run,L"San Audisco",0,REG_SZ,reinterpret_cast<const BYTE*>(replacement.c_str()),DWORD((replacement.size()+1)*sizeof(wchar_t)))==ERROR_SUCCESS)RegDeleteValueW(run,L"AudioBridge");
+  }RegCloseKey(run);
+ }
+ if(fs::exists(legacyExe))fs::rename(legacy,base/(L"legacy-app-backup-"+std::to_wstring(GetTickCount64())));
  report(L"San Audisco installed for this user. Settings and existing audio drivers were retained. Setup never starts audio automatically.");
 }
 void removeApp(){
  if(ab_setup_remove_shared_driver()!=0)fail("Unexpected uninstall policy; no changes made.");
- if(processRunning(L"AudioBridgeApp.exe")||processRunning(L"audiobridge.exe")||processRunning(L"bridge-agent.exe"))fail("Quit San Audisco and its background agent before removing the app.");
+ if(processRunning(L"SanAudisco.exe")||processRunning(L"san-audisco.exe")||processRunning(L"AudioBridgeApp.exe")||processRunning(L"audiobridge.exe")||processRunning(L"bridge-agent.exe"))fail("Quit San Audisco and its background agent before removing the app.");
  // Only files owned by this bootstrap's app payload are removed. Drivers, user
  // configuration, pairing records, setup state and previous-version backups stay.
  for(const auto& file:payload){if(std::wstring(file.group)!=L"app")continue;auto target=appDir/file.path;if(fs::exists(target)&&fs::is_regular_file(target))fs::remove(target);}
  std::error_code error;fs::remove(appDir/L"licenses",error);fs::remove(appDir,error);
- wchar_t programs[MAX_PATH]{};if(SUCCEEDED(SHGetFolderPathW(nullptr,CSIDL_PROGRAMS,nullptr,SHGFP_TYPE_CURRENT,programs)))fs::remove(fs::path(programs)/L"AudioBridge.lnk",error);
+ wchar_t programs[MAX_PATH]{};if(SUCCEEDED(SHGetFolderPathW(nullptr,CSIDL_PROGRAMS,nullptr,SHGFP_TYPE_CURRENT,programs)))fs::remove(fs::path(programs)/L"San Audisco.lnk",error);
  report(L"San Audisco app removed. Shared audio drivers, pairing/settings, setup files and previous-version backups were retained.");
 }
 
@@ -173,7 +195,7 @@ void asyncAction(int id){
  std::thread([id,ready,present]{CoInitializeEx(nullptr,COINIT_MULTITHREADED);try{if(id==101)installApp();else if(id==108)removeApp();else installVendor(id==103,ready,present);}catch(const std::exception&e){report(widen(e.what()));}CoUninitialize();busy=false;PostMessageW(window,WM_APP+1,0,0);}).detach();
 }
 LRESULT CALLBACK procedure(HWND h,UINT m,WPARAM w,LPARAM l){
- switch(m){case WM_COMMAND:{auto id=LOWORD(w);if(id>=101&&id<=103)asyncAction(id);else if(id==108){if(MessageBoxW(h,L"Remove the San Audisco app for this user? Shared audio drivers and pairing/settings will be kept.",L"Remove app only",MB_YESNO|MB_ICONQUESTION)==IDYES)asyncAction(id);}else if(id==104)refresh();else if(id==105)ShellExecuteW(h,L"open",(appDir/L"AudioBridgeApp.exe").c_str(),nullptr,appDir.c_str(),SW_SHOWNORMAL);else if(id==109)MessageBoxW(h,L"On your trusted home network, allow bridge-agent.exe and audiobridge.exe through Windows Defender Firewall for Private networks. Do not enable Public access or disable the firewall.\n\nIf room discovery fails, use Windows Security > Firewall & network protection > Allow an app through firewall and select the installed binaries in LocalAppData\\AudioBridge\\app.\n\nRoom discovery/control uses UDP/TCP 45671; audio uses UDP 45670. Guest Wi-Fi client isolation can also prevent pairing.",L"Private-network firewall setup",MB_OK|MB_ICONINFORMATION);else if(id==107)ShellExecuteW(h,L"open",L"control.exe",L"mmsys.cpl",nullptr,SW_SHOWNORMAL);else if(id==106)ShellExecuteW(h,L"open",L"https://vb-audio.com/Services/licensing.htm",nullptr,nullptr,SW_SHOWNORMAL);return 0;}
+ switch(m){case WM_COMMAND:{auto id=LOWORD(w);if(id>=101&&id<=103)asyncAction(id);else if(id==108){if(MessageBoxW(h,L"Remove the San Audisco app for this user? Shared audio drivers and pairing/settings will be kept.",L"Remove app only",MB_YESNO|MB_ICONQUESTION)==IDYES)asyncAction(id);}else if(id==104)refresh();else if(id==105)ShellExecuteW(h,L"open",(appDir/L"SanAudisco.exe").c_str(),nullptr,appDir.c_str(),SW_SHOWNORMAL);else if(id==109)MessageBoxW(h,L"On your trusted home network, allow bridge-agent.exe and san-audisco.exe through Windows Defender Firewall for Private networks. Do not enable Public access or disable the firewall.\n\nIf room discovery fails, use Windows Security > Firewall & network protection > Allow an app through firewall and select the installed binaries in LocalAppData\\SanAudisco\\app.\n\nRoom discovery/control uses UDP/TCP 45671; audio uses UDP 45670. Guest Wi-Fi client isolation can also prevent pairing.",L"Private-network firewall setup",MB_OK|MB_ICONINFORMATION);else if(id==107)ShellExecuteW(h,L"open",L"control.exe",L"mmsys.cpl",nullptr,SW_SHOWNORMAL);else if(id==106)ShellExecuteW(h,L"open",L"https://vb-audio.com/Services/licensing.htm",nullptr,nullptr,SW_SHOWNORMAL);return 0;}
  case WM_APP+1:refresh();return 0;
  case WM_CLOSE:if(busy){MessageBoxW(h,L"Finish or cancel the vendor installer first. Setup will not kill it.",L"Installation in progress",MB_OK);return 0;}DestroyWindow(h);return 0;
  case WM_DESTROY:PostQuitMessage(0);return 0;}
@@ -184,8 +206,8 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,LPWSTR,int){
   int count=0;auto argv=CommandLineToArgvW(GetCommandLineW(),&count);checkOnly=count==2&&std::wstring(argv[1])==L"--check-payload";LocalFree(argv);
   for(const auto&file:payload)resource(file);if(checkOnly)return 0;
   HANDLE singleton=CreateMutexW(nullptr,TRUE,L"Local\\AudioBridgePrivateSetupV2");if(!singleton||GetLastError()==ERROR_ALREADY_EXISTS)fail("San Audisco Setup is already running.");
-  CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);PWSTR local=nullptr;if(FAILED(SHGetKnownFolderPath(FOLDERID_LocalAppData,0,nullptr,&local)))fail("Cannot locate per-user application data");base=fs::path(local)/L"AudioBridge";CoTaskMemFree(local);appDir=base/L"app";stage=base/L"setup-v2-payload";
-  WNDCLASSW wc{};wc.lpfnWndProc=procedure;wc.hInstance=instance;wc.lpszClassName=L"AudioBridgePrivateSetup";wc.hCursor=LoadCursor(nullptr,IDC_ARROW);wc.hbrBackground=reinterpret_cast<HBRUSH>(COLOR_WINDOW+1);RegisterClassW(&wc);
+  CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);PWSTR local=nullptr;if(FAILED(SHGetKnownFolderPath(FOLDERID_LocalAppData,0,nullptr,&local)))fail("Cannot locate per-user application data");base=fs::path(local)/L"AudioBridge";CoTaskMemFree(local);appDir=base.parent_path()/L"SanAudisco"/L"app";stage=base/L"setup-v2-payload";
+  WNDCLASSW wc{};wc.lpfnWndProc=procedure;wc.hInstance=instance;wc.lpszClassName=L"SanAudiscoPrivateSetup";wc.hCursor=LoadCursor(nullptr,IDC_ARROW);wc.hIcon=LoadIconW(instance,MAKEINTRESOURCEW(101));wc.hbrBackground=reinterpret_cast<HBRUSH>(COLOR_WINDOW+1);RegisterClassW(&wc);
   window=CreateWindowW(wc.lpszClassName,L"San Audisco Setup — private build",WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX,CW_USEDEFAULT,CW_USEDEFAULT,760,535,nullptr,nullptr,instance,nullptr);
   auto label=[&](const wchar_t* text,int y,int height){return CreateWindowW(L"STATIC",text,WS_CHILD|WS_VISIBLE,24,y,700,height,window,nullptr,instance,nullptr);};
   label(L"San Audisco — existing audio components",20,30);detailLabel=label(L"Checking installed endpoints...",60,125);

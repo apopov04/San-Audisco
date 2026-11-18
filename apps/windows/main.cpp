@@ -8,6 +8,7 @@
 #include <windows.h>
 #include <commctrl.h>
 #include <shellapi.h>
+#include <shobjidl.h>
 #include <nlohmann/json.hpp>
 #include <algorithm>
 #include <array>
@@ -50,7 +51,7 @@ std::vector<std::string> audio_ids[4];
 std::string configured_id,applied_device_signature,selected_room_id,selected_room_address;
 bool device_dirty=false,advanced=false,updating=false,quitting=false,agent_available=false,connected=false,running=false,wanted_running=false,paired=false;
 NOTIFYICONDATAW tray{};
-std::wstring executable_path(){std::vector<wchar_t> p(32768);auto n=GetModuleFileNameW(nullptr,p.data(),static_cast<DWORD>(p.size()));if(!n||n>=p.size())throw std::runtime_error("Cannot locate AudioBridge");return {p.data(),n};}
+std::wstring executable_path(){std::vector<wchar_t> p(32768);auto n=GetModuleFileNameW(nullptr,p.data(),static_cast<DWORD>(p.size()));if(!n||n>=p.size())throw std::runtime_error("Cannot locate San Audisco");return {p.data(),n};}
 std::wstring agent_path(){return (std::filesystem::path(executable_path()).parent_path()/L"bridge-agent.exe").wstring();}
 std::wstring utf16(const std::string& s){if(s.empty())return {};int n=MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,s.data(),static_cast<int>(s.size()),nullptr,0);if(!n)return L"Invalid text";std::wstring out(n,L'\0');MultiByteToWideChar(CP_UTF8,0,s.data(),static_cast<int>(s.size()),out.data(),n);return out;}
 std::string utf8(const std::wstring& s){if(s.empty())return {};int n=WideCharToMultiByte(CP_UTF8,0,s.data(),static_cast<int>(s.size()),nullptr,0,nullptr,nullptr);std::string out(n,'\0');WideCharToMultiByte(CP_UTF8,0,s.data(),static_cast<int>(s.size()),out.data(),n,nullptr,nullptr);return out;}
@@ -90,7 +91,7 @@ Json invoke(const wchar_t* argument,const Json* request=nullptr){
  if(!UpdateProcThreadAttribute(attributes,0,PROC_THREAD_ATTRIBUTE_HANDLE_LIST,handles,sizeof(handles),nullptr,nullptr))throw std::runtime_error("Cannot restrict agent handles");
  STARTUPINFOEXW si{};si.StartupInfo.cb=sizeof(si);si.StartupInfo.dwFlags=STARTF_USESTDHANDLES;si.StartupInfo.hStdInput=in_read.value;si.StartupInfo.hStdOutput=out_write.value;si.StartupInfo.hStdError=null.value;si.lpAttributeList=attributes;
  PROCESS_INFORMATION pi{};auto exe=agent_path();auto cmd=L"\""+exe+L"\" "+argument;
- if(!CreateProcessW(exe.c_str(),cmd.data(),nullptr,nullptr,TRUE,CREATE_NO_WINDOW|EXTENDED_STARTUPINFO_PRESENT,nullptr,nullptr,&si.StartupInfo,&pi))throw std::runtime_error("Cannot launch bridge-agent.exe beside AudioBridgeApp.exe");
+ if(!CreateProcessW(exe.c_str(),cmd.data(),nullptr,nullptr,TRUE,CREATE_NO_WINDOW|EXTENDED_STARTUPINFO_PRESENT,nullptr,nullptr,&si.StartupInfo,&pi))throw std::runtime_error("Cannot launch bridge-agent.exe beside SanAudisco.exe");
  Handle process(pi.hProcess),thread(pi.hThread);in_read.close();out_write.close();
  if(request){auto data=request->dump()+"\n";DWORD n=0;if(data.size()>65536||!WriteFile(in_write.value,data.data(),static_cast<DWORD>(data.size()),&n,nullptr)||n!=data.size()){TerminateProcess(process.value,1);throw std::runtime_error("Cannot send the agent request");}}
  in_write.close();std::string output;bool finished=false;const auto deadline=GetTickCount64()+15000;
@@ -267,10 +268,10 @@ void apply_state(const Json& s){updating=true;if(!agent_available){set_text(erro
  set_text(diagnostics_box,checks.c_str());update_cards();updating=false;
 }
 void startup(bool enabled){HKEY raw{};if(RegCreateKeyExW(HKEY_CURRENT_USER,L"Software\\Microsoft\\Windows\\CurrentVersion\\Run",0,nullptr,0,KEY_SET_VALUE,nullptr,&raw,nullptr)!=ERROR_SUCCESS)throw std::runtime_error("Cannot update your login setting");struct Key{HKEY k;~Key(){RegCloseKey(k);}}key{raw};LONG result;
- if(enabled){auto value=L"\""+executable_path()+L"\" --background";result=RegSetValueExW(raw,L"AudioBridge",0,REG_SZ,reinterpret_cast<const BYTE*>(value.c_str()),static_cast<DWORD>((value.size()+1)*sizeof(wchar_t)));}else{result=RegDeleteValueW(raw,L"AudioBridge");if(result==ERROR_FILE_NOT_FOUND)result=ERROR_SUCCESS;}
+ if(enabled){auto value=L"\""+executable_path()+L"\" --background";result=RegSetValueExW(raw,L"San Audisco",0,REG_SZ,reinterpret_cast<const BYTE*>(value.c_str()),static_cast<DWORD>((value.size()+1)*sizeof(wchar_t)));}else{result=RegDeleteValueW(raw,L"San Audisco");if(result==ERROR_FILE_NOT_FOUND)result=ERROR_SUCCESS;}
  if(result!=ERROR_SUCCESS)throw std::runtime_error("Could not save your login setting");
 }
-bool startup_enabled(){wchar_t value[32768];DWORD size=sizeof(value),type=0;if(RegGetValueW(HKEY_CURRENT_USER,L"Software\\Microsoft\\Windows\\CurrentVersion\\Run",L"AudioBridge",RRF_RT_REG_SZ,&type,value,&size)!=ERROR_SUCCESS)return false;return std::wstring(value)==L"\""+executable_path()+L"\" --background";}
+bool startup_enabled(){wchar_t value[32768];DWORD size=sizeof(value),type=0;if(RegGetValueW(HKEY_CURRENT_USER,L"Software\\Microsoft\\Windows\\CurrentVersion\\Run",L"San Audisco",RRF_RT_REG_SZ,&type,value,&size)!=ERROR_SUCCESS)return false;return std::wstring(value)==L"\""+executable_path()+L"\" --background";}
 void open_window(){ShowWindow(window,SW_RESTORE);SetForegroundWindow(window);request({{"command","status"}},true);}
 void tray_menu(){HMENU menu=CreatePopupMenu();AppendMenuW(menu,MF_STRING,tray_open,L"Open San Audisco");AppendMenuW(menu,MF_STRING,tray_quit,L"Quit San Audisco");POINT point;GetCursorPos(&point);SetForegroundWindow(window);auto command=TrackPopupMenu(menu,TPM_RETURNCMD|TPM_RIGHTBUTTON,point.x,point.y,0,window,nullptr);DestroyMenu(menu);if(command==tray_open)open_window();else if(command==tray_quit){quitting=true;request({{"command","quit"}},false,true);}}
 void choose_configured_device(){auto selected=control_message(computer_box,CB_GETCURSEL,0,0);if(selected>=0&&static_cast<size_t>(selected)<devices.size()){configured_id=string_value(devices[selected],"id");device_dirty=false;applied_device_signature.clear();populate_audio();}}
@@ -330,7 +331,7 @@ LRESULT CALLBACK proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){switch(msg){
   run_button=element(L"BUTTON",L"Start audio",WS_TABSTOP,745,698,175,34,601);element(L"BUTTON",L"Quit",WS_TABSTOP,750,20,170,30,602);
   audio_tooltip(master);audio_tooltip(run_button);
   for(auto h:mix_controls)enable_control(h,FALSE);for(auto h:card_hub)enable_control(h,FALSE);for(auto h:card_source)enable_control(h,FALSE);enable_control(run_button,FALSE);enable_control(apply_button,FALSE);show_page();
-  tray.cbSize=sizeof(tray);tray.hWnd=w;tray.uID=1;tray.uFlags=NIF_MESSAGE|NIF_ICON|NIF_TIP;tray.uCallbackMessage=tray_message;tray.hIcon=LoadIconW(nullptr,IDI_APPLICATION);wcscpy_s(tray.szTip,L"San Audisco — audio continues when the window closes");Shell_NotifyIconW(NIM_ADD,&tray);
+  tray.cbSize=sizeof(tray);tray.hWnd=w;tray.uID=1;tray.uFlags=NIF_MESSAGE|NIF_ICON|NIF_TIP;tray.uCallbackMessage=tray_message;tray.hIcon=LoadIconW(GetModuleHandleW(nullptr),MAKEINTRESOURCEW(101));wcscpy_s(tray.szTip,L"San Audisco — audio continues when the window closes");Shell_NotifyIconW(NIM_ADD,&tray);
   enable_control(autoconfigure_button,FALSE);start_worker();request({{"command","status"}},true);SetTimer(w,refresh_timer,1000,nullptr);return 0;}
  case WM_DRAWITEM:{auto item=reinterpret_cast<DRAWITEMSTRUCT*>(lp);if(item->CtlID==760){
   // Buffer this small native graphic so the moving dashes do not flicker.
@@ -390,10 +391,11 @@ LRESULT CALLBACK proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){switch(msg){
  }return DefWindowProcW(w,msg,wp,lp);}
 }
 int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR command_line,int show){
+ SetCurrentProcessExplicitAppUserModelID(L"SanAudisco.Desktop");
  SetProcessDPIAware();auto screen=GetDC(nullptr);if(screen){ui_dpi=GetDeviceCaps(screen,LOGPIXELSX);ReleaseDC(nullptr,screen);}RECT work{};if(SystemParametersInfoW(SPI_GETWORKAREA,0,&work,0)){ui_dpi=std::min({ui_dpi,int((work.right-work.left)*96/990),int((work.bottom-work.top)*96/810)});}ui_dpi=std::max(ui_dpi,72);INITCOMMONCONTROLSEX cc{sizeof(cc),ICC_BAR_CLASSES|ICC_TAB_CLASSES|ICC_PROGRESS_CLASS};InitCommonControlsEx(&cc);
- WNDCLASSW cls{};cls.lpfnWndProc=proc;cls.hInstance=instance;cls.lpszClassName=L"AudioBridgeRoomWindow";cls.hCursor=LoadCursorW(nullptr,IDC_ARROW);cls.hbrBackground=reinterpret_cast<HBRUSH>(COLOR_WINDOW+1);RegisterClassW(&cls);
+ WNDCLASSW cls{};cls.lpfnWndProc=proc;cls.hInstance=instance;cls.lpszClassName=L"SanAudiscoRoomWindow";cls.hCursor=LoadCursorW(nullptr,IDC_ARROW);cls.hIcon=LoadIconW(instance,MAKEINTRESOURCEW(101));cls.hbrBackground=reinterpret_cast<HBRUSH>(COLOR_WINDOW+1);RegisterClassW(&cls);
  // One visible control window per session; the agent independently enforces one engine owner.
- auto existing=FindWindowW(cls.lpszClassName,nullptr);if(existing){if(!command_line||!wcsstr(command_line,L"--background")){ShowWindow(existing,SW_RESTORE);SetForegroundWindow(existing);}return 0;}
+ auto existing=FindWindowW(cls.lpszClassName,nullptr);if(!existing)existing=FindWindowW(L"AudioBridgeRoomWindow",nullptr);if(existing){if(!command_line||!wcsstr(command_line,L"--background")){ShowWindow(existing,SW_RESTORE);SetForegroundWindow(existing);}return 0;}
  HWND w=CreateWindowExW(0,cls.lpszClassName,L"San Audisco",WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_CLIPCHILDREN,CW_USEDEFAULT,CW_USEDEFAULT,px(970),px(780),nullptr,nullptr,instance,nullptr);if(!w)return 1;
  if(!command_line||!wcsstr(command_line,L"--background"))ShowWindow(w,show);
  MSG m;while(GetMessageW(&m,nullptr,0,0)>0){if(!IsDialogMessageW(w,&m)){TranslateMessage(&m);DispatchMessageW(&m);}}

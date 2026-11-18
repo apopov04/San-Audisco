@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build a private offline setup artifact from explicit, locally supplied inputs.
 
-Never installs drivers, launches AudioBridge, downloads dependencies, or publishes
+Never installs drivers, launches San Audisco, downloads dependencies, or publishes
 an artifact. Vendor packages are intentionally excluded from source control.
 """
 import argparse
@@ -35,7 +35,7 @@ def files_under(path):
 
 def build_mac(args, lock, scratch):
     app = args.app.resolve()
-    for executable in ('AudioBridge', 'bridge-engine', 'bridge-agent'):
+    for executable in ('SanAudisco', 'bridge-engine', 'bridge-agent'):
         if not (app / 'Contents/MacOS' / executable).is_file():
             raise ValueError(f'Missing app executable: {executable}')
     run(['/usr/bin/codesign', '--verify', '--deep', '--strict', app])
@@ -44,7 +44,7 @@ def build_mac(args, lock, scratch):
     resources = contents / 'Resources'
     (contents / 'MacOS').mkdir(parents=True)
     (resources / 'drivers').mkdir(parents=True)
-    shutil.copytree(app, resources / 'AudioBridge.app')
+    shutil.copytree(app, resources / 'San Audisco.app')
     for component in ('blackhole2', 'blackhole16'):
         package = verified_vendor(args.vendor_dir, lock['components'][component])
         signature = subprocess.check_output(['/usr/sbin/pkgutil', '--check-signature', str(package)], text=True)
@@ -52,19 +52,20 @@ def build_mac(args, lock, scratch):
             raise ValueError('BlackHole package publisher could not be verified')
         shutil.copy2(package, resources / 'drivers' / package.name)
     shutil.copy2(ROOT / 'PRIVATE_SETUP.md', resources / 'PRIVATE_SETUP.md')
+    shutil.copy2(ROOT/'assets/SanAudisco.icns', resources/'SanAudisco.icns')
     rows = [{'path':p.relative_to(resources).as_posix(), 'sha256':hashlib.sha256(p.read_bytes()).hexdigest()} for p in files_under(resources)]
     write_manifest(resources / 'manifest.json', {'schema':1, 'private_only':True, 'files':rows})
     with (contents / 'Info.plist').open('wb') as f:
-        plistlib.dump({'CFBundleIdentifier':'local.audiobridge.setup', 'CFBundleExecutable':'AudioBridgeSetup', 'CFBundleName':'San Audisco Setup', 'CFBundleVersion':'11', 'CFBundleShortVersionString':'0.2.9', 'LSMinimumSystemVersion':'13.0', 'NSHighResolutionCapable':True}, f)
+        plistlib.dump({'CFBundleIdentifier':'local.audiobridge.setup', 'CFBundleExecutable':'SanAudiscoSetup', 'CFBundleName':'San Audisco Setup', 'CFBundleIconFile':'SanAudisco', 'CFBundleVersion':'12', 'CFBundleShortVersionString':'0.2.10', 'LSMinimumSystemVersion':'13.0', 'NSHighResolutionCapable':True}, f)
     run(['clang++', '-target', 'arm64-apple-macos13.0', '-std=c++20', '-O2', '-c', ROOT/'installer/setup_policy.cpp', '-o',scratch/'setup_policy.o'])
-    run(['swiftc', '-target', 'arm64-apple-macos13.0', '-O', '-parse-as-library', ROOT / 'installer/macos/Setup.swift', scratch/'setup_policy.o', '-o', contents / 'MacOS/AudioBridgeSetup', '-framework', 'SwiftUI', '-framework', 'AppKit', '-framework', 'CoreAudio', '-framework', 'CryptoKit'])
+    run(['swiftc', '-target', 'arm64-apple-macos13.0', '-O', '-parse-as-library', ROOT / 'installer/macos/Setup.swift', scratch/'setup_policy.o', '-o', contents / 'MacOS/SanAudiscoSetup', '-framework', 'SwiftUI', '-framework', 'AppKit', '-framework', 'CoreAudio', '-framework', 'CryptoKit'])
     spec = importlib.util.spec_from_file_location('sign_mac', ROOT/'scripts/sign-mac.py')
     signing = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(signing)
     signing.sign(setup)
     run(['/usr/bin/codesign', '--verify', '--deep', '--strict', setup])
     args.output.mkdir(parents=True, exist_ok=True)
-    artifact = args.output / 'AudioBridge-Private-Setup-macOS-arm64.dmg'
+    artifact = args.output / 'San Audisco-Private-Setup-macOS-arm64.dmg'
     if artifact.exists():
         raise ValueError('Refusing to overwrite an existing installer artifact')
     disk = scratch / 'disk'; disk.mkdir()
@@ -78,7 +79,7 @@ def build_windows(args, lock, scratch):
     if not args.toolchain:
         raise ValueError('--toolchain must name the LLVM-MinGW bin directory')
     entries = []
-    for executable in ('AudioBridgeApp.exe', 'audiobridge.exe', 'bridge-agent.exe'):
+    for executable in ('SanAudisco.exe', 'san-audisco.exe', 'bridge-agent.exe'):
         path = args.app / executable
         if not path.is_file():
             raise ValueError(f'Missing app executable: {path}')
@@ -96,7 +97,8 @@ def build_windows(args, lock, scratch):
         package = verified_vendor(args.vendor_dir, lock['components'][component])
         entries.extend((component,name,data) for name,data in checked_zip(package))
     header = ['#pragma once', 'struct Payload {int id; const wchar_t* group; const wchar_t* path; const char* sha256;};', 'inline const Payload payload[] = {']
-    rc = ['#include <windows.h>', '1 RT_MANIFEST "setup.manifest"']
+    shutil.copy2(ROOT/'assets/SanAudisco.ico', scratch/'SanAudisco.ico')
+    rc = ['#include <windows.h>', '1 RT_MANIFEST "setup.manifest"', '101 ICON "SanAudisco.ico"']
     manifest = []
     for number, (group, name, data) in enumerate(entries, 100):
         staged = scratch / f'payload-{number}.bin'; staged.write_bytes(data)
@@ -113,7 +115,7 @@ def build_windows(args, lock, scratch):
     toolchain = args.toolchain.resolve()
     subprocess.run([str(toolchain/'x86_64-w64-mingw32-windres'), 'setup.rc', '-O','coff','-o','setup.res'], cwd=scratch,check=True)
     args.output.mkdir(parents=True,exist_ok=True)
-    artifact = args.output / 'AudioBridge-Private-Setup-Windows-x64.exe'
+    artifact = args.output / 'San Audisco-Private-Setup-Windows-x64.exe'
     if artifact.exists():
         raise ValueError('Refusing to overwrite an existing installer artifact')
     run([toolchain/'x86_64-w64-mingw32-clang++', '-std=c++20','-O2','-municode','-mwindows','-static','-DUNICODE','-D_UNICODE','-I',ROOT/'installer', '-I',scratch, ROOT/'installer/windows/setup.cpp',ROOT/'installer/setup_policy.cpp',scratch/'setup.res','-o',artifact,'-lbcrypt','-lwintrust','-lcrypt32','-lshell32','-lole32','-luuid','-lpropsys'])
@@ -133,7 +135,7 @@ def main():
     if args.output.is_relative_to(ROOT) and not args.output.is_relative_to(ROOT/'dist'):
         raise ValueError('Use an output outside the source repository, or its ignored dist directory')
     lock=json.loads((ROOT/'installer/vendor-lock.json').read_text())
-    with tempfile.TemporaryDirectory(prefix='audiobridge-private-') as directory:
+    with tempfile.TemporaryDirectory(prefix='san-audisco-private-') as directory:
         scratch=Path(directory)
         artifact=(build_mac if args.platform=='mac' else build_windows)(args,lock,scratch)
     digest=hashlib.sha256(artifact.read_bytes()).hexdigest()

@@ -1,5 +1,5 @@
 """Exercise the real native GUI against a TEST-ONLY agent fixture; never captures audio.
-Run on Windows or Wine with a dedicated directory containing AudioBridgeApp.exe and
+Run on Windows or Wine with a dedicated directory containing SanAudisco.exe and
 agent_fixture.cpp compiled as bridge-agent.exe. The directory must be disposable.
 """
 import ctypes, ctypes.wintypes as w, pathlib, subprocess, time, json, sys
@@ -24,13 +24,13 @@ def value(h):
  b=ctypes.create_unicode_buffer(8192);u.SendMessageW(h,0xD,len(b),ctypes.cast(b,ctypes.c_void_p).value);return b.value
 exe=pathlib.Path(sys.argv[1]).resolve()
 assert (exe.parent/'bridge-agent.exe').exists()
-assert not u.FindWindowW('AudioBridgeRoomWindow',None),'An existing AudioBridge room UI is running; test refuses to interfere'
+assert not (u.FindWindowW('SanAudiscoRoomWindow',None) or u.FindWindowW('AudioBridgeRoomWindow',None)),'An existing San Audisco room UI is running; test refuses to interfere'
 state=exe.parent/'ui-fixture-state.json';events=exe.parent/'ui-fixture-requests.jsonl'
 state.unlink(missing_ok=True);events.unlink(missing_ok=True)
 p=subprocess.Popen([str(exe)])
 try:
- wait(lambda:u.FindWindowW('AudioBridgeRoomWindow',None),'GUI did not open')
- hwnd=u.FindWindowW('AudioBridgeRoomWindow',None);get=lambda i:u.GetDlgItem(hwnd,i)
+ wait(lambda:u.FindWindowW('SanAudiscoRoomWindow',None),'GUI did not open')
+ hwnd=u.FindWindowW('SanAudiscoRoomWindow',None);get=lambda i:u.GetDlgItem(hwnd,i)
  click=lambda i:u.SendMessageW(get(i),0xF5,0,0)
  class Header(ctypes.Structure):_fields_=[('hwndFrom',w.HWND),('idFrom',ctypes.c_size_t),('code',w.UINT)]
  def page(index):
@@ -39,6 +39,21 @@ try:
   if not events.exists():return []
   return [r for line in events.read_text().splitlines() if (r:=json.loads(line)).get('command')==command]
  wait(lambda:value(get(201))=='Test Windows','Initial state did not populate')
+ # Load the packaged resource locally: Wine cannot marshal a foreign class HICON.
+ k=ctypes.WinDLL('kernel32',use_last_error=True)
+ k.LoadLibraryExW.argtypes=[w.LPCWSTR,w.HANDLE,w.DWORD];k.LoadLibraryExW.restype=w.HMODULE
+ k.FreeLibrary.argtypes=[w.HMODULE]
+ u.LoadImageW.argtypes=[w.HINSTANCE,ctypes.c_void_p,w.UINT,ctypes.c_int,ctypes.c_int,w.UINT];u.LoadImageW.restype=w.HANDLE
+ u.DestroyIcon.argtypes=[w.HANDLE]
+ module=k.LoadLibraryExW(str(exe),None,2)
+ assert module,'Cannot inspect application icon resources'
+ try:
+  for size in (16,32,48,256):
+   icon=u.LoadImageW(module,101,1,size,size,0)
+   assert icon,f'Packaged icon cannot load at {size}px'
+   u.DestroyIcon(icon)
+ finally:k.FreeLibrary(module)
+ assert value(hwnd)=='San Audisco','Application window name differs from product name'
  assert not u.IsWindowEnabled(get(702)),'Unpaired Hub control should be disabled'
  client=w.RECT();assert u.GetClientRect(hwnd,ctypes.byref(client))
  for control_id in [700,703,705,720,723,725,410,420,440,441,431,601,602,760]:

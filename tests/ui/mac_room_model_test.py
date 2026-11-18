@@ -5,10 +5,10 @@ Requires macOS Swift compiler and clang++; uses a disposable output directory.
 from pathlib import Path
 import subprocess, tempfile, sys
 root=Path(__file__).resolve().parents[2]
-with tempfile.TemporaryDirectory(prefix='audiobridge-ui-') as tmp:
+with tempfile.TemporaryDirectory(prefix='san-audisco-ui-') as tmp:
  out=Path(tmp)
  subprocess.run(['clang++','-std=c++20','-O2','-I'+str(root/'third_party/json/include'),str(root/'tests/ui/agent_fixture.cpp'),'-o',str(out/'bridge-agent')],check=True)
- source=(root/'apps/macos/AudioBridge.swift').read_text().split('struct DeviceRouteView:View')[0]
+ source=(root/'apps/macos/SanAudisco.swift').read_text().split('struct DeviceRouteView:View')[0]
  # Only expose the actual transport method for the test harness; its body is unchanged.
  source=source.replace('private static func invoke','static func invoke')
  source+='''

@@ -17,7 +17,7 @@ For distribution, obtain/configure Developer ID first. Then build with:
 
 ```sh
 export SAN_AUDISCO_SIGNING_IDENTITY='Developer ID Application: Your Name (TEAMID)'
-./scripts/package-mac.sh /path/to/build /path/to/AudioBridge.app
+./scripts/package-mac.sh /path/to/build /path/to/San Audisco.app
 ```
 
 Package the signed app with `scripts/package-private.py`. With notarization

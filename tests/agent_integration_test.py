@@ -33,7 +33,7 @@ class Instance:
         try:self.process.wait(timeout=5)
         except subprocess.TimeoutExpired:self.process.kill();self.process.wait()
         self.log.close()
-with tempfile.TemporaryDirectory(prefix='audiobridge-agent-test-') as temp:
+with tempfile.TemporaryDirectory(prefix='san-audisco-agent-test-') as temp:
     root=pathlib.Path(temp);wp,mp,wm,mm=port(),port(),port(),port();instances=[]
     try:
         win=Instance(root/'win','windows',wp,wm,mp);instances.append(win)
@@ -97,6 +97,7 @@ with tempfile.TemporaryDirectory(prefix='audiobridge-agent-test-') as temp:
         print('PASS saved credential reconnect, remembered start intent, explicit protective mute reason')
         assert mac.call('stop')['ok']
         wait(lambda:not win.state()['running'] and not mac.state()['running'],'room-wide stop')
+        assert 'Audio bridge active' not in win.state()['status'], 'Remote Stop left stale active status'
         for device in (win,mac):
             assert not device.state()['diagnostics']['output_routing_active']
             assert json.loads((device.root/'output-restore.json').read_text())['entries']==[]

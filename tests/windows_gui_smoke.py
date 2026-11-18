@@ -1,4 +1,4 @@
-"""Optional Windows GUI smoke. Pass AudioBridgeApp.exe; requires an audio endpoint.
+"""Optional Windows GUI smoke. Pass SanAudisco.exe; requires an audio endpoint.
 May run under Wine but that is compatibility testing, not native Windows validation.
 """
 import ctypes, ctypes.wintypes as w, subprocess,time,json,sys
@@ -14,7 +14,7 @@ p=subprocess.Popen([sys.argv[1]])
 try:
  until=time.monotonic()+10;hwnd=None
  while time.monotonic()<until:
-  hwnd=u.FindWindowW('AudioBridgeWindow',None)
+  hwnd=u.FindWindowW('SanAudiscoWindow',None)
   if hwnd:break
   time.sleep(.1)
  if not hwnd:raise AssertionError('Windows GUI did not create its native window')

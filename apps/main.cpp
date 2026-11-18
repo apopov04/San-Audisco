@@ -164,7 +164,7 @@ int main(int argc,char** argv) {try {
         std::cout<<(removed?"Pairing credential deleted.\n":"Pairing credential was not present.\n");return 0;
     }
     if(argc!=3||std::string(argv[1])!="run") {
-        std::cout<<"AudioBridge: devices | keygen FILE | key-import ID FILE | key-delete ID | run CONFIG\nCommands on stdin: primary 0|1, mic_source 0|1, win_volume 0..1, mac_volume 0..1, win_mute 0|1, mac_mute 0|1, win_deafen 0|1, mac_deafen 0|1, mute 0|1, deafen 0|1, balance -1..1, quit\n";return 0;
+        std::cout<<"San Audisco: devices | keygen FILE | key-import ID FILE | key-delete ID | run CONFIG\nCommands on stdin: primary 0|1, mic_source 0|1, win_volume 0..1, mac_volume 0..1, win_mute 0|1, mac_mute 0|1, win_deafen 0|1, mac_deafen 0|1, mute 0|1, deafen 0|1, balance -1..1, quit\n";return 0;
     }
     auto config=read_config(argv[2]);auto required=[&](const char* k){if(config[k].empty())throw std::runtime_error(std::string("Missing config: ")+k);return config[k];};
     if(required("device")!="windows"&&required("device")!="mac")throw std::runtime_error("device must be windows or mac");

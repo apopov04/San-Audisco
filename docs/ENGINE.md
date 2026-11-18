@@ -8,7 +8,7 @@ configuration remain supported for standalone use.
 
 ## Configuration
 
-Run `audiobridge devices` on each computer to obtain stable device IDs. Create a UTF-8 file with these exact fields (no quotes around values):
+Run `san-audisco devices` on each computer to obtain stable device IDs. Create a UTF-8 file with these exact fields (no quotes around values):
 
 ```ini
 device=windows

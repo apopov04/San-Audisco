@@ -1,4 +1,4 @@
-# AudioBridge room protocol v2
+# San Audisco room protocol v2
 
 This protocol manages a two-device (one Windows, one Mac) LAN room. It does not
 replace or change the audio codec, audio engine, or real-time transport.
@@ -17,7 +17,7 @@ BoringSSL was selected over the small older CPace examples because its maintaine
 implementation provides an established SPAKE2 primitive, strong randomness,
 constant-time elliptic-curve operations, and explicit role/identity binding. This
 is BoringSSL's deployed SPAKE2 variant, **not a claim of RFC 9382 wire compatibility**.
-AudioBridge's framing, confirmation, discovery and reconnect integration are new
+San Audisco's framing, confirmation, discovery and reconnect integration are new
 application code; passing these tests is not an independent security audit.
 
 ## Invitations and discovery

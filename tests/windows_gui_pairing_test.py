@@ -1,6 +1,6 @@
 """Optional Windows onboarding test in an isolated profile.
-Pass a GUI beside the TEST-ONLY fake-audio runtime named audiobridge.exe.
-This test refuses to overwrite existing AudioBridge settings or paired-peer keys.
+Pass a GUI beside the TEST-ONLY fake-audio runtime named san-audisco.exe.
+This test refuses to overwrite existing San Audisco settings or paired-peer keys.
 """
 import ctypes,ctypes.wintypes as w,subprocess,time,sys,pathlib,tempfile,os,secrets,json
 u=ctypes.WinDLL('user32',use_last_error=True)
@@ -19,18 +19,18 @@ def wait(f,message):
   time.sleep(.1)
  raise AssertionError(message)
 omit_microphone='--omit-microphone' in sys.argv[2:]
-exe=pathlib.Path(sys.argv[1]).resolve();engine=exe.parent/'audiobridge.exe'
+exe=pathlib.Path(sys.argv[1]).resolve();engine=exe.parent/'san-audisco.exe'
 config=pathlib.Path(os.environ['LOCALAPPDATA'])/'AudioBridge/windows.conf'
 credential=config.parent/'keys/paired-peer.dpapi'
 if config.exists() or credential.exists():
- print('SKIP: GUI pairing test requires an isolated Windows user profile without existing AudioBridge pairing')
+ print('SKIP: GUI pairing test requires an isolated Windows user profile without existing San Audisco pairing')
  sys.exit(77)
 prior=None
 with tempfile.TemporaryDirectory(prefix='audio-pairing-') as tmp:
  key=pathlib.Path(tmp)/'pair-ünicode.key';key.write_text(secrets.token_hex(32)+'\n')
  p=subprocess.Popen([str(exe)]);hwnd=None
  try:
-  wait(lambda:u.FindWindowW('AudioBridgeWindow',None),'GUI window missing');hwnd=u.FindWindowW('AudioBridgeWindow',None)
+  wait(lambda:u.FindWindowW('SanAudiscoWindow',None),'GUI window missing');hwnd=u.FindWindowW('SanAudiscoWindow',None)
   get=lambda i:u.GetDlgItem(hwnd,i)
   wait(lambda:u.SendMessageW(get(210),0x146,0,0)>0,'Device list empty')
   assert not u.IsWindowEnabled(get(110)),'Mixer should be disabled before starting'

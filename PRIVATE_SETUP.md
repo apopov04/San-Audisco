@@ -1,4 +1,4 @@
-# AudioBridge private setup (v0.2)
+# San Audisco private setup (v0.2)
 
 These installers are assembled for the owner's private machines. They contain
 third-party packages, are not public release artifacts, and must not be uploaded
@@ -9,11 +9,11 @@ and licensing screens are preserved unchanged.
 ## What setup does
 
 Windows setup installs the three application executables for the current user in
-`%LOCALAPPDATA%\AudioBridge\app` and adds an AudioBridge Start Menu shortcut. Driver
+`%LOCALAPPDATA%\SanAudisco\app` and adds an San Audisco Start Menu shortcut. Driver
 installation opens the original VB-Audio installers with the normal Windows
 administrator prompt. App installation does not require administrator rights.
 
-Mac setup installs the complete application in `~/Applications/AudioBridge.app`.
+Mac setup installs the complete application in `~/Applications/San Audisco.app`.
 The original, signed BlackHole installers install the audio components through
 Apple Installer. They may request a restart. Setup never restarts the computer,
 kills an audio application, silently changes system defaults, or alters system
@@ -36,7 +36,7 @@ is recorded as `AudioBridge/setup-v2.json` in the user's application support/dat
 directory. If vendor installation was cancelled, retry its button. If a component
 exists but is unavailable, review it or restart when convenient before retrying.
 
-Closing setup does not start AudioBridge. **Open AudioBridge** is an explicit
+Closing setup does not start San Audisco. **Open San Audisco** is an explicit
 action enabled only once required endpoints and the app are present. Microphone
 and local-network permission prompts belong to the operating system and still
 must be approved on the respective computer. First room setup configures the app's
@@ -44,9 +44,9 @@ virtual routes; Discord and Deadlock retain their own device selections.
 
 ## Windows private-network access
 
-On your trusted home network, allow **bridge-agent.exe** and **audiobridge.exe**
+On your trusted home network, allow **bridge-agent.exe** and **san-audisco.exe**
 through Windows Defender Firewall for **Private** networks when Windows prompts.
-The installed binaries are in `%LOCALAPPDATA%\AudioBridge\app`. Do not enable
+The installed binaries are in `%LOCALAPPDATA%\SanAudisco\app`. Do not enable
 Public access or disable the firewall. If the prompt was previously declined, use
 **Windows Security → Firewall & network protection → Allow an app through firewall**
 and review those two installed programs. Administrator approval may be necessary.
@@ -76,7 +76,7 @@ before extraction. Before elevation, Windows verifies Authenticode trust and the
 expected VB-Audio publisher on the vendor installer. An unavailable certificate
 chain can stop installation; setup never installs a trusted publisher certificate
 or disables signature checks to work around that. Mac verifies the package hashes,
-Apple signature/publisher, and AudioBridge's bundle signature before enabling
+Apple signature/publisher, and San Audisco's bundle signature before enabling
 installation. The private wrapper itself is development signed on Mac and unsigned
 on Windows; it is not a trusted, publicly notarized/signed distribution.
 
@@ -91,7 +91,7 @@ Supply a built v0.2 app containing all three binaries (including `bridge-agent`)
 
 ```sh
 python3 scripts/package-private.py --platform mac \
-  --app /absolute/private/build/AudioBridge.app \
+  --app /absolute/private/build/San Audisco.app \
   --vendor-dir /absolute/private/drivers --output /absolute/private/installers/mac
 
 python3 scripts/package-private.py --platform windows \
@@ -101,7 +101,7 @@ python3 scripts/package-private.py --platform windows \
 ```
 
 The scripts do not install anything or launch audio. Mac output is a DMG containing
-**AudioBridge Setup.app** and these instructions. Windows output is one native
+**San Audisco Setup.app** and these instructions. Windows output is one native
 bootstrap EXE. Hash sidecars identify the final artifacts. Existing output artifacts
 are never overwritten. The build rejects missing/mismatched vendor packages and
 unsafe ZIP members. Vendor versions can only be changed deliberately in the lock
@@ -109,17 +109,17 @@ file after validation; the installer never auto-downloads a new version.
 
 ## Update, uninstall, and rollback
 
-Quit AudioBridge and its background agent before replacing application binaries.
+Quit San Audisco and its background agent before replacing application binaries.
 Setup refuses to interrupt a running engine. Previous app directories are retained
 as timestamp/UUID-named backups. Existing room credentials and configuration are
 not rewritten by the installer.
 
-To remove the Mac app, quit it and move `~/Applications/AudioBridge.app` to Trash.
+To remove the Mac app, quit it and move `~/Applications/San Audisco.app` to Trash.
 On Windows, quit the app and agent and choose **Remove app only** in setup. This
-removes the known application files and AudioBridge Start Menu shortcut; it keeps
-unknown extra files rather than deleting an entire directory blindly. Leave the surrounding AudioBridge data
+removes the known application files and San Audisco Start Menu shortcut; it keeps
+unknown extra files rather than deleting an entire directory blindly. Leave the legacy AudioBridge data
 folder if you want to keep pairing/settings. Review backup app folders separately.
-Removing AudioBridge never removes BlackHole or VB-Audio drivers: other programs
+Removing San Audisco never removes BlackHole or VB-Audio drivers: other programs
 may depend on them. Vendor driver removal remains a separate explicit operation.
 
 For application rollback, quit the agent and restore the retained previous app

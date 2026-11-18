@@ -1,5 +1,5 @@
 // Exercise the actual GDI renderer and timer lifecycle in-process. No agent/audio.
-#define wWinMain audiobridge_app_entry
+#define wWinMain san_audisco_app_entry
 #include "../../apps/windows/main.cpp"
 #undef wWinMain
 #include <iostream>

@@ -6,14 +6,14 @@ These tests exercise the production GUI/model against an explicitly test-only ag
 
 Run `python3 tests/ui/mac_room_model_test.py` on an Apple Silicon Mac with Xcode command-line tools. It compiles the production `BridgeModel` and tests its JSON state mapping and bounded subprocess IPC with a fixture. Temporary artifacts are removed afterward.
 
-The native SwiftUI candidate was additionally opened in an isolated `local.audiobridge.room-uitest` app bundle. The v0.2.1 device overview, connected/offline graphics, physical-only picker contents, direct Hub selection and room settings sheet were inspected via accessibility and screenshots. Model tests also cover stale peer inventory versus actual connectivity and invitation cancellation. Quit stopped that fixture app; the installed AudioBridge app was not replaced.
+The native SwiftUI candidate was additionally opened in an isolated `local.san-audisco.room-uitest` app bundle. The v0.2.1 device overview, connected/offline graphics, physical-only picker contents, direct Hub selection and room settings sheet were inspected via accessibility and screenshots. Model tests also cover stale peer inventory versus actual connectivity and invitation cancellation. Quit stopped that fixture app; the installed San Audisco app was not replaced.
 
 ## Windows
 
-Build `tests/ui/agent_fixture.cpp` as `bridge-agent.exe` with the vendored nlohmann include directory. Place it beside a test copy of `AudioBridgeApp.exe` in a disposable directory. Run:
+Build `tests/ui/agent_fixture.cpp` as `bridge-agent.exe` with the vendored nlohmann include directory. Place it beside a test copy of `SanAudisco.exe` in a disposable directory. Run:
 
 ```
-python tests/ui/windows_room_ui_test.py path/to/AudioBridgeApp.exe
+python tests/ui/windows_room_ui_test.py path/to/SanAudisco.exe
 ```
 
 The v0.2.1 build embeds the Windows common-controls v6 manifest and scales native controls and graphics together for system DPI. Native 150% hardware rendering still requires acceptance.

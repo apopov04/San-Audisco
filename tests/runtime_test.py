@@ -118,7 +118,7 @@ def metric_check(peer, sink, after, present=(), absent=(), silent=False, levels=
 
 def main():
     executable = str(Path(sys.argv[1]).resolve())
-    with tempfile.TemporaryDirectory(prefix='audiobridge-runtime-') as tmp:
+    with tempfile.TemporaryDirectory(prefix='san-audisco-runtime-') as tmp:
         root = Path(tmp)
         key = root / 'pair.key'
         key.write_text(secrets.token_hex(32) + '\n')

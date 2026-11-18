@@ -8,11 +8,11 @@ driver performance, Bluetooth latency, Discord or game performance.
 
 Build the `runtime_fake` target for each host and provide Python 3. The script
 imports the adjacent `runtime_test.py`; keep both files together. Stop other
-AudioBridge network tests. Both peers use UDP port 45672 by default and need
+San Audisco network tests. Both peers use UDP port 45672 by default and need
 each other's numeric IPv4 address. A different port must be specified on both.
 
 Generate one **disposable** pairing-key file using `runtime_fake keygen` or the
-AudioBridge CLI's `keygen` command, then transfer the same file privately to the
+San Audisco CLI's `keygen` command, then transfer the same file privately to the
 other computer. Pass its explicit local path with `--key` on each host. Do not
 use a real session's key, commit a key, or store keys/results in `tests/`. Delete
 the disposable copies when the test is finished.

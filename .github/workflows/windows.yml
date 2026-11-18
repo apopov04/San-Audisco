@@ -26,8 +26,8 @@ jobs:
         run: ctest --test-dir build -C Release --output-on-failure
       - uses: actions/upload-artifact@v4
         with:
-          name: AudioBridge-Windows-x64
+          name: SanAudisco-Windows-x64
           path: |
-            build/Release/audiobridge.exe
-            build/Release/AudioBridgeApp.exe
+            build/Release/san-audisco.exe
+            build/Release/SanAudisco.exe
             build/Release/bridge-agent.exe

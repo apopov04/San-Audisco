@@ -1,4 +1,4 @@
-# San Audisco v0.2.9
+# San Audisco v0.2.10
 
 San Audisco (formerly AudioBridge) mixes audio from a Windows PC and a Mac into headphones connected to
 one computer, and sends a selected physical microphone to voice apps on both.
@@ -13,17 +13,17 @@ used successfully with Discord on the Mac and Deadlock on Windows; this new
 release has automated and simulated validation, with installation and listening
 acceptance still required on the actual pair. See [v0.2 validation](docs/V02_VALIDATION.md).
 
-Version 0.2.9 adds automatic system playback routing and restoration, and reduces
+Version 0.2.10 adds automatic system playback routing and restoration, and reduces
 Windows redraws. See [routing and update notes](docs/V029_UPDATE.md) and
 [signing and OS permissions](docs/SIGNING.md).
 
 ## Start using a room
 
-1. Quit the old AudioBridge app on both computers. Keep its binaries for rollback.
-   Run the matching **AudioBridge Setup** privately supplied for each computer.
+1. Quit the old San Audisco app on both computers. Keep its binaries for rollback.
+   Run the matching **San Audisco Setup** privately supplied for each computer.
    Existing usable drivers are retained. Follow any normal vendor/OS prompts;
    restart only when convenient. Reopen setup after restarting.
-2. Open AudioBridge on both computers, on the same private Wi-Fi/LAN. Create a
+2. Open San Audisco on both computers, on the same private Wi-Fi/LAN. Create a
    room on either and enter its eight-character code on the other. Invitations
    expire after five minutes. Pairing is remembered; no key files or normal IP
    entry are required. If broadcast discovery fails, use the creator's IPv4
@@ -80,7 +80,7 @@ Balance is available in Room settings on Mac and Advanced on Windows.
 - **Deafen** stops listening and microphone delivery globally or for that device.
 - **Stop audio** stops both engines when both devices are reachable. Closing the
   window keeps audio running; use the menu-bar/notification-area icon to reopen it.
-- **Quit AudioBridge** stops the app and agent on that computer. Optional login
+- **Quit San Audisco** stops the app and agent on that computer. Optional login
   startup is controlled locally on each computer. No login item is enabled by default.
 
 Startup, reconnect, and audio role changes protectively mute the microphone. The
@@ -109,7 +109,7 @@ approval, permissions, and a possible driver restart remain.
 Existing `mac.conf` / `windows.conf` route choices are copied into the separate
 `room-v2` state directory on first launch, with a legacy backup. Old files and
 credentials are retained for rollback. You still create the new room once.
-Application settings live in the user's AudioBridge application-data directory;
+Application settings live in the user's legacy AudioBridge application-data directory;
 room secrets use macOS Keychain or current-user Windows DPAPI.
 
 If sound stops, check which stage has signal: source playback, selected microphone,
@@ -134,7 +134,7 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
   -DBORINGSSL_ROOT=/absolute/path/to/room-deps
 cmake --build build --parallel
 ctest --test-dir build --output-on-failure
-./scripts/package-mac.sh "$PWD/build" /absolute/path/to/candidate/AudioBridge.app
+./scripts/package-mac.sh "$PWD/build" /absolute/path/to/candidate/San Audisco.app
 ```
 
 For Windows cross-builds, build the dependencies for Windows and use

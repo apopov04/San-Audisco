@@ -63,7 +63,7 @@ final class BridgeModel: ObservableObject {
  @Published var diagnostics: [String:Any]=[:]
  @Published var settings: [String:Double]=["primary":0,"mic_source":1,"mute":1,"deafen":0,"master":1,"balance":0,"win_volume":1,"mac_volume":1]
  @Published var startAtLogin=false
- private let requests=DispatchQueue(label:"AudioBridge.agent.requests")
+ private let requests=DispatchQueue(label:"San Audisco.agent.requests")
  private var timer: Timer?
  private var polling=false
  private var permissionRequestID: UUID?
@@ -81,7 +81,7 @@ final class BridgeModel: ObservableObject {
   requests.async { [weak self] in
    guard let self=self else{return}
    do {let result=try Self.invoke(self.executable,arguments:["ensure"],request:nil)
-    if result["ok"] as? Bool == false {throw NSError(domain:"AudioBridge",code:6,userInfo:[NSLocalizedDescriptionKey:result["error"] as? String ?? "Background agent could not start."])}
+    if result["ok"] as? Bool == false {throw NSError(domain:"San Audisco",code:6,userInfo:[NSLocalizedDescriptionKey:result["error"] as? String ?? "Background agent could not start."])}
     let response=try Self.invoke(self.executable,arguments:["request"],request:["command":"status"])
     DispatchQueue.main.async {self.busy=false;if let state=response["state"] as? [String:Any]{self.apply(state)};self.available=response["ok"] as? Bool == true;if !self.available{self.error=response["error"] as? String ?? "Background agent unavailable"}}
    } catch {DispatchQueue.main.async {self.busy=false;self.available=false;self.error=error.localizedDescription;self.status="Background agent unavailable"}}
@@ -103,18 +103,18 @@ final class BridgeModel: ObservableObject {
   let finished=DispatchSemaphore(value:0);p.terminationHandler={_ in finished.signal()}
   do {try p.run()}catch{try? output.fileHandleForWriting.close();throw error}
   try? output.fileHandleForWriting.close()
-  if let request=request {var data=try JSONSerialization.data(withJSONObject:request);guard data.count<=60_000 else{p.terminate();throw NSError(domain:"AudioBridge",code:5,userInfo:[NSLocalizedDescriptionKey:"The requested change is too large."])};data.append(10);try input.fileHandleForWriting.write(contentsOf:data)}
+  if let request=request {var data=try JSONSerialization.data(withJSONObject:request);guard data.count<=60_000 else{p.terminate();throw NSError(domain:"San Audisco",code:5,userInfo:[NSLocalizedDescriptionKey:"The requested change is too large."])};data.append(10);try input.fileHandleForWriting.write(contentsOf:data)}
   try? input.fileHandleForWriting.close()
   if finished.wait(timeout:.now()+15) == .timedOut {
    p.terminate();if finished.wait(timeout:.now()+1) == .timedOut {kill(p.processIdentifier,SIGKILL);_ = finished.wait(timeout:.now()+1)}
-   throw NSError(domain:"AudioBridge",code:1,userInfo:[NSLocalizedDescriptionKey:"San Audisco did not respond. Open the app again to reconnect; audio may still be running."])
+   throw NSError(domain:"San Audisco",code:1,userInfo:[NSLocalizedDescriptionKey:"San Audisco did not respond. Open the app again to reconnect; audio may still be running."])
   }
-  guard drained.wait(timeout:.now()+2) == .success else {throw NSError(domain:"AudioBridge",code:4,userInfo:[NSLocalizedDescriptionKey:"The agent response stream did not close."])}
+  guard drained.wait(timeout:.now()+2) == .success else {throw NSError(domain:"San Audisco",code:4,userInfo:[NSLocalizedDescriptionKey:"The agent response stream did not close."])}
   lock.lock();let result=bytes;let tooLarge=oversized;lock.unlock()
-  guard !tooLarge else {throw NSError(domain:"AudioBridge",code:2,userInfo:[NSLocalizedDescriptionKey:"San Audisco returned an oversized response."])}
+  guard !tooLarge else {throw NSError(domain:"San Audisco",code:2,userInfo:[NSLocalizedDescriptionKey:"San Audisco returned an oversized response."])}
   if arguments.first == "ensure" && p.terminationStatus==0 {return [:]}
   guard let object=(try? JSONSerialization.jsonObject(with:result)) as? [String:Any] else {
-   throw NSError(domain:"AudioBridge",code:3,userInfo:[NSLocalizedDescriptionKey:"Could not read the background agent response."])
+   throw NSError(domain:"San Audisco",code:3,userInfo:[NSLocalizedDescriptionKey:"Could not read the background agent response."])
   }
   return object
  }
@@ -476,7 +476,7 @@ struct MenuControls:View {
  @Environment(\.openWindow) private var openWindow
  var body:some View {Button("Open San Audisco"){openWindow(id:"main");NSApp.activate(ignoringOtherApps:true);model.poll()};Divider();Button("Quit San Audisco"){model.quit()}}
 }
-@main struct AudioBridgeApp:App {
+@main struct SanAudiscoApp:App {
  @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
  @StateObject private var model=BridgeModel()
  var body:some Scene {

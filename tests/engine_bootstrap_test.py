@@ -91,7 +91,7 @@ def unexplained_rms(samples):
 def main():
     executable = Path(sys.argv[1]).resolve()
     key = secrets.token_hex(32).encode()
-    with tempfile.TemporaryDirectory(prefix='audiobridge-bootstrap-') as temp:
+    with tempfile.TemporaryDirectory(prefix='san-audisco-bootstrap-') as temp:
         root = Path(temp)
         ports = [port(), port()]
         configs = []

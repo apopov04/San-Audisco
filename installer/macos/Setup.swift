@@ -23,7 +23,7 @@ struct SetupManifest: Decodable { let files: [PayloadFile] }
     private var awaitingBoot = ""
     private var loadedState = false
     let resources = Bundle.main.resourceURL!
-    let destination = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Applications/AudioBridge.app")
+    let destination = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Applications/San Audisco.app")
     let state = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("AudioBridge/setup-v2.json")
 
     func run(_ path: String, _ args: [String]) throws -> (Int32, String) {
@@ -46,8 +46,8 @@ struct SetupManifest: Decodable { let files: [PayloadFile] }
                 let result = try run("/usr/sbin/pkgutil",["--check-signature",resources.appendingPathComponent("drivers/"+file).path])
                 guard result.0 == 0, result.1.contains("Q5C99V536K"), result.1.contains("signed by a developer certificate issued by Apple") else { throw NSError(domain:"Vendor signature check failed: \(file)",code:1) }
             }
-            let app = resources.appendingPathComponent("AudioBridge.app")
-            guard try run("/usr/bin/codesign",["--verify","--deep","--strict",app.path]).0 == 0 else { throw NSError(domain:"AudioBridge app signature check failed",code:1) }
+            let app = resources.appendingPathComponent("San Audisco.app")
+            guard try run("/usr/bin/codesign",["--verify","--deep","--strict",app.path]).0 == 0 else { throw NSError(domain:"San Audisco app signature check failed",code:1) }
             verified = true; message = "Package integrity verified. Existing compatible drivers will be kept."
         } catch { verified = false; message = error.localizedDescription }
         busy = false; refresh()
@@ -83,7 +83,7 @@ struct SetupManifest: Decodable { let files: [PayloadFile] }
         restartPending = !installationBoot.isEmpty
         let two = inventory(2), sixteen = inventory(16)
         ready2 = two.0; ready16 = sixteen.0
-        installedApp = ["AudioBridge","bridge-engine","bridge-agent"].allSatisfy{FileManager.default.isExecutableFile(atPath:destination.appendingPathComponent("Contents/MacOS/"+$0).path)}
+        installedApp = ["SanAudisco","bridge-engine","bridge-agent"].allSatisfy{FileManager.default.isExecutableFile(atPath:destination.appendingPathComponent("Contents/MacOS/"+$0).path)}
         rows = [two.1,sixteen.1,installedApp ? "San Audisco: installed in ~/Applications" : "San Audisco: ready to install in ~/Applications"]
         if restartPending {rows.append("A driver was installed this boot. Restart when convenient, then reopen setup.")}
         saveState()
@@ -121,12 +121,14 @@ struct SetupManifest: Decodable { let files: [PayloadFile] }
             guard !running && !agent else { throw NSError(domain:"Quit San Audisco and its background agent before updating. Setup will not stop live audio.",code:1) }
             let fm = FileManager.default
             try fm.createDirectory(at:destination.deletingLastPathComponent(),withIntermediateDirectories:true)
-            let temporary = destination.deletingLastPathComponent().appendingPathComponent("AudioBridge-install-"+UUID().uuidString+".app")
-            try fm.copyItem(at:resources.appendingPathComponent("AudioBridge.app"),to:temporary)
+            let temporary = destination.deletingLastPathComponent().appendingPathComponent("San Audisco-install-"+UUID().uuidString+".app")
+            try fm.copyItem(at:resources.appendingPathComponent("San Audisco.app"),to:temporary)
             defer {try? fm.removeItem(at:temporary)}
             guard try run("/usr/bin/codesign",["--verify","--deep","--strict",temporary.path]).0 == 0 else {throw NSError(domain:"Copied app failed signature verification; existing app retained.",code:1)}
             if fm.fileExists(atPath:destination.path) {
-                let backup = destination.deletingLastPathComponent().appendingPathComponent("AudioBridge-backup-"+UUID().uuidString+".app")
+                let backups = state.deletingLastPathComponent().appendingPathComponent("app-backups")
+                try fm.createDirectory(at:backups,withIntermediateDirectories:true)
+                let backup = backups.appendingPathComponent("San Audisco-"+UUID().uuidString+".app")
                 try fm.moveItem(at:destination,to:backup)
                 do {try fm.moveItem(at:temporary,to:destination)} catch {
                     let installError = error
@@ -134,6 +136,10 @@ struct SetupManifest: Decodable { let files: [PayloadFile] }
                     throw installError
                 }
             } else {try fm.moveItem(at:temporary,to:destination)}
+            let legacy = destination.deletingLastPathComponent().appendingPathComponent("AudioBridge.app")
+            if let bundle = Bundle(url:legacy), bundle.bundleIdentifier == "local.audiobridge.desktop" {
+                try fm.trashItem(at:legacy,resultingItemURL:nil)
+            }
             message = "San Audisco installed. Open it when both audio components are ready. Existing settings and drivers were retained."
         } catch {message = error.localizedDescription}
         busy = false;refresh()
