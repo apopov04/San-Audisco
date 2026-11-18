@@ -17,6 +17,7 @@
 #include <cerrno>
 #include <vector>
 #include <string_view>
+#include <cmath>
 #ifdef _WIN32
 #define NOMINMAX
 #include <windows.h>
@@ -45,6 +46,23 @@ net::Key read_key_file(const std::filesystem::path& path) {
     net::Key key{};
     auto nibble=[](char c)->int {if(c>='0'&&c<='9')return c-'0';if(c>='a'&&c<='f')return c-'a'+10;if(c>='A'&&c<='F')return c-'A'+10;return -1;};
     for(std::size_t i=0;i<32;++i){int hi=nibble(text.bytes[begin+2*i]),lo=nibble(text.bytes[begin+2*i+1]);if(hi<0||lo<0){wipe(key.data(),key.size());throw std::runtime_error("Pairing key file contains non-hexadecimal characters");}key[i]=static_cast<uint8_t>((hi<<4)|lo);}return key;
+}
+// The room agent is the sole credential-store client. Pass the engine's media
+// key through its private inherited stdin pipe, never argv or a plaintext file.
+// Read exact bytes rather than std::cin (whose buffering could eat commands).
+net::Key read_key_pipe() {
+ std::array<char,65> text{};
+ struct Guard {std::array<char,65>&v;~Guard(){wipe(v.data(),v.size());}} guard{text};
+ for(size_t i=0;i<text.size();++i){
+#ifdef _WIN32
+  DWORD n=0;if(!ReadFile(GetStdHandle(STD_INPUT_HANDLE),text.data()+i,1,&n,nullptr)||n!=1)throw std::runtime_error("Private media-key pipe closed");
+#else
+  ssize_t n;do{n=::read(STDIN_FILENO,text.data()+i,1);}while(n<0&&errno==EINTR);if(n!=1)throw std::runtime_error("Private media-key pipe closed");
+#endif
+ }
+ if(text.back()!='\n')throw std::runtime_error("Invalid private media-key frame");
+ net::Key key{};auto digit=[](char c)->int{if(c>='0'&&c<='9')return c-'0';if(c>='a'&&c<='f')return c-'a'+10;return -1;};
+ for(size_t i=0;i<key.size();++i){auto a=digit(text[2*i]),b=digit(text[2*i+1]);if(a<0||b<0){wipe(key.data(),key.size());throw std::runtime_error("Invalid private media-key frame");}key[i]=uint8_t(a*16+b);}return key;
 }
 void generate_key_file(const std::filesystem::path& path) {
     SecretKey key{net::random_key()};auto hex=net::key_to_hex(key.value);hex+='\n';
@@ -157,7 +175,8 @@ int main(int argc,char** argv) {try {
     const auto headphoneId=config["headphones_output"],physicalMicId=config["physical_microphone"];
     if(playbackId==micOutputId)throw std::runtime_error("Playback and microphone paths must use separate virtual cables");
     SecretKey key;
-    if(config.contains("key_id")&&!config["key_id"].empty())key.value=credentials::load_key(config["key_id"]);
+    if(config.contains("key_stdin")&&config["key_stdin"]=="1")key.value=read_key_pipe();
+    else if(config.contains("key_id")&&!config["key_id"].empty())key.value=credentials::load_key(config["key_id"]);
     else key.value=read_key_file(utf8_path(required("key_file")));
     net::Config nc;nc.key=key.value;nc.peer_address=required("peer");
     if(config.contains("port"))nc.bind_port=port(config["port"]);if(config.contains("peer_port"))nc.peer_port=port(config["peer_port"]);
@@ -172,8 +191,18 @@ int main(int argc,char** argv) {try {
     // Local capture/listening and hardware callback targets remain independent.
     AdaptiveAudioRing<8192> networkMicrophone{4800};
     std::atomic<bool> microphoneBlocked{true},listeningBlocked{true};
+    std::atomic<size_t> testToneFrames{0};
+    size_t tonePosition=0;
     AudioStream playback,microphone,listen,micSink;
-    playback.open(playbackId,true,[&](float* p,size_t n){playbackIn.push(p,n);listeningMixer.pushLocal(p,n);});
+    auto capturePlayback=[&](float*p,size_t frames){
+        if(testToneFrames.load(std::memory_order_relaxed)==0){playbackIn.push(p,frames);listeningMixer.pushLocal(p,frames);return;}
+        std::array<float,480> scratch{};
+        for(size_t at=0;at<frames;){auto n=std::min(size_t(240),frames-at);std::copy_n(p+at*2,n*2,scratch.data());
+            for(size_t i=0;i<n;++i){auto remaining=testToneFrames.load(std::memory_order_relaxed);if(remaining){float fade=std::min(1.f,float(remaining)/480.f);float tone=.04f*fade*std::sin(6.283185307179586*440.*double(tonePosition++)/48000.);scratch[2*i]+=tone;scratch[2*i+1]+=tone;testToneFrames.fetch_sub(1,std::memory_order_relaxed);}else tonePosition=0;}
+            playbackIn.push(scratch.data(),n);listeningMixer.pushLocal(scratch.data(),n);at+=n;
+        }
+    };
+    playback.open(playbackId,true,capturePlayback);
     micSink.open(micOutputId,false,[&](float* p,size_t n){micOut.pop(p,n);if(microphoneBlocked.load())std::fill(p,p+n*2,0.f);});
     playback.start();micSink.start();
     // A receive burst may contain 16 packets after an 80 ms Wi-Fi pause.
@@ -181,6 +210,7 @@ int main(int argc,char** argv) {try {
     std::array<float,480> lp{},lm{},rm{},localMic{},remoteMic{},txp{},txm{};
     std::array<int16_t,480> wire{};
     uint64_t tick=0,revision=0,remoteRevision=0,request=0,appliedRequest=0,generation=0,nextSampleTime=0,playbackDiscontinuities=0,microphoneDiscontinuities=0;
+    float playbackLevel=0,microphoneLevel=0,deliveryLevel=0,receivedMicLevel=0;
     std::map<std::string,float> pending;
     bool wasReady=false,synchronized=false,run=true,previousMicBlocked=true,previousRemoteMicEnabled=false;
     Settings previous=settings;Commands commands;
@@ -215,6 +245,7 @@ int main(int argc,char** argv) {try {
         nextSampleTime=sampleTime+240;
         commands.poll([&](const std::string& line){
             if(line=="quit"){run=false;return;}
+            if(line=="test_tone"){testToneFrames.store(96000,std::memory_order_relaxed);return;}
             Settings candidate=settings;std::map<std::string,float> changes;
             if(!control::parse(candidate,line,&changes)){std::cerr<<"Ignored invalid command\n";return;}
             if(local==Device::Windows){settings=candidate;++revision;}
@@ -245,7 +276,7 @@ int main(int argc,char** argv) {try {
         const bool ready=network.ready();
         if(!ready&&wasReady)resetRemote();wasReady=ready;
         if(!playback.running()&&began>=retryPlayback){
-            try {playback.close();playbackIn.discard();listeningMixer.requestReset(ListeningMixer::Local);playback.open(playbackId,true,[&](float* p,size_t n){playbackIn.push(p,n);listeningMixer.pushLocal(p,n);});playback.start();}
+            try {playback.close();playbackIn.discard();listeningMixer.requestReset(ListeningMixer::Local);playback.open(playbackId,true,capturePlayback);playback.start();}
             catch(const std::exception& e){playback.close();std::cerr<<"Playback source unavailable: "<<e.what()<<'\n';retryPlayback=began+std::chrono::seconds(1);}
         }
         resumeMicSink();
@@ -333,6 +364,8 @@ int main(int argc,char** argv) {try {
         engine.setSettings(effective);listeningMixer.setSettings(effective);
         engine.process({lp.data(),nullptr,lm.data(),rm.data()},{nullptr,localMic.data(),remoteMic.data(),txp.data(),txm.data()},240);
         micOut.push(localMic.data(),240);
+        auto level=[](const auto&samples){double sum=0;for(float x:samples)sum+=double(x)*x;return float(std::min(1.,std::sqrt(sum/samples.size())));};
+        playbackLevel=std::max(playbackLevel,level(lp));microphoneLevel=std::max(microphoneLevel,level(lm));deliveryLevel=std::max(deliveryLevel,level(localMic));receivedMicLevel=std::max(receivedMicLevel,level(rm));
         listeningBlocked=effective.globalDeafen;microphoneBlocked=micBlocked;
         auto send=[&](net::Stream stream,const std::array<float,480>& audio){
             for(size_t i=0;i<480;++i)wire[i]=static_cast<int16_t>(std::clamp(audio[i],-1.f,0.999969f)*32768.f);
@@ -349,7 +382,9 @@ int main(int argc,char** argv) {try {
                     <<",\""<<prefix<<"_volume\":"<<r.volume<<",\""<<prefix<<"_silence\":"<<(r.silenced?"true":"false");}
             std::cout<<",\"buffer_frames\":"<<hardwareBufferFrames<<",\"listening_buffer_frames\":"<<listeningMixer.targetFrames()<<",\"playback_ready\":"<<(playback.running()?"true":"false")<<",\"mic_sink_ready\":"<<(micSink.running()?"true":"false")
                 <<",\"headphones_ready\":"<<(listen.running()?"true":"false")<<",\"microphone_ready\":"<<(microphone.running()?"true":"false")
+                <<",\"microphone_level\":"<<microphoneLevel<<",\"playback_level\":"<<playbackLevel<<",\"microphone_delivery_level\":"<<deliveryLevel<<",\"received_microphone_level\":"<<receivedMicLevel
                 <<",\"rejected\":"<<network.rejected_packets()<<",\"drops\":"<<playbackIn.dropped.load()<<",\"settings\":"<<quote(control::snapshot(settings))<<"}"<<std::endl;
+            playbackLevel=microphoneLevel=deliveryLevel=receivedMicLevel=0;
         }
         ++tick;next+=std::chrono::milliseconds(5);
         if(next<began-std::chrono::milliseconds(20))next=began+std::chrono::milliseconds(5);

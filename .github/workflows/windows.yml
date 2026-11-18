@@ -14,10 +14,12 @@ jobs:
         shell: pwsh
         run: |
           & "$env:VCPKG_INSTALLATION_ROOT/vcpkg.exe" install libsodium:x64-windows-static opus:x64-windows-static
+      - name: Build pinned room cryptography
+        run: python scripts/bootstrap-room-crypto.py room-crypto
       - name: Configure
         shell: pwsh
         run: |
-          cmake -S . -B build -A x64 "-DSODIUM_ROOT=$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows-static" '-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded$<$<CONFIG:Debug>:Debug>' -DCMAKE_CXX_FLAGS=/DSODIUM_STATIC
+          cmake -S . -B build -A x64 "-DBORINGSSL_ROOT=$PWD/room-crypto" "-DSODIUM_ROOT=$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows-static" '-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded$<$<CONFIG:Debug>:Debug>' -DCMAKE_CXX_FLAGS=/DSODIUM_STATIC
       - name: Build
         run: cmake --build build --config Release --parallel
       - name: Test routing and encrypted loopback audio
@@ -28,3 +30,4 @@ jobs:
           path: |
             build/Release/audiobridge.exe
             build/Release/AudioBridgeApp.exe
+            build/Release/bridge-agent.exe

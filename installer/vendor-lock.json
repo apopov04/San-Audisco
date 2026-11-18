@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "private_only": true,
+  "components": {
+    "blackhole2": {
+      "filename": "BlackHole2ch-0.7.1.pkg",
+      "version": "0.7.1",
+      "sha256": "57b540f27a3e29c37e310e01bee0fdfab76733087e47f997ef9dccf851400dcf",
+      "size": 103021,
+      "source": "https://existential.audio/blackhole/",
+      "publisher": "Q5C99V536K"
+    },
+    "blackhole16": {
+      "filename": "BlackHole16ch-0.7.1.pkg",
+      "version": "0.7.1",
+      "sha256": "57254e2f76cd40db7f3f715238b1a2cb2bd08819d38abf4087f2944f71a3641a",
+      "size": 103302,
+      "source": "https://existential.audio/blackhole/",
+      "publisher": "Q5C99V536K"
+    },
+    "vbcable": {
+      "filename": "VBCABLE_Driver_Pack45.zip",
+      "version": "45",
+      "sha256": "b950e39f01af1d04ea623c8f6d8eb9b6ea5c477c637295fabf20631c85116bfb",
+      "size": 1318877,
+      "source": "https://download.vb-audio.com/Download_CABLE/VBCABLE_Driver_Pack45.zip",
+      "publisher": "VB-Audio"
+    },
+    "hifi": {
+      "filename": "HiFiCableAsioBridgeSetup_v1007.zip",
+      "version": "1.0.0.7",
+      "sha256": "3ecf204bfd8579d36bb918f9856eb1eaddd49c75146f5e8a8f59dcb8375ae89a",
+      "size": 4006986,
+      "source": "https://download.vb-audio.com/Download_CABLE/HiFiCableAsioBridgeSetup_v1007.zip",
+      "publisher": "VB-Audio"
+    }
+  }
+}
