@@ -191,8 +191,6 @@ struct DeviceRouteView:View {
  private var online:Bool {model.isOnline(device)}
  private var controlsDisabled:Bool {!online || model.busy}
  private var prefix:String {device.roleValue==0 ? "win":"mac"}
- private var isHub:Bool {device.roleValue==Int(model.number("primary"))}
- private var isMic:Bool {device.roleValue==Int(model.number("mic_source"))}
  private func route(_ key:String,_ current:String)->Binding<String> {Binding(get:{current},set:{model.send(["command":"configure","device_id":device.id,key:$0])})}
  private func select(_ title:String,key:String,current:String,input:Bool,virtual:Bool=false)->some View {
   VStack(alignment:.leading,spacing:5){
@@ -201,14 +199,14 @@ struct DeviceRouteView:View {
     Text("Choose \(title.lowercased())…").tag("")
     if !current.isEmpty && !device.audio.contains(where:{$0.id==current}) {Text("Saved device · unavailable").tag(current)}
     ForEach(device.audio.filter{(input ? $0.inputs>0 : $0.outputs>0) && $0.isVirtual==virtual}){Text($0.name).tag($0.id)}
-   }.labelsHidden().frame(maxWidth:.infinity).disabled(controlsDisabled)
+   }.labelsHidden().frame(minWidth:0,maxWidth:.infinity).clipped().disabled(controlsDisabled)
   }
  }
  var body:some View {VStack(alignment:.leading,spacing:14){
-  select("Headphones",key:"headphones_output",current:device.headphones,input:false)
-  HStack{Image(systemName:isHub ? "headphones":"arrow.right").foregroundColor(.secondary);if isHub{Text("Hub · listen here").font(.callout)}else{Button("Use as Hub"){model.control("primary",Double(device.roleValue))}.disabled(controlsDisabled || !model.connected || !device.audio.contains(where:{$0.id==device.headphones && $0.outputs>0 && !$0.isVirtual}))}}.frame(height:28,alignment:.leading)
-  select("Microphone",key:"physical_microphone",current:device.microphone,input:true)
-  HStack{Image(systemName:isMic ? "mic.fill":"mic").foregroundColor(.secondary);if isMic{Text("Microphone source for both computers").font(.callout)}else{Button("Use this microphone"){model.control("mic_source",Double(device.roleValue))}.disabled(controlsDisabled || !model.connected || !device.audio.contains(where:{$0.id==device.microphone && $0.inputs>0 && !$0.isVirtual}))}}.frame(height:28,alignment:.leading)
+  HStack(alignment:.top,spacing:12){
+   select("Input",key:"physical_microphone",current:device.microphone,input:true).frame(minWidth:0,maxWidth:.infinity)
+   select("Output",key:"headphones_output",current:device.headphones,input:false).frame(minWidth:0,maxWidth:.infinity)
+  }
   Divider()
   VStack(alignment:.leading,spacing:6){HStack{Text("Audio from this computer");Spacer();Text("\(Int(model.number(prefix+"_volume",default:1)*100))%").monospacedDigit()};Slider(value:model.scalar(prefix+"_volume",default:1),in:0...1).accessibilityLabel("\(device.name) listening volume")}.disabled(controlsDisabled || !model.connected)
   HStack{Toggle("Mute mic here",isOn:model.toggle(prefix+"_mute")).help("Stop your voice reaching apps on \(device.name).");Spacer();Toggle("Deafen",isOn:model.toggle(prefix+"_deafen")).help("Stop this computer’s audio and microphone delivery.")}.disabled(controlsDisabled || !model.connected)
@@ -264,7 +262,7 @@ struct AudioChecksView:View {
     }
     Button("Play test sound from \(d.name)"){m.send(["command":"test_tone","device_id":d.id])}.disabled(m.busy || !m.running || !d.online)
    }.padding(8)}}
-   Text("Test sounds play for two seconds through the Hub headphones.").font(.caption).foregroundColor(.secondary)
+   Text("Test sounds play for two seconds through the Output Hub.").font(.caption).foregroundColor(.secondary)
    if !m.diagnosticMessage.isEmpty {Text(m.diagnosticMessage).textSelection(.enabled)}
    Divider();Text("App audio settings").font(.headline)
    Text("Discord on Mac\nSpeaker: BlackHole 2ch · Microphone: BlackHole 16ch")
@@ -282,9 +280,22 @@ struct ContentView:View {
  private func online(_ d:RoomDevice?)->Bool {guard let d=d else{return false};return m.isOnline(d)}
  private var linkLabel:String {!m.available ? "App unavailable":m.connected ? "Connected":m.paired ? "Reconnecting…":"Not connected"}
  private var micBlocked:Bool {m.number("mute",default:1) != 0 || m.number("deafen") != 0 || (m.diagnostics["muted"] as? Bool == true)}
+ @ViewBuilder private func hubChoice(_ role:Int,input:Bool)->some View {
+  let key=input ? "mic_source":"primary"
+  let title=input ? "Input Hub":"Output Hub"
+  let selected=Int(m.number(key,default:input ? 1:0))==role
+  let d=device(role)
+  let hasEndpoint=d?.audio.contains(where:{a in !a.isVirtual && (input ? (a.id==d?.microphone && a.inputs>0):(a.id==d?.headphones && a.outputs>0))}) ?? false
+  if selected && m.paired {
+   Label(title,systemImage:"checkmark").font(.caption).fontWeight(.medium).foregroundColor(online(d) ? .blue:.secondary).frame(maxWidth:.infinity)
+  }else{
+   Button("Use as \(title)"){m.control(key,Double(role))}.controlSize(.small).disabled(!online(d) || !m.connected || m.busy || !hasEndpoint).frame(maxWidth:.infinity)
+  }
+ }
  @ViewBuilder private func computer(_ role:Int)->some View {
   let d=device(role);let ready=online(d)
-  VStack(spacing:9){
+  VStack(spacing:12){
+   HStack(spacing:8){hubChoice(role,input:true);hubChoice(role,input:false)}.frame(height:28)
    Image(systemName:role==0 ? "desktopcomputer":"laptopcomputer").font(.system(size:68,weight:.light)).foregroundColor(ready ? .blue:.secondary).frame(height:84).accessibilityHidden(true)
    Text(d?.name ?? (role==0 ? "Windows PC":"MacBook")).font(.title3).fontWeight(.semibold).lineLimit(2)
    HStack(spacing:5){Circle().fill(ready ? Color.blue:Color.secondary).frame(width:6,height:6);Text(ready ? ((d?.id==m.localID) ? "This computer · available":"Connected"):(m.paired ? "Offline":"Not connected"))}.font(.caption).foregroundColor(.secondary)
@@ -292,7 +303,7 @@ struct ContentView:View {
  }
  @ViewBuilder private func routes(_ role:Int)->some View {
   if let d=device(role){DeviceRouteView(model:m,device:d)}else{
-   VStack(alignment:.leading,spacing:16){Text("Connect this computer to choose its headphones and microphone.").foregroundColor(.secondary);Button("Connect a computer"){showRoom=true}.disabled(!m.available)}.frame(maxWidth:.infinity,alignment:.leading)
+   VStack(alignment:.leading,spacing:16){Text("Connect this computer to choose its input and output.").foregroundColor(.secondary);Button("Connect a computer"){showRoom=true}.disabled(!m.available)}.frame(maxWidth:.infinity,alignment:.leading)
   }
  }
  var body:some View {VStack(alignment:.leading,spacing:0){
@@ -300,7 +311,7 @@ struct ContentView:View {
   ScrollView{VStack(spacing:18){
    HStack(alignment:.center,spacing:20){computer(0);VStack(spacing:8){HStack(spacing:6){Rectangle().fill(m.connected && m.available ? Color.blue:Color.secondary.opacity(0.4)).frame(height:2);Image(systemName:m.connected && m.available ? "link":"xmark").foregroundColor(m.connected && m.available ? .blue:.secondary);Rectangle().fill(m.connected && m.available ? Color.blue:Color.secondary.opacity(0.4)).frame(height:2)};Text(linkLabel).font(.caption).foregroundColor(.secondary)}.frame(width:120);computer(1)}
    HStack(alignment:.top,spacing:32){routes(0);Divider();routes(1)}
-   Text("Connect your headphones to the Hub in Bluetooth settings. Your selected microphone can serve both computers.").font(.caption).foregroundColor(.secondary).frame(maxWidth:.infinity,alignment:.leading)
+   Text("Connect headphones to the Output Hub. The Input Hub supplies your microphone to both computers.").font(.caption).foregroundColor(.secondary).frame(maxWidth:.infinity,alignment:.leading)
   }.padding(.vertical,6)}
   Divider().padding(.vertical,16)
   VStack(alignment:.leading,spacing:12){

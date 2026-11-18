@@ -54,7 +54,7 @@ def build_mac(args, lock, scratch):
     rows = [{'path':p.relative_to(resources).as_posix(), 'sha256':hashlib.sha256(p.read_bytes()).hexdigest()} for p in files_under(resources)]
     write_manifest(resources / 'manifest.json', {'schema':1, 'private_only':True, 'files':rows})
     with (contents / 'Info.plist').open('wb') as f:
-        plistlib.dump({'CFBundleIdentifier':'local.audiobridge.setup', 'CFBundleExecutable':'AudioBridgeSetup', 'CFBundleName':'AudioBridge Setup', 'CFBundleVersion':'3', 'CFBundleShortVersionString':'0.2.1', 'LSMinimumSystemVersion':'13.0', 'NSHighResolutionCapable':True}, f)
+        plistlib.dump({'CFBundleIdentifier':'local.audiobridge.setup', 'CFBundleExecutable':'AudioBridgeSetup', 'CFBundleName':'AudioBridge Setup', 'CFBundleVersion':'4', 'CFBundleShortVersionString':'0.2.2', 'LSMinimumSystemVersion':'13.0', 'NSHighResolutionCapable':True}, f)
     run(['clang++', '-target', 'arm64-apple-macos13.0', '-std=c++20', '-O2', '-c', ROOT/'installer/setup_policy.cpp', '-o',scratch/'setup_policy.o'])
     run(['swiftc', '-target', 'arm64-apple-macos13.0', '-O', '-parse-as-library', ROOT / 'installer/macos/Setup.swift', scratch/'setup_policy.o', '-o', contents / 'MacOS/AudioBridgeSetup', '-framework', 'SwiftUI', '-framework', 'AppKit', '-framework', 'CoreAudio', '-framework', 'CryptoKit'])
     run(['/usr/bin/codesign', '--force', '--sign', '-', setup])

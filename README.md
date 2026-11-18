@@ -1,9 +1,10 @@
-# AudioBridge v0.2.1
+# AudioBridge v0.2.2
 
 AudioBridge mixes audio from a Windows PC and a Mac into headphones connected to
 one computer, and sends a selected physical microphone to voice apps on both.
-The computer with the headphones is the **Hub**; the other is the **Satellite**.
-Microphone source is independent of those roles.
+The **Output Hub** plays the mixed audio through its selected output. The
+**Input Hub** supplies its selected microphone to both computers. These roles
+are independent and can belong to the same computer or different computers.
 
 This private release adds rooms, synchronized setup and controls, background
 operation, and installers containing the existing audio components. It retains
@@ -23,9 +24,9 @@ acceptance still required on the actual pair. See [v0.2 validation](docs/V02_VAL
    expire after five minutes. Pairing is remembered; no key files or normal IP
    entry are required. If broadcast discovery fails, use the creator's IPv4
    address in the optional address field.
-3. For the current setup, select **Windows PC as Hub**, the **AirPods stereo
-   output as headphones**, and the **MacBook built-in microphone** as microphone
-   source. Virtual routes are detected automatically where unambiguous. Device
+3. For the current setup, select **Windows PC as Output Hub** with **AirPods stereo**
+   as its Output, and **MacBook as Input Hub** with its **built-in microphone**
+   as its Input. Virtual routes are detected automatically where unambiguous. Device
    selections for either computer can be changed from either interface.
 4. Configure Discord and Deadlock once using the table below. Grant the Mac's
    microphone/local-network permissions and the Windows private-network firewall
@@ -44,7 +45,7 @@ end of each microphone cable. Keep the playback and microphone cables separate.
 Do not enable Windows “Listen to this device.” Hi-Fi Cable's playback and recording
 endpoints must both use stereo 48,000 Hz; setup detects mismatches and guides the
 required Sound Settings step. AirPods remain paired through OS Bluetooth settings.
-Selecting a new Hub does not automatically move their Bluetooth connection.
+Selecting a new Output Hub does not automatically move their Bluetooth connection.
 
 ## Controls and background operation
 
@@ -52,8 +53,10 @@ Both interfaces open with a two-computer overview. Blue indicates an available
 computer; gray indicates offline or unavailable, with matching text labels. The
 line between them shows room connectivity, separately from whether audio is running.
 
-Choose Headphones and Microphone directly beneath each computer. **Use as Hub**
-chooses where you listen; **Use this microphone** chooses the shared voice source.
+Choose **Input** and **Output** side by side beneath each computer. Above its
+icon, **Use as Input Hub** chooses the shared microphone source and **Use as
+Output Hub** chooses where you listen. Active roles show **Input Hub** or
+**Output Hub**; selecting one does not change the other.
 Physical selectors exclude virtual cables. Each computer has its own volume,
 microphone mute and deafen controls. Overall volume and global mute/deafen stay
 within reach. Room pairing, audio checks and advanced cables are secondary controls.

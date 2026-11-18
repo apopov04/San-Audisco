@@ -35,3 +35,12 @@ limited to fit the work area. Per-monitor DPI transitions are not implemented.
 
 Native Windows rendering at 150% DPI, real-device listening and installation
 acceptance remain outstanding. Wine GUI tests do not establish those results.
+
+## v0.2.2 follow-up
+
+Input Hub and Output Hub are independently selected above each computer icon.
+The selected role is labeled Input Hub/Output Hub; the other computer offers
+Use as Input Hub/Use as Output Hub. Input and Output device dropdowns are side
+by side beneath the icon. Selecting the current Windows hub is a no-op, avoiding
+an unnecessary role command and protective mute. The native Windows fixture
+checks role placement, dropdown alignment, independent role changes and labels.

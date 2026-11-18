@@ -48,6 +48,14 @@ try:
  assert u.SendMessageW(get(703),0x146,0,0)==2,'Physical headphones list must exclude virtual cable'
  assert u.SendMessageW(get(705),0x146,0,0)==2,'Physical microphone list must exclude virtual cable'
  assert 'Offline' in value(get(721)),'Peer should be offline before room connection'
+ # Independent hub selectors sit above the icons; Input/Output are adjacent.
+ def bounds(i):
+  r=w.RECT();assert u.GetWindowRect(get(i),ctypes.byref(r));return r
+ for base in (700,720):
+  assert bounds(base+2).bottom<=bounds(760).top and bounds(base+4).bottom<=bounds(760).top
+  assert bounds(base+5).top==bounds(base+3).top and bounds(base+5).right<=bounds(base+3).left
+  assert value(get(base+6))=='Input' and value(get(base+7))=='Output'
+
  page(1)
  click(203);wait(lambda:seen('create'),'Create request missing')
  click(207);wait(lambda:u.SendMessageW(get(206),0x146,0,0)==1,'Discovery results missing')
@@ -71,6 +79,11 @@ try:
  assert seen('control')[-1]['key']=='primary' and seen('control')[-1]['value']==1
  click(704);wait(lambda:seen('control')[-1]['key']=='mic_source','Per-device mic source request missing')
  assert seen('control')[-1]['value']==0
+ wait(lambda:value(get(722))=='Output Hub' and value(get(704))=='Input Hub','Independent role labels not updated')
+ assert value(get(702))=='Use as Output Hub' and value(get(724))=='Use as Input Hub'
+ before=len(seen('control'));click(722);time.sleep(.15)
+ assert len(seen('control'))==before,'Clicking the current Output Hub must not send a role change'
+
  page(3)
  click(501);wait(lambda:'Fixture check complete' in value(get(502)),'Readiness checks not rendered')
  assert u.SendMessageW(get(510),0x408,0,0)>0,'Local signal meter missing'
