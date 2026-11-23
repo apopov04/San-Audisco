@@ -23,6 +23,8 @@
 
 Works with **Windows + Mac, Windows + Windows, or Mac + Mac** on the same Wi-Fi or local network. Use headphones or speakers already connected to either computer.
 
+You might ask why I built this. The problem is my PC is running old hardware, and couldn't run Deadlock and Discord at the same time, a problem which is only exacerbated by the fact that my old headphones died and I only had AirPods Pro 3 (My PC also doesn't have speakers). AirPods also have poor audio quality when on handsfree mode (when it relays input and output), so I also had to hear bad quality game audio. This software is the solution to all of these issues.
+
 ## How it works
 
 1. Open San Audisco on both computers. **Create a room** on one and enter its code on the other.
