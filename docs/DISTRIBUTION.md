@@ -1,8 +1,8 @@
 # Downloads, installation, and distribution
 
 San Audisco v0.4.0 is a first GitHub **preview**, not a store release or a
-certified installer. The repository is private. Packaging does not change its
-visibility or grant rights to redistribute third-party software.
+certified installer. The source repository is public under MIT. That does not
+grant rights to redistribute third-party software.
 
 ## Choose the appropriate package
 
@@ -63,7 +63,7 @@ historical tests; review compatibility before changing an existing working setup
 On both computers, open San Audisco, create/join a room, select the Input and
 Output Hubs, and run Autoconfigure. Start audio and explicitly unmute when ready.
 Applications with their own device overrides may need the choices shown in
-[README](../README.md).
+[setup guide](GETTING_STARTED.md).
 
 ## Assemble a release without private vendor payloads
 
@@ -113,7 +113,7 @@ The app-only route lets users obtain those components directly from their
 vendors. Third-party library notices remain in the app packages. San Audisco's
 own source uses the [MIT license](../LICENSE), included in every release archive.
 That grant does not replace the separate terms for third-party components or
-vendor installers. The repository's access settings remain private.
+vendor installers. The source repository is public; vendor-bundled personal installers remain private.
 
 Private repository access is not a substitute for redistribution permission.
 The local full bundles were made for the owner's machines; sharing them with
