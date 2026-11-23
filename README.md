@@ -1,5 +1,9 @@
 # San Audisco v0.4.0 preview
 
+San Audisco's own source is available under the [MIT license](LICENSE).
+Third-party libraries and separately installed audio drivers retain their own
+licenses; see [distribution](docs/DISTRIBUTION.md) before bundling vendor installers.
+
 San Audisco (formerly AudioBridge) mixes audio from two Windows or Mac computers through headphones or speakers connected to
 one computer, and sends a selected physical microphone to voice apps on both.
 The **Output Hub** plays the mixed audio through its selected output. The

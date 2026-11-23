@@ -111,8 +111,9 @@ Primary sources checked November 23, 2026:
 
 The app-only route lets users obtain those components directly from their
 vendors. Third-party library notices remain in the app packages. San Audisco's
-own source-license choice is separate from those dependencies; repository access
-alone is not a statement that the project is open source.
+own source uses the [MIT license](../LICENSE), included in every release archive.
+That grant does not replace the separate terms for third-party components or
+vendor installers. The repository's access settings remain private.
 
 Private repository access is not a substitute for redistribution permission.
 The local full bundles were made for the owner's machines; sharing them with
