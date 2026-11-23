@@ -19,7 +19,7 @@ jobs:
       - name: Configure
         shell: pwsh
         run: |
-          cmake -S . -B build -A x64 "-DBORINGSSL_ROOT=$PWD/room-crypto" "-DSODIUM_ROOT=$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows-static" '-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded$<$<CONFIG:Debug>:Debug>' -DCMAKE_CXX_FLAGS=/DSODIUM_STATIC
+          cmake -S . -B build -A x64 "-DBORINGSSL_ROOT=$PWD/room-crypto" "-DSODIUM_ROOT=$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows-static" '-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded$<$<CONFIG:Debug>:Debug>'
       - name: Build
         run: cmake --build build --config Release --parallel
       - name: Test routing and encrypted loopback audio

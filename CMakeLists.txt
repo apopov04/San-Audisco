@@ -10,8 +10,9 @@ endif()
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if(MSVC)
- # UI and protocol strings are UTF-8, independently of the build host code page.
- add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/utf-8>)
+ # RAII cleanup and JSON error handling require exception unwinding. UI and
+ # protocol strings must also be UTF-8 regardless of the build host code page.
+ add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/EHsc> $<$<COMPILE_LANGUAGE:CXX>:/utf-8>)
 endif()
 option(BRIDGE_SANITIZE "Enable address/undefined sanitizers" OFF)
 if(BRIDGE_SANITIZE AND NOT MSVC)

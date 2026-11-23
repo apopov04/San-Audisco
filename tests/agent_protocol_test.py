@@ -71,12 +71,16 @@ with tempfile.TemporaryDirectory(prefix='san-protocol-') as temp:
         for key in ('epoch','revision'):
             for bad in (-1,0,1.5,2**64-1):
                 mutations.append(lambda j,k=key,v=bad:j['shared'].update({k:v}))
-        for mutate in mutations:
+        for mutation_index,mutate in enumerate(mutations):
             j=json.loads(json.dumps(base));mutate(j)
             assert a.call('test_peer_message',message=j)['ok']
             time.sleep(.1)
             assert b.process.poll() is None,'Malformed peer state crashed agent'
-            state=b.state();assert state['settings']==original and not state['running'],'Malformed update changed room state'
+            try:
+                state=b.state()
+            except AssertionError as error:
+                raise AssertionError(f'Malformed peer update {mutation_index}: {error}') from error
+            assert state['settings']==original and not state['running'],'Malformed update changed room state'
         assert b.call('control',key='master',value=.72)['ok']
         wait(lambda:abs(a.state()['settings']['master']-.72)<.001,'valid control after invalid frames')
         print('PASS malformed diagnostics, route metadata and counter ranges rejected without poisoning state')

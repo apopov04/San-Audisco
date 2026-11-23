@@ -26,12 +26,16 @@ int main(int argc, char** argv) {
 #ifndef _WIN32
     signal(SIGPIPE, SIG_IGN); // Same process policy as the agent executable.
 #endif
+    const char* phase = "construct";
+    int cycle = 0;
     try {
         bridge::agent::Child child;
         auto executable = bridge::agent::executable_path();
-        for (int cycle = 0; cycle < 3; ++cycle) {
+        for (; cycle < 3; ++cycle) {
+            phase = "start stalled child";
             child.start(executable, {"--hang"});
             auto began = Clock::now();
+            phase = "fill stalled child command queue";
             bool full = false;
             for (int i = 0; i < 256; ++i) {
                 try { child.send(std::string(4095, 'x') + "\n"); }
@@ -40,13 +44,17 @@ int main(int argc, char** argv) {
             require(full, "Stalled child did not apply bounded backpressure");
             require(Clock::now() - began < std::chrono::milliseconds(500),
                     "Sending to stalled child blocked the agent");
+            phase = "stop stalled child";
             began = Clock::now();
             child.stop();
             require(Clock::now() - began < std::chrono::milliseconds(2500),
                     "Stopping stalled child exceeded deadline");
             require(!child.running(), "Stopped child remains running");
+            phase = "restart echo child";
             child.start(executable, {"--echo"});
+            phase = "send echo command";
             child.send("restarted\n");
+            phase = "read echo response";
             std::string output;
             auto deadline = Clock::now() + std::chrono::seconds(3);
             do {
@@ -56,12 +64,13 @@ int main(int argc, char** argv) {
             } while (Clock::now() < deadline);
             require(output.find("restarted") != std::string::npos,
                     "Restarted child did not receive command");
+            phase = "stop echo child";
             child.stop();
         }
         std::cout << "PASS bounded child backpressure, forced stop, and restart\n";
         return 0;
     } catch (const std::exception& error) {
-        std::cerr << "FAIL " << error.what() << '\n';
+        std::cerr << "FAIL cycle " << cycle << " (" << phase << "): " << error.what() << '\n';
         return 1;
     }
 }

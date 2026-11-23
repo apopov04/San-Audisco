@@ -24,7 +24,10 @@ class Instance:
     def call(self,command,**kw):
         p=subprocess.run([str(agent),'request',*self.args],input=json.dumps({'command':command,**kw})+'\n',text=True,capture_output=True,timeout=8)
         return json.loads(p.stdout)
-    def state(self):return self.call('status')['state']
+    def state(self):
+        reply=self.call('status')
+        assert reply.get('ok') and 'state' in reply,f'Agent status failed: {reply}'
+        return reply['state']
     def close(self):
         try:self.call('forget')
         except Exception:pass

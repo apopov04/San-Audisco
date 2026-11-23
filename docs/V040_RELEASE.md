@@ -20,6 +20,12 @@ and an app-only download. It does not add new audio-routing features.
   marked old validation reports as historical.
 - Fixed an MSVC Windows macro collision in the transport build and made the
   installer-policy checks run in optimized Release builds.
+- Restored MSVC exception unwinding in CI so expected errors release locks and
+  malformed JSON can be rejected without aborting. Moved large mixer-test
+  fixtures to the heap to fit Windows' default stack, and added clearer failure
+  context to child-process and protocol checks.
+- Made Windows source-text encoding explicit and split the Swift bridge drawing
+  expression to compile reliably with the macOS 15 runner's compiler.
 
 ## Release boundaries
 
