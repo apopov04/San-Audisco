@@ -137,20 +137,50 @@ def main():
             win.command('slot0_volume 1')
             win.command('mute 0')
             wait(lambda: not win.state().get('muted', True) and not mac.state().get('muted', True), 'Unmute failed')
-            baseline = time.time()+.4
-            time.sleep(1.5)
+            sinks = ((win, 'win-headphones'), (win, 'win-mic-sink'), (mac, 'mac-mic-sink'))
+            baseline_samples = {}
+            baseline_after = time.time()+.2
+
+            def audible_baseline():
+                # Unmuted telemetry acknowledges controls, not filled audio
+                # reservoirs. Require current, completed PCM windows on BOTH
+                # microphone sinks before testing tone isolation.
+                now = time.time()
+                current = {sink: peer.metrics(sink, max(baseline_after, now-.8), now)[-6:]
+                           for peer, sink in sinks}
+                if any(len(rows) < 6 for rows in current.values()):
+                    return False
+                if any(any(row['tones'][3] <= .06 for row in current[sink])
+                       for sink in ('win-mic-sink', 'mac-mic-sink')):
+                    return False
+                baseline_samples.update(current)
+                return True
+
+            wait(audible_baseline, 'Both microphone routes did not produce a stable audible baseline')
             tone_start = time.time()
             win.command('test_tone')
-            time.sleep(1.7)
-            before = unexplained_rms(win.metrics('win-headphones', baseline, tone_start))
-            during = unexplained_rms(win.metrics('win-headphones', tone_start+.3, tone_start+1.6))
+            tone_end = tone_start+1.6
+            # The logger stamps windows when they finish. Wait for each sink
+            # to finish the interval; a fixed sleep is not a logger barrier.
+            wait(lambda: all(peer.metrics(sink, tone_end, time.time()) for peer, sink in sinks),
+                 'Tone measurement windows did not complete', seconds=5)
+            during_samples = {sink: peer.metrics(sink, tone_start+.3, tone_end) for peer, sink in sinks}
+            before = unexplained_rms(baseline_samples['win-headphones'])
+            during = unexplained_rms(during_samples['win-headphones'])
             assert during > before+.012, ('Diagnostic tone absent from headphones', before, during)
-            for peer, sink in ((win, 'win-mic-sink'), (mac, 'mac-mic-sink')):
-                prior = unexplained_rms(peer.metrics(sink, baseline, tone_start))
-                tone = unexplained_rms(peer.metrics(sink, tone_start+.3, tone_start+1.6))
+            for _, sink in sinks[1:]:
+                prior = unexplained_rms(baseline_samples[sink])
+                tone = unexplained_rms(during_samples[sink])
                 assert tone < max(.012, prior+.006), ('Diagnostic tone leaked into microphone', sink, prior, tone)
-                assert statistics.median(m['tones'][3] for m in peer.metrics(sink, tone_start+.3, tone_start+1.6)) > .06, 'Isolation tested with inaudible microphone'
+                microphone = statistics.median(m['tones'][3] for m in during_samples[sink])
+                assert microphone > .06, ('Isolation tested with inaudible microphone', sink, microphone)
             print('PASS diagnostic tone reaches headphones without entering either unmuted microphone route', flush=True)
+        except Exception:
+            for peer in peers:
+                print('DIAGNOSTIC', peer.log.name, peer.state(), peer.errors[-8:], file=sys.stderr)
+                if peer.log.exists():
+                    print('\n'.join(peer.log.read_text().splitlines()[-18:]), file=sys.stderr)
+            raise
         finally:
             for peer in peers:
                 peer.stop()

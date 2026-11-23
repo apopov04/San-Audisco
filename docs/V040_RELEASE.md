@@ -26,6 +26,9 @@ and an app-only download. It does not add new audio-routing features.
   context to child-process and protocol checks.
 - Made Windows source-text encoding explicit and split the Swift bridge drawing
   expression to compile reliably with the macOS 15 runner's compiler.
+- Replaced the tone-isolation test's fixed startup sleep with actual audible
+  microphone readiness and completed measurement windows. The isolation and
+  microphone-presence thresholds remain unchanged.
 
 ## Release boundaries
 
