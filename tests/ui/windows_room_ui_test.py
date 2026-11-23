@@ -58,6 +58,7 @@ try:
   if not events.exists():return []
   return [r for line in events.read_text().splitlines() if (r:=json.loads(line)).get('command')==command]
  wait(lambda:value(get(201))=='Test Windows','Initial state did not populate')
+ assert value(get(701))=='This computer \u00b7 available','Native UI source text was not compiled as Unicode'
  # Load the packaged resource locally: Wine cannot marshal a foreign class HICON.
  k=ctypes.WinDLL('kernel32',use_last_error=True)
  k.LoadLibraryExW.argtypes=[w.LPCWSTR,w.HANDLE,w.DWORD];k.LoadLibraryExW.restype=w.HMODULE
