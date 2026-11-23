@@ -34,7 +34,7 @@ and installed audio drivers. Use matching app versions on both computers.
 1. Obtain BlackHole **2ch and 16ch** from the
    [official BlackHole download page](https://existential.audio/blackhole/) if
    they are missing. Follow the vendor's installer and restart instructions.
-2. Extract `San Audisco-macOS-arm64.zip`. Put `San Audisco.app` in
+2. Extract `SanAudisco-macOS-arm64.zip`. Put `San Audisco.app` in
    `~/Applications/`, replacing the prior app only after it has quit.
 3. Open the app. Review any Gatekeeper message and grant microphone/local-network
    permissions when requested. This preview is ad-hoc signed and **not notarized**;
@@ -46,7 +46,7 @@ and installed audio drivers. Use matching app versions on both computers.
    [Hi-Fi Cable](https://vb-audio.com/Cable/index.htm#DownloadASIOBridge) from their
    official product pages if absent. Follow vendor instructions and any restart
    request. Existing usable drivers do not need to be reinstalled.
-2. Extract **all** files from `San Audisco-Windows-x64.zip` into a persistent
+2. Extract **all** files from `SanAudisco-Windows-x64.zip` into a persistent
    folder, preferably `%LOCALAPPDATA%\SanAudisco\app`. Keep the GUI, agent, and
    engine together; do not run the application from inside the ZIP.
 3. Launch `SanAudisco.exe`. This app-only archive does not create a Start Menu
@@ -71,9 +71,9 @@ Applications with their own device overrides may need the choices shown in
 `San Audisco.app` and a `windows/` directory with the three production executables.
 It creates exactly these artifacts:
 
-- `San Audisco-macOS-arm64.zip`
-- `San Audisco-Windows-x64.zip`
-- `San Audisco-source.zip`
+- `SanAudisco-macOS-arm64.zip`
+- `SanAudisco-Windows-x64.zip`
+- `SanAudisco-source.zip`
 - `BUILD_INFO.json`
 - `SHA256SUMS.txt`
 

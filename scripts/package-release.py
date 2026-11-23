@@ -19,8 +19,8 @@ import zipfile
 from release_metadata import release_metadata
 
 ROOT = Path(__file__).resolve().parents[1]
-ARCHIVES = ('San Audisco-Windows-x64.zip', 'San Audisco-source.zip',
-            'San Audisco-macOS-arm64.zip')
+ARCHIVES = ('SanAudisco-Windows-x64.zip', 'SanAudisco-source.zip',
+            'SanAudisco-macOS-arm64.zip')
 OUTPUTS = ('BUILD_INFO.json', *ARCHIVES, 'SHA256SUMS.txt')
 
 

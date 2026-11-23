@@ -97,18 +97,18 @@ class ReleaseBoundaries(unittest.TestCase):
         checksums = (self.dist / 'SHA256SUMS.txt').read_text()
         self.assertNotIn(private.name, checksums)
         self.assertEqual(private.read_bytes(), b'private vendor material')
-        with zipfile.ZipFile(self.dist / 'San Audisco-Windows-x64.zip') as archive:
+        with zipfile.ZipFile(self.dist / 'SanAudisco-Windows-x64.zip') as archive:
             names = archive.namelist()
             self.assertNotIn('runtime_fake.exe', names)
             self.assertIn('LICENSE', names)
             self.assertIn('licenses/opus.txt', names)
-        with zipfile.ZipFile(self.dist / 'San Audisco-source.zip') as archive:
+        with zipfile.ZipFile(self.dist / 'SanAudisco-source.zip') as archive:
             self.assertIn('San Audisco/src/main.cpp', archive.namelist())
             self.assertFalse(any('/dist/' in name for name in archive.namelist()))
         info = json.loads((self.dist / 'BUILD_INFO.json').read_text())
         self.assertFalse(info['source_dirty'])
         self.assertFalse(info['bundled_audio_drivers'])
-        with zipfile.ZipFile(self.dist / 'San Audisco-macOS-arm64.zip') as archive:
+        with zipfile.ZipFile(self.dist / 'SanAudisco-macOS-arm64.zip') as archive:
             self.assertIn('San Audisco.app/Contents/MacOS/SanAudisco', archive.namelist())
             self.assertIn('San Audisco.app/Contents/Resources/LICENSE', archive.namelist())
             self.assertEqual(set(archive.namelist()),
@@ -149,7 +149,7 @@ class ReleaseBoundaries(unittest.TestCase):
         self.assertFalse((self.dist / 'BUILD_INFO.json').exists())
 
     def test_existing_artifact_is_not_overwritten(self):
-        artifact = self.dist / 'San Audisco-source.zip'
+        artifact = self.dist / 'SanAudisco-source.zip'
         artifact.write_bytes(b'previous release')
         with self.assertRaisesRegex(ValueError, 'overwrite'):
             self.package()
