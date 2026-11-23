@@ -1,5 +1,12 @@
 # v0.2.1 device overview
 
+> Historical version record. Statements about pending tests, installed versions,
+> and temporary artifact paths describe the run recorded here. For current behavior
+> and installation, start with [README](../README.md). Temporary build/test folders
+> were removed during the November 18, 2026 cleanup; retained evidence is in
+> `validation/` and the owner’s cleanup archives.
+
+
 The main screen follows the two-computer diagram: Windows on the left, Mac on the
 right, and a room-connection link between them. Available devices are blue;
 offline/unavailable devices and a disconnected link are gray. Text states accompany

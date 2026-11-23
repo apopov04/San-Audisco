@@ -13,7 +13,7 @@ LRESULT CALLBACK observe(HWND h,UINT msg,WPARAM wp,LPARAM lp,UINT_PTR,DWORD_PTR)
 int wmain(){
  try {
   auto require=[](bool ok,const char* message){if(!ok)throw std::runtime_error(message);};
-  INITCOMMONCONTROLSEX common{sizeof(common),ICC_TAB_CLASSES|ICC_BAR_CLASSES};InitCommonControlsEx(&common);
+  INITCOMMONCONTROLSEX common{sizeof(common),ICC_BAR_CLASSES};InitCommonControlsEx(&common);
   window=CreateWindowW(L"STATIC",L"Bridge render test",WS_OVERLAPPEDWINDOW,0,0,970,780,nullptr,nullptr,nullptr,nullptr);
   // Real native controls: unchanged status polls must not send paint-triggering
   // setters. Telemetry/inventory revisions alone must not rebuild selectors.

@@ -25,6 +25,11 @@ jobs:
       - name: Test routing and encrypted loopback audio
         run: ctest --test-dir build -C Release --output-on-failure
       - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Windows-test-results
+          path: build/Testing/Temporary/LastTest.log
+      - uses: actions/upload-artifact@v4
         with:
           name: SanAudisco-Windows-x64
           path: |

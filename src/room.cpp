@@ -37,6 +37,8 @@ using Bytes=std::vector<unsigned char>;
 using Clock=std::chrono::steady_clock;
 constexpr std::size_t max_message=65536, max_frame=max_message+64, max_queued=512*1024;
 constexpr const char* alphabet="23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+// Stable wire/KDF identity: changing the former product name here would break
+// discovery, saved pairing authentication, and derived media keys.
 constexpr const char* protocol="AudioBridge-room-v2-spake2-boringssl";
 void init(){static int result=sodium_init();if(result<0)throw std::runtime_error("Cryptographic initialization failed");}
 void close_socket(RoomSocket s){if(s==invalid_socket)return;
@@ -108,7 +110,6 @@ struct Service::Impl {
  Clock::time_point invitation_end{},last_discover{},next_connect{},rate_window{};
  unsigned attempts=0,invite_attempts=0;
  std::optional<Credential> credential,pending_credential;
- std::optional<Nearby> join_target;
  std::string join_code;
  std::vector<std::unique_ptr<Connection>> connections;
  Connection* active=nullptr;
@@ -150,7 +151,7 @@ struct Service::Impl {
  }
  bool accepting()const{return !invitation.empty()&&!credential&&Clock::now()<invitation_end;}
  void clear_connections(){active=nullptr;connections.clear();messages.clear();message_bytes=0;state.connected=false;}
- void fail(Connection& c,const std::string& why){c.dead=true;if(&c==active){active=nullptr;state.connected=false;messages.clear();message_bytes=0;state.phase=credential?"reconnecting":"idle";state.error=why;}else if(c.outgoing){state.error=why;state.phase=credential?"reconnecting":(accepting()?"inviting":"idle");}if(c.outgoing&&!credential){join_target.reset();wipe(join_code);}}
+ void fail(Connection& c,const std::string& why){c.dead=true;if(&c==active){active=nullptr;state.connected=false;messages.clear();message_bytes=0;state.phase=credential?"reconnecting":"idle";state.error=why;}else if(c.outgoing){state.error=why;state.phase=credential?"reconnecting":(accepting()?"inviting":"idle");}if(c.outgoing&&!credential){wipe(join_code);}}
  bool queue(Connection& c,const Bytes& bytes){if(bytes.empty()||bytes.size()>max_frame||c.queued+bytes.size()+4>max_queued)return false;Bytes frame(bytes.size()+4);const auto n=std::uint32_t(bytes.size());frame[0]=n>>24;frame[1]=n>>16;frame[2]=n>>8;frame[3]=n;std::copy(bytes.begin(),bytes.end(),frame.begin()+4);c.queued+=frame.size();c.outgoing_frames.push_back(std::move(frame));return true;}
  void plain(Connection& c,const Json& j){auto s=j.dump();if(s.size()>4096||!queue(c,Bytes(s.begin(),s.end())))throw std::runtime_error("Room handshake queue exceeded");}
  bool encrypted(Connection& c,unsigned char type,const std::string& message){
@@ -181,7 +182,7 @@ struct Service::Impl {
   if(!credential||credential->peer.id!=c.peer.id||credential->room_id!=c.room_id)throw std::runtime_error("Unexpected room identity");
   credential->last_address=c.address;credential->peer_port=c.peer_port;credential->peer=c.peer;pending_credential=*credential;
   c.confirmed=true;active=&c;state.connected=true;state.phase="connected";state.error.clear();state.room_id=c.room_id;state.peer=c.peer;state.peer_address=c.address;state.peer_port=c.peer_port;++state.generation;
-  wipe(invitation);state.invitation_code.clear();state.invitation_seconds=0;wipe(join_code);join_target.reset();
+  wipe(invitation);state.invitation_code.clear();state.invitation_seconds=0;wipe(join_code);
   for(auto& other:connections)if(other.get()!=&c)other->dead=true;
  }
  void handshake(Connection& c,const Json& j){
@@ -266,15 +267,15 @@ struct Service::Impl {
 };
 Service::Service(Config c):impl_(std::make_unique<Impl>(std::move(c))){}
 Service::~Service()=default;
-std::string Service::create_invitation(){auto& v=*impl_;if(v.credential)throw std::runtime_error("Forget the current room before creating another");v.clear_connections();v.join_target.reset();wipe(v.join_code);wipe(v.invitation);v.state=Status{};v.state.room_id=new_id();for(int i=0;i<8;++i)v.invitation+=alphabet[randombytes_uniform(std::strlen(alphabet))];v.state.invitation_code=v.invitation.substr(0,4)+"-"+v.invitation.substr(4);v.invitation_end=Clock::now()+std::chrono::seconds(v.config.invitation_lifetime_seconds);v.state.phase="inviting";v.invite_attempts=0;v.discover();return v.state.invitation_code;}
-void Service::cancel_invitation(){auto& v=*impl_;wipe(v.invitation);v.state.invitation_code.clear();v.state.invitation_seconds=0;if(!v.credential){v.clear_connections();wipe(v.join_code);v.join_target.reset();v.state=Status{};}}
+std::string Service::create_invitation(){auto& v=*impl_;if(v.credential)throw std::runtime_error("Forget the current room before creating another");v.clear_connections();wipe(v.join_code);wipe(v.invitation);v.state=Status{};v.state.room_id=new_id();for(int i=0;i<8;++i)v.invitation+=alphabet[randombytes_uniform(std::strlen(alphabet))];v.state.invitation_code=v.invitation.substr(0,4)+"-"+v.invitation.substr(4);v.invitation_end=Clock::now()+std::chrono::seconds(v.config.invitation_lifetime_seconds);v.state.phase="inviting";v.invite_attempts=0;v.discover();return v.state.invitation_code;}
+void Service::cancel_invitation(){auto& v=*impl_;wipe(v.invitation);v.state.invitation_code.clear();v.state.invitation_seconds=0;if(!v.credential){v.clear_connections();wipe(v.join_code);v.state=Status{};}}
 void Service::set_local_name(const std::string& name){validate_name(name);impl_->config.local.name=name;}
 void Service::discover(){impl_->discover();}
 void Service::discover_at(const std::string& address,std::uint16_t port){if(!port)throw std::runtime_error("Invalid discovery port");impl_->discover_at(address,port);}
 std::vector<Nearby> Service::nearby()const{std::vector<Nearby> result;for(auto& [id,s]:impl_->seen)result.push_back(s.item);return result;}
-void Service::join(const Nearby& target,const std::string& code){auto& v=*impl_;if(v.credential)throw std::runtime_error("Forget the current room before joining another");if(!valid_id(target.room_id)||(!target.device.id.empty()&&!valid_id(target.device.id))||!target.port)throw std::runtime_error("Invalid room invitation");auto normalized=normalize_code(code);endpoint(target.address,target.port);v.clear_connections();wipe(v.invitation);v.state=Status{};v.state.room_id=target.room_id;v.state.phase="joining";v.join_target=target;wipe(v.join_code);v.join_code=std::move(normalized);try{v.connect_to(target,true);}catch(...){wipe(v.join_code);v.join_target.reset();v.state.phase="idle";throw;}}
-void Service::restore(const Credential& credential){auto& v=*impl_;if(!valid_id(credential.room_id))throw std::runtime_error("Invalid saved room");validate_device(credential.peer);if(credential.peer.id==v.config.local.id||!credential.peer_port)throw std::runtime_error("Invalid saved room peer");endpoint(credential.last_address,credential.peer_port);v.clear_connections();if(v.pending_credential)wipe(v.pending_credential->secret);v.pending_credential.reset();if(v.credential)wipe(v.credential->secret);v.credential=credential;wipe(v.invitation);wipe(v.join_code);v.join_target.reset();v.state=Status{};v.state.room_id=credential.room_id;v.state.peer=credential.peer;v.state.peer_address=credential.last_address;v.state.peer_port=credential.peer_port;v.state.phase="reconnecting";v.next_connect={};v.discover();}
-void Service::forget(){auto& v=*impl_;v.clear_connections();if(v.credential)wipe(v.credential->secret);if(v.pending_credential)wipe(v.pending_credential->secret);v.credential.reset();v.pending_credential.reset();wipe(v.invitation);wipe(v.join_code);v.join_target.reset();v.state=Status{};}
+void Service::join(const Nearby& target,const std::string& code){auto& v=*impl_;if(v.credential)throw std::runtime_error("Forget the current room before joining another");if(!valid_id(target.room_id)||(!target.device.id.empty()&&!valid_id(target.device.id))||!target.port)throw std::runtime_error("Invalid room invitation");auto normalized=normalize_code(code);endpoint(target.address,target.port);v.clear_connections();wipe(v.invitation);v.state=Status{};v.state.room_id=target.room_id;v.state.phase="joining";wipe(v.join_code);v.join_code=std::move(normalized);try{v.connect_to(target,true);}catch(...){wipe(v.join_code);v.state.phase="idle";throw;}}
+void Service::restore(const Credential& credential){auto& v=*impl_;if(!valid_id(credential.room_id))throw std::runtime_error("Invalid saved room");validate_device(credential.peer);if(credential.peer.id==v.config.local.id||!credential.peer_port)throw std::runtime_error("Invalid saved room peer");endpoint(credential.last_address,credential.peer_port);v.clear_connections();if(v.pending_credential)wipe(v.pending_credential->secret);v.pending_credential.reset();if(v.credential)wipe(v.credential->secret);v.credential=credential;wipe(v.invitation);wipe(v.join_code);v.state=Status{};v.state.room_id=credential.room_id;v.state.peer=credential.peer;v.state.peer_address=credential.last_address;v.state.peer_port=credential.peer_port;v.state.phase="reconnecting";v.next_connect={};v.discover();}
+void Service::forget(){auto& v=*impl_;v.clear_connections();if(v.credential)wipe(v.credential->secret);if(v.pending_credential)wipe(v.pending_credential->secret);v.credential.reset();v.pending_credential.reset();wipe(v.invitation);wipe(v.join_code);v.state=Status{};}
 void Service::poll(){impl_->tick();}
 Status Service::status()const{auto s=impl_->state;if(impl_->accepting())s.invitation_seconds=static_cast<std::uint32_t>(std::max(std::int64_t(1),std::chrono::duration_cast<std::chrono::seconds>(impl_->invitation_end-Clock::now()).count()));return s;}
 std::optional<Credential> Service::take_credential(){auto value=impl_->pending_credential;if(impl_->pending_credential)wipe(impl_->pending_credential->secret);impl_->pending_credential.reset();return value;}

@@ -1,57 +1,54 @@
-# San Audisco v0.3.3
+# San Audisco v0.4.0 preview
 
-San Audisco (formerly AudioBridge) mixes audio from two Windows or Mac computers into headphones connected to
+San Audisco (formerly AudioBridge) mixes audio from two Windows or Mac computers through headphones or speakers connected to
 one computer, and sends a selected physical microphone to voice apps on both.
 The **Output Hub** plays the mixed audio through its selected output. The
 **Input Hub** supplies its selected microphone to both computers. These roles
 are independent and can belong to the same computer or different computers.
 
-This private release adds rooms, synchronized setup and controls, background
-operation, and installers containing the existing audio components. It retains
-the working audio transport and Wi-Fi buffer settings. The previous version was
-used successfully with Discord on the Mac and Deadlock on Windows; this new
-release has automated and simulated validation, with installation and listening
-acceptance still required on the actual pair. See [v0.2 validation](docs/V02_VALIDATION.md).
+This first GitHub preview release retains the working two-computer audio path and
+adds code cleanup, consistent release metadata, and current setup documentation.
+The repository and bundled-driver installers remain private. This is not a signed,
+notarized, or store-approved public release. See [distribution options](docs/DISTRIBUTION.md)
+for the distinction between an app-only download and a complete private setup package.
 
-Version 0.2.10 adds automatic system playback routing and restoration, and reduces
-Windows redraws. See [routing and update notes](docs/V029_UPDATE.md) and
-[signing and OS permissions](docs/SIGNING.md).
+The owner has used the preceding v0.3.3 release with Discord/video on the Mac and
+Deadlock on Windows, and with the MacBook speakers playing PC audio. These are
+successful listening reports, not measured Bluetooth latency, game benchmarks,
+or a quantified reliability guarantee. Historical test results remain in the
+version-specific validation documents; they do not automatically validate this cleanup.
 
-Version 0.3.1 brings the Mac overview layout to Windows: aligned header actions,
-rounded selectors and icon buttons, matching device/global mute and deafen pairs,
-and light/dark appearance. It keeps native Windows controls and system graphics
-libraries. Choose **Room settings → Appearance → System, Light, or Dark**.
-See [Windows appearance and validation](docs/WINDOWS_APPEARANCE.md).
+## Current behavior
 
-Version 0.3.2 fixes stretched/stale Windows artwork on maximize and restores
-normal audio when quitting. Quit stops both connected computers, waits for the
-peer's acknowledgement, and leaves the other app open with audio stopped. When
-an old cable selection has no restore record, recovery uses the explicitly
-selected physical device. Unavailable devices produce an actionable error.
-See [quit and resize validation](docs/V032_FIXES.md).
-
-Version 0.3.3 fixes Quit being blocked by an unavailable output on either
-computer. Audio stops and the local app exits even if a device cannot yet be
-restored. Warnings and recovery records remain available; the other open app
-continues retrying restoration. Reopening stays paired with audio stopped.
-See [Quit regression validation](docs/V033_QUIT.md).
+- Either computer can be the Output Hub or Input Hub, regardless of operating system.
+- Both interfaces use the same device overview and synchronized controls.
+- Autoconfigure enables automatic system input/output routing; Stop and Quit restore
+  previous defaults where possible and preserve manual overrides.
+- Quit stops the shared session and exits locally even when a physical output is
+  unavailable. Recovery information is retained and reopening remains paired with
+  audio stopped. See [Quit recovery](docs/V033_QUIT.md).
+- Windows uses native controls with System, Light, or Dark appearance. Resize
+  painting and the bridge/status layout include the fixes described in
+  [Windows appearance](docs/WINDOWS_APPEARANCE.md) and [resize fixes](docs/V032_FIXES.md).
 
 ## Start using a room
 
-1. Quit the old San Audisco app on both computers. Keep its binaries for rollback.
-   Run the matching **San Audisco Setup** privately supplied for each computer.
-   Existing usable drivers are retained. Follow any normal vendor/OS prompts;
-   restart only when convenient. Reopen setup after restarting.
+1. Install the matching build on each computer. The private **San Audisco Setup**
+   packages include dependency checks and the existing vendor installers. App-only
+   downloads require the separate components described in
+   [installation and distribution](docs/DISTRIBUTION.md). Quit San Audisco before
+   updating. Existing usable drivers are retained; follow normal vendor/OS prompts
+   and restart when convenient if requested.
 2. Open San Audisco on both computers, on the same private Wi-Fi/LAN. Create a
    room on either and enter its eight-character code on the other. Invitations
    expire after five minutes. Pairing is remembered; no key files or normal IP
    entry are required. If broadcast discovery fails, use the creator's IPv4
    address in the optional address field.
-3. For the current setup, select **Windows PC as Output Hub** with **AirPods stereo**
-   as its Output, and **MacBook as Input Hub** with its **built-in microphone**
-   as its Input. Virtual routes are detected automatically where unambiguous. Device
-   selections for either computer can be changed from either interface.
-4. Configure Discord and Deadlock once using the table below. Grant the Mac's
+3. Choose an **Output Hub** and its physical Output, then an **Input Hub** and
+   its microphone. For example, listen through AirPods connected to Windows while
+   using the MacBook microphone. Virtual routes are detected automatically where
+   unambiguous. Device selections for either computer can be changed from either interface.
+4. Configure application device overrides if needed; the table below is an example. Grant the Mac's
    microphone/local-network permissions and the Windows private-network firewall
    prompt locally. OS permission dialogs cannot be approved from the other app.
 5. Press **Autoconfigure** on either computer to configure both devices and enable
@@ -83,7 +80,7 @@ Selecting a new Output Hub does not automatically move their Bluetooth connectio
 
 Both interfaces open with a two-computer overview. Blue indicates an available
 computer; gray indicates offline or unavailable, with matching text labels. The
-line between them shows room connectivity, separately from whether audio is running.
+bridge between them shows room connectivity, separately from whether audio is running.
 
 Choose **Input** and **Output** side by side beneath each computer. Above its
 icon, **Use as Input Hub** chooses the shared microphone source and **Use as
@@ -95,7 +92,7 @@ within reach. Room pairing, audio checks and advanced cables are secondary contr
 Balance is available in Room settings on Mac and Advanced on Windows.
 
 - **Mute** stops microphone delivery. It is available globally and per destination.
-- Set a device's volume to **0%** to remove it from the headphone mix without
+- Set a device's volume to **0%** to remove it from the listening mix without
   muting its microphone.
 - **Deafen** stops listening and microphone delivery globally or for that device.
 - **Stop audio** stops both engines when both devices are reachable. Closing the
@@ -155,7 +152,7 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
   -DBORINGSSL_ROOT=/absolute/path/to/room-deps
 cmake --build build --parallel
 ctest --test-dir build --output-on-failure
-./scripts/package-mac.sh "$PWD/build" /absolute/path/to/candidate/San Audisco.app
+./scripts/package-mac.sh "$PWD/build" "/absolute/path/to/candidate/San Audisco.app"
 ```
 
 For Windows cross-builds, build the dependencies for Windows and use
@@ -171,6 +168,7 @@ artifacts or infer redistribution rights from personal use.
 
 ## Technical references
 
+- [v0.4.0 cleanup and verification scope](docs/V040_RELEASE.md)
 - [System architecture and state ownership](docs/ARCHITECTURE.md)
 - [Room protocol, cryptography, and boundaries](docs/ROOM_PROTOCOL.md)
 - [v0.2 validation and hardware acceptance](docs/V02_VALIDATION.md)
@@ -178,6 +176,6 @@ artifacts or infer redistribution rights from personal use.
 - [Historical v0.1 test evidence](VALIDATION.md)
 - [Target hardware test procedure](HARDWARE_TEST.md)
 
-## Version 0.3 device roles
+## Device-role architecture
 
-Windows–Windows, Mac–Mac and mixed rooms use device IDs and an Output Hub coordinator. Input Hub is independent. Both devices must run v0.3; existing rooms and routes migrate without re-pairing. See [v0.3 architecture](docs/V03_ARCHITECTURE.md) for protocol and migration, and [v0.3 validation](docs/V03_VALIDATION.md) for completed checks and pending hardware acceptance.
+Windows–Windows, Mac–Mac and mixed rooms use device IDs and an Output Hub coordinator. Input Hub is independent. Both devices must support application protocol 3 (introduced in v0.3); use matching app releases. Existing rooms and routes migrate without re-pairing. See [v0.3 architecture](docs/V03_ARCHITECTURE.md) for protocol and migration, and [v0.3 validation](docs/V03_VALIDATION.md) for historical completed checks and their hardware-validation limits.

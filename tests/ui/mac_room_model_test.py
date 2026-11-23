@@ -3,7 +3,7 @@ No UI is launched, no audio is captured, and no real agent or credentials are us
 Requires macOS Swift compiler and clang++; uses a disposable output directory.
 """
 from pathlib import Path
-import subprocess, tempfile, sys
+import platform, subprocess, tempfile, sys
 root=Path(__file__).resolve().parents[2]
 with tempfile.TemporaryDirectory(prefix='san-audisco-ui-') as tmp:
  out=Path(tmp)
@@ -81,5 +81,5 @@ with tempfile.TemporaryDirectory(prefix='san-audisco-ui-') as tmp:
 }
 '''
  (out/'model_test.swift').write_text(source)
- subprocess.run(['swiftc','-target','arm64-apple-macos13.0','-parse-as-library',str(out/'model_test.swift'),'-o',str(out/'model_test'),'-framework','SwiftUI','-framework','AppKit','-framework','AVFoundation','-framework','ServiceManagement'],check=True)
+ subprocess.run(['swiftc','-target',platform.machine()+'-apple-macos13.0','-parse-as-library',str(out/'model_test.swift'),'-o',str(out/'model_test'),'-framework','SwiftUI','-framework','AppKit','-framework','AVFoundation','-framework','ServiceManagement'],check=True)
  subprocess.run([str(out/'model_test'),str(out/'bridge-agent')],check=True)

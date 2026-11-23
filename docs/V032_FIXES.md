@@ -1,5 +1,12 @@
 # 0.3.2 — resize and Quit restoration
 
+> Historical version record. Statements about pending tests, installed versions,
+> and temporary artifact paths describe the run recorded here. For current behavior
+> and installation, start with [README](../README.md). Temporary build/test folders
+> were removed during the November 18, 2026 cleanup; retained evidence is in
+> `validation/` and the owner’s cleanup archives.
+
+
 The Quit-blocking behavior described here was corrected in
 [0.3.3](V033_QUIT.md): restoration warnings no longer prevent exit.
 

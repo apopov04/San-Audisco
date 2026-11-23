@@ -1,12 +1,14 @@
-# San Audisco v0.3 architecture
+# San Audisco architecture
 
 ## Processes and ownership
 
 Each computer runs a native UI, one per-user `bridge-agent`, and an owned audio
 engine while audio is enabled. The UI uses authenticated local loopback IPC;
-closing the window leaves the agent and engine alive. Explicit Quit stops only
-the local agent and its owned engine. UI/login startup runs `ensure`, which uses
-a private instance lock rather than starting duplicate agents.
+closing the window leaves the agent and engine alive. Explicit Quit stops local
+audio, requests the peer to stop its engine, and exits the local app/agent while
+leaving the peer app open. An unavailable output produces a restoration warning,
+not a veto on Quit; see [Quit recovery](V033_QUIT.md). UI/login startup runs
+`ensure`, which uses a private instance lock rather than starting duplicate agents.
 
 The agent handles discovery, pairing, device inventory, setup, persistence,
 remote commands, and engine supervision. It does not move audio samples. Audio
@@ -28,7 +30,7 @@ Each device has four possible endpoints:
 
 1. Playback capture from its first virtual cable.
 2. Microphone delivery into its second, independent virtual cable.
-3. Physical headphone output, opened only by the selected Hub.
+3. Physical listening output (headphones or speakers), opened only by the Output Hub.
 4. Physical microphone input, opened only by the selected microphone-source device.
 
 Local playback reaches the Hub's listening mixer directly; satellite playback
@@ -88,4 +90,4 @@ choices remain local to the OS/Discord/game.
 Source-only archives and private installer payloads are separate. Mac app/setup
 use ad-hoc signatures, so production signing/notarization remains outstanding.
 Native Windows drivers, Bluetooth, actual reboot flows and gaming performance
-cannot be validated with synthetic audio or Wine; see V02_VALIDATION.md.
+cannot be validated with synthetic audio or Wine; see [validation limits](V03_VALIDATION.md).

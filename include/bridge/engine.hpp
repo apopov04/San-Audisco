@@ -61,43 +61,4 @@ private:
     void loadSettings() noexcept;
 };
 
-// Single producer / single consumer only. Capacity is in stereo frames.
-// Overflow drops newest frames; producer never changes the consumer cursor.
-// Consumer discard() is safe while producer runs. It discards only currently
-// published samples; during handover first stop the producer, then discard().
-template<std::size_t CapacityFrames>
-class SpscAudioRing {
-    static_assert(CapacityFrames > 0 && (CapacityFrames & (CapacityFrames - 1)) == 0);
-public:
-    std::size_t push(const float* stereo, std::size_t frames) noexcept {
-        const auto w = write_.load(std::memory_order_relaxed);
-        const auto r = read_.load(std::memory_order_acquire);
-        const auto free = CapacityFrames - (w - r);
-        const auto n = frames < free ? frames : free;
-        for (std::size_t i = 0; i < n; ++i) {
-            const auto p = ((w + i) & (CapacityFrames - 1)) * 2;
-            data_[p] = stereo[i * 2]; data_[p + 1] = stereo[i * 2 + 1];
-        }
-        write_.store(w + n, std::memory_order_release);
-        return n;
-    }
-    // Always initializes the requested output; underrun tail is silence.
-    std::size_t pop(float* stereo, std::size_t frames) noexcept {
-        const auto r = read_.load(std::memory_order_relaxed);
-        const auto w = write_.load(std::memory_order_acquire);
-        const auto n = frames < w - r ? frames : w - r;
-        for (std::size_t i = 0; i < n; ++i) {
-            const auto p = ((r + i) & (CapacityFrames - 1)) * 2;
-            stereo[i * 2] = data_[p]; stereo[i * 2 + 1] = data_[p + 1];
-        }
-        for (std::size_t i = n * 2; i < frames * 2; ++i) stereo[i] = 0.0f;
-        read_.store(r + n, std::memory_order_release);
-        return n;
-    }
-    void discard() noexcept { read_.store(write_.load(std::memory_order_acquire), std::memory_order_release); }
-private:
-    std::array<float, CapacityFrames * 2> data_{};
-    alignas(64) std::atomic<std::size_t> write_{0};
-    alignas(64) std::atomic<std::size_t> read_{0};
-};
 } // namespace bridge

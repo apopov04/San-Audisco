@@ -2,8 +2,8 @@
 1 RT_MANIFEST "app.manifest"
 101 ICON "SanAudisco.ico"
 1 VERSIONINFO
-FILEVERSION 0,3,3,0
-PRODUCTVERSION 0,3,3,0
+FILEVERSION 0,4,0,0
+PRODUCTVERSION 0,4,0,0
 FILEOS VOS_NT_WINDOWS32
 FILETYPE VFT_APP
 BEGIN
@@ -15,8 +15,8 @@ BEGIN
    VALUE "ProductName", "San Audisco\0"
    VALUE "InternalName", "SanAudisco\0"
    VALUE "OriginalFilename", "SanAudisco.exe\0"
-   VALUE "FileVersion", "0.3.3\0"
-   VALUE "ProductVersion", "0.3.3\0"
+   VALUE "FileVersion", "0.4.0\0"
+   VALUE "ProductVersion", "0.4.0\0"
   END
  END
  BLOCK "VarFileInfo"

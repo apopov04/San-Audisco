@@ -1,0 +1,31 @@
+name: macOS build and simulated audio tests
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  macos:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build pinned audio libraries
+        run: ./scripts/bootstrap-deps.sh "$RUNNER_TEMP/audio-deps" "$RUNNER_TEMP/audio-source"
+      - name: Build pinned room cryptography
+        run: python3 scripts/bootstrap-room-crypto.py "$RUNNER_TEMP/room-crypto"
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DSODIUM_ROOT="$RUNNER_TEMP/audio-deps" -DBORINGSSL_ROOT="$RUNNER_TEMP/room-crypto"
+      - name: Build
+        run: cmake --build build --parallel 3
+      - name: Test routing, recovery, UI model and release boundaries
+        run: ctest --test-dir build --output-on-failure
+      - name: Compile and verify app bundle
+        run: |
+          ./scripts/package-mac.sh "$PWD/build" "$RUNNER_TEMP/San Audisco.app"
+          codesign --verify --deep --strict "$RUNNER_TEMP/San Audisco.app"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macOS-test-results
+          path: build/Testing/Temporary/LastTest.log

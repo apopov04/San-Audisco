@@ -1,5 +1,12 @@
 # San Audisco 0.3.0 validation
 
+> Historical version record. Statements about pending tests, installed versions,
+> and temporary artifact paths describe the run recorded here. For current behavior
+> and installation, start with [README](../README.md). Temporary build/test folders
+> were removed during the November 18, 2026 cleanup; retained evidence is in
+> `validation/` and the owner’s cleanup archives.
+
+
 Date: 2026-11-18. Builds: macOS arm64 (minimum macOS 13) and Windows x64.
 This is a private test release. The existing 0.2.10 installations were left
 intact during this verification.

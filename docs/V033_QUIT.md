@@ -1,5 +1,12 @@
 # 0.3.3 — Quit without requiring an available output
 
+> Historical version record. Statements about pending tests, installed versions,
+> and temporary artifact paths describe the run recorded here. For current behavior
+> and installation, start with [README](../README.md). Temporary build/test folders
+> were removed during the November 18, 2026 cleanup; retained evidence is in
+> `validation/` and the owner’s cleanup archives.
+
+
 The 0.3.2 Quit guard conflated two outcomes: successfully stopping audio and
 successfully restoring every OS audio default. A stopped Windows peer with an
 unavailable AirPods output returned a restoration error; the Mac then refused

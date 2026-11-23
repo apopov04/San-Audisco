@@ -48,7 +48,6 @@ public:
     PacketCodec(const Key&, const Epoch& local);
     ~PacketCodec();
     void set_peer_epoch(const Epoch&);
-    const Epoch& local_epoch() const { return local_; }
     std::vector<uint8_t> encode(Kind, Stream, uint64_t sample_time, std::span<const uint8_t>);
     std::optional<Packet> decode(std::span<const uint8_t>);
     Epoch decoded_sender() const { return decoded_sender_; }

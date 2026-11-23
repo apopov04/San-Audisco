@@ -54,8 +54,8 @@ int main() {
     h.settings.routes[0].deafened=false; h.run();
     check(h.localMic[0]==0 && near(h.sendMic[0],.7f),"undeafen preserves explicit mute and remote continues");
     h.settings.routes[0].micMuted=false; h.settings.balance=-1; h.run();
-    check(near(h.listen[0],.1f),"Windows balance endpoint");
-    h.settings.balance=1; h.run(); check(near(h.listen[0],.3f),"Mac balance endpoint");
+    check(near(h.listen[0],.1f),"participant A balance endpoint");
+    h.settings.balance=1; h.run(); check(near(h.listen[0],.3f),"participant B balance endpoint");
     h.settings.balance=0; h.settings.routes[0].volume=.5f; h.settings.routes[1].volume=.25f; h.settings.masterVolume=.5f; h.run();
     check(near(h.listen[0],.0625f),"independent gains and master");
     h.settings=Settings{}; h.lp.fill(1); h.rp.fill(1); h.run(); check(h.listen[0]==1,"positive clipping limited");
@@ -67,25 +67,12 @@ int main() {
     h.engine.process({}, {h.listen.data(),h.localMic.data(),nullptr,nullptr,nullptr},2);
     check(h.listen[0]==0&&h.localMic[0]==0,"missing input produces silence");
 
-    SpscAudioRing<4> ring;
-    std::array<float,12> input{1,2,3,4,5,6,7,8,9,10,11,12}, output{};
-    check(ring.push(input.data(),6)==4,"ring drops newest overflow");
-    check(ring.pop(output.data(),2)==2&&output[0]==1&&output[3]==4,"ring keeps oldest frames");
-    check(ring.push(input.data()+8,2)==2,"ring wrap push");
-    check(ring.pop(output.data(),6)==4&&output[0]==5&&output[6]==11&&output[8]==0,"ring wrap and underrun zero fill");
-    ring.push(input.data(),4); ring.discard();
-    check(ring.pop(output.data(),1)==0&&output[0]==0,"discard stale audio");
-
     // Control updates must not race the RT callback or create mixed settings.
     Engine concurrent(Device::A, 0); std::atomic<bool> done=false;
     std::thread writer([&]{for(int i=0;i<100000;++i){Settings s; s.routes[0].volume=(i&1)?0:1; s.routes[1].volume=(i&1)?1:0; concurrent.setSettings(s);}done=true;});
     std::array<float,2> ones{.25f,.25f}, mixed{};
     while(!done.load()) { concurrent.process({ones.data(),ones.data(),nullptr,nullptr},{mixed.data()},1);check(near(mixed[0],.25f)||near(mixed[0],.5f),"settings snapshot coherent"); }
     writer.join();
-    SpscAudioRing<256> concurrentRing; constexpr int total=100000;
-    std::thread producer([&]{for(int i=0;i<total;){float frame[2]{float(i),float(-i)};if(concurrentRing.push(frame,1))++i;}});
-    for(int i=0;i<total;){float frame[2];if(concurrentRing.pop(frame,1)){check(frame[0]==float(i)&&frame[1]==float(-i),"SPSC threaded order");++i;}}
-    producer.join();
     Engine ramped(Device::A, 4);
     Settings rampSettings; ramped.setSettings(rampSettings);
     std::array<float,8> signal{.5,.5,.5,.5,.5,.5,.5,.5}, fade{};
@@ -99,5 +86,5 @@ int main() {
     rampSettings.routes[0].deafened=true; ramped.setSettings(rampSettings);
     ramped.process({signal.data()}, {fade.data()}, 4);
     check(fade[0]==0&&fade[6]==0,"deafen immediate without fade leakage");
-    std::puts("engine tests passed (2048 route combinations, isolation, gains, nonfinite, ring, concurrency)");
+    std::puts("engine tests passed (2048 route combinations, isolation, gains, nonfinite, concurrency)");
 }

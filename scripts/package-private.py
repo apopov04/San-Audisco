@@ -8,7 +8,6 @@ import argparse
 import importlib.util
 import hashlib
 import json
-import os
 from pathlib import Path
 import plistlib
 import shutil
@@ -19,6 +18,9 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'installer'))
 from package_support import checked_zip, verified_vendor, write_manifest
+from release_metadata import release_metadata
+
+VERSION, MAC_BUILD = release_metadata()
 
 
 def run(args):
@@ -56,7 +58,7 @@ def build_mac(args, lock, scratch):
     rows = [{'path':p.relative_to(resources).as_posix(), 'sha256':hashlib.sha256(p.read_bytes()).hexdigest()} for p in files_under(resources)]
     write_manifest(resources / 'manifest.json', {'schema':1, 'private_only':True, 'files':rows})
     with (contents / 'Info.plist').open('wb') as f:
-        plistlib.dump({'CFBundleIdentifier':'local.audiobridge.setup', 'CFBundleExecutable':'SanAudiscoSetup', 'CFBundleName':'San Audisco Setup', 'CFBundleIconFile':'SanAudisco', 'CFBundleVersion':'16', 'CFBundleShortVersionString':'0.3.3', 'LSMinimumSystemVersion':'13.0', 'NSHighResolutionCapable':True}, f)
+        plistlib.dump({'CFBundleIdentifier':'local.audiobridge.setup', 'CFBundleExecutable':'SanAudiscoSetup', 'CFBundleName':'San Audisco Setup', 'CFBundleIconFile':'SanAudisco', 'CFBundleVersion':MAC_BUILD, 'CFBundleShortVersionString':VERSION, 'LSMinimumSystemVersion':'13.0', 'NSHighResolutionCapable':True}, f)
     run(['clang++', '-target', 'arm64-apple-macos13.0', '-std=c++20', '-O2', '-c', ROOT/'installer/setup_policy.cpp', '-o',scratch/'setup_policy.o'])
     run(['swiftc', '-target', 'arm64-apple-macos13.0', '-O', '-parse-as-library', ROOT / 'installer/macos/Setup.swift', scratch/'setup_policy.o', '-o', contents / 'MacOS/SanAudiscoSetup', '-framework', 'SwiftUI', '-framework', 'AppKit', '-framework', 'CoreAudio', '-framework', 'CryptoKit'])
     spec = importlib.util.spec_from_file_location('sign_mac', ROOT/'scripts/sign-mac.py')
@@ -99,8 +101,8 @@ def build_windows(args, lock, scratch):
     header = ['#pragma once', 'struct Payload {int id; const wchar_t* group; const wchar_t* path; const char* sha256;};', 'inline const Payload payload[] = {']
     shutil.copy2(ROOT/'assets/SanAudisco.ico', scratch/'SanAudisco.ico')
     rc = ['#include <windows.h>', '1 RT_MANIFEST "setup.manifest"', '101 ICON "SanAudisco.ico"', '''1 VERSIONINFO
-FILEVERSION 0,3,3,0
-PRODUCTVERSION 0,3,3,0
+FILEVERSION @VERSION_NUMBERS@
+PRODUCTVERSION @VERSION_NUMBERS@
 FILEOS VOS_NT_WINDOWS32
 FILETYPE VFT_APP
 BEGIN
@@ -110,15 +112,15 @@ BEGIN
   BEGIN
    VALUE "FileDescription", "San Audisco Setup\\0"
    VALUE "ProductName", "San Audisco\\0"
-   VALUE "FileVersion", "0.3.3\\0"
-   VALUE "ProductVersion", "0.3.3\\0"
+   VALUE "FileVersion", "@VERSION@\\0"
+   VALUE "ProductVersion", "@VERSION@\\0"
   END
  END
  BLOCK "VarFileInfo"
  BEGIN
   VALUE "Translation", 0x409, 1200
  END
-END''']
+END'''.replace('@VERSION_NUMBERS@', VERSION.replace('.', ',')+',0').replace('@VERSION@', VERSION)]
     manifest = []
     for number, (group, name, data) in enumerate(entries, 100):
         staged = scratch / f'payload-{number}.bin'; staged.write_bytes(data)

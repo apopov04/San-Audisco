@@ -56,8 +56,8 @@ HWND window{},status_label{},error_label{},mute_reason{},run_button{};
 HWND appearance_box{},name_edit{},kind_box{},invite_label{},code_edit{},address_edit{},nearby_box{},login_check{},create_button{},join_button{},forget_button{};
 HWND computer_box{},headphones_box{},microphone_box{},playback_box{},micoutput_box{},apply_button{},setup_label{};
 HWND playback_label{},micoutput_label{},advanced_button{};
-HWND hub_box{},mic_source{},first_volume{},second_volume{},balance{},master{},mute{},deafen{},first_mute{},second_mute{},first_deafen{},second_deafen{},first_label{},second_label{},diagnostics_box{};
-std::vector<HWND> pages[4],mix_controls;
+HWND first_volume{},second_volume{},balance{},master{},mute{},deafen{},first_mute{},second_mute{},first_deafen{},second_deafen{},diagnostics_box{};
+std::vector<HWND> mix_controls;
 HWND signal_bars[2][3]{},signal_labels[2]{},tone_buttons[2]{};std::string tone_ids[2];
 int building_page=-1;
 Json state=Json::object();std::vector<Json> devices,nearby;
@@ -152,7 +152,7 @@ HWND element(const wchar_t* cls,const wchar_t* caption,DWORD style,int x,int y,i
  if(page)y-=40;
  int divider=std::wstring(cls)==L"STATIC"?((style&SS_TYPEMASK)==SS_ETCHEDHORZ?1:(style&SS_TYPEMASK)==SS_ETCHEDVERT?2:0):0;if(divider)style=(style&~SS_TYPEMASK)|SS_SIMPLE;
  auto h=CreateWindowExW(0,cls,caption,WS_CHILD|WS_VISIBLE|WS_CLIPSIBLINGS|style,px(x),px(y),px(width),px(height),parent,reinterpret_cast<HMENU>(static_cast<INT_PTR>(id)),nullptr,nullptr);
- control_message(h,WM_SETFONT,reinterpret_cast<WPARAM>(ui_font),TRUE);if(building_page>=0)pages[building_page].push_back(h);
+ control_message(h,WM_SETFONT,reinterpret_cast<WPARAM>(ui_font),TRUE);
  if(divider)SetPropW(h,L"SanAudisco.Divider",reinterpret_cast<HANDLE>(INT_PTR(divider)));appearance::attach(h,ui_dpi);layout_items.push_back({h,x,y,width,height,page});if(style&WS_TABSTOP)SetWindowSubclass(h,focus_proc,1,0);return h;
 }
 HICON audio_icon(bool headphones,bool blocked,bool crowned=false){
@@ -286,7 +286,6 @@ void paint_computers(const DRAWITEMSTRUCT& item){
  BitBlt(item.hDC,0,0,width,height,diagram_frame.dc,0,0,SRCCOPY);
 }
 std::wstring slot_name(int slot){return utf16(device_name(slot_device(slot)));}
-void fill_roles(){for(auto box:{hub_box,mic_source}){control_message(box,CB_RESETCONTENT,0,0);for(int slot=0;slot<2;++slot){auto name=slot_name(slot);control_message(box,CB_ADDSTRING,0,reinterpret_cast<LPARAM>(name.c_str()));}}}
 void apply_state(const Json& s){updating=true;if(!agent_available){set_text(error_label,L"");applied_device_signature.clear();}agent_available=true;state=s;paired=boolean(s,"paired");connected=boolean(s,"connected");running=boolean(s,"running");wanted_running=boolean(s,"wanted_running",running);
  enable_control(autoconfigure_button,TRUE);
  auto incoming_name=string_value(s,"name","This computer");if(text(name_edit).empty()||utf8(text(name_edit))==last_local_name)set_text(name_edit,utf16(incoming_name).c_str());last_local_name=incoming_name;
@@ -298,18 +297,17 @@ void apply_state(const Json& s){updating=true;if(!agent_available){set_text(erro
  enable_control(create_button,!paired);enable_control(join_button,!paired);enable_control(code_edit,!paired);enable_control(forget_button,paired||!string_value(s,"invite_code").empty());
  auto old=devices;devices.clear();if(s.contains("devices")&&s["devices"].is_array())for(const auto& d:s["devices"])if(d.is_object())devices.push_back(d);
  std::vector<std::string> old_ids,new_ids;for(const auto& d:old)old_ids.push_back(string_value(d,"id")+string_value(d,"name"));for(const auto& d:devices)new_ids.push_back(string_value(d,"id")+string_value(d,"name"));
- if(old_ids!=new_ids){control_message(computer_box,CB_RESETCONTENT,0,0);int selection=0;for(size_t i=0;i<devices.size();++i){auto name=utf16(device_name(devices[i]));if(string_value(devices[i],"id")==string_value(s,"device_id"))name+=L" (this computer)";control_message(computer_box,CB_ADDSTRING,0,reinterpret_cast<LPARAM>(name.c_str()));if(string_value(devices[i],"id")==configured_id)selection=static_cast<int>(i);}control_message(computer_box,CB_SETCURSEL,selection,0);if(!devices.empty())configured_id=string_value(devices[selection],"id");applied_device_signature.clear();fill_roles();}
+ if(old_ids!=new_ids){control_message(computer_box,CB_RESETCONTENT,0,0);int selection=0;for(size_t i=0;i<devices.size();++i){auto name=utf16(device_name(devices[i]));if(string_value(devices[i],"id")==string_value(s,"device_id"))name+=L" (this computer)";control_message(computer_box,CB_ADDSTRING,0,reinterpret_cast<LPARAM>(name.c_str()));if(string_value(devices[i],"id")==configured_id)selection=static_cast<int>(i);}control_message(computer_box,CB_SETCURSEL,selection,0);if(!devices.empty())configured_id=string_value(devices[selection],"id");applied_device_signature.clear();}
  for(const auto& d:devices)if(string_value(d,"id")==string_value(state,"device_id")){auto kind=string_value(d,"kind_override","auto");int selected=kind=="laptop"?1:kind=="desktop"?2:kind=="server"?3:0;control_message(kind_box,CB_SETCURSEL,selected,0);}
  populate_audio();
  auto new_nearby=s.value("discovered",Json::array());Json old_nearby=nearby;if(new_nearby.is_array()&&new_nearby!=old_nearby){nearby.clear();control_message(nearby_box,CB_RESETCONTENT,0,0);for(const auto& d:new_nearby)if(d.is_object()){nearby.push_back(d);auto name=utf16(string_value(d,"name","Nearby room")+" · "+string_value(d,"address"));control_message(nearby_box,CB_ADDSTRING,0,reinterpret_cast<LPARAM>(name.c_str()));}}
  const auto settings=s.value("settings",Json::object());
  if(settings.is_object()){
-  control_message(hub_box,CB_SETCURSEL,number(settings,"primary"),0);control_message(mic_source,CB_SETCURSEL,number(settings,"mic_source",1),0);
   for(auto item:{std::pair{mute,"mute"},std::pair{deafen,"deafen"}})control_message(item.first,BM_SETCHECK,boolean(settings,item.second)?BST_CHECKED:BST_UNCHECKED,0);
-  for(auto item:{std::pair{master,"master"}})if(GetCapture()!=item.first)control_message(item.first,TBM_SETPOS,TRUE,static_cast<LPARAM>(number(settings,item.second,1)*100));
+  if(GetCapture()!=master)control_message(master,TBM_SETPOS,TRUE,static_cast<LPARAM>(number(settings,"master",1)*100));
   if(GetCapture()!=balance)control_message(balance,TBM_SETPOS,TRUE,static_cast<LPARAM>((number(settings,"balance")+1)*50));
  }
- set_text(first_label,slot_name(0).c_str());set_text(second_label,slot_name(1).c_str());set_text(balance_label,(slot_name(0)+L" / "+slot_name(1)).c_str());for(auto h:mix_controls)enable_control(h,controls_ready());
+ set_text(balance_label,(slot_name(0)+L" / "+slot_name(1)).c_str());for(auto h:mix_controls)enable_control(h,controls_ready());
  for(int kind=0;kind<2;++kind){auto button=kind?deafen:mute;bool inherited=!kind&&boolean(settings,"deafen"),active=inherited||boolean(settings,kind?"deafen":"mute");
   control_message(button,BM_SETCHECK,active?BST_CHECKED:BST_UNCHECKED,0);control_message(button,BM_SETIMAGE,IMAGE_ICON,reinterpret_cast<LPARAM>(audio_icons[kind][active?1:0]));
   set_text(button,inherited?L"Microphone blocked by global deafen. Undeafen both first.":kind?(active?L"Undeafen both computers":L"Deafen both computers"):(active?L"Unmute microphone everywhere":L"Mute microphone everywhere"));enable_control(button,controls_ready()&&!inherited);
@@ -469,7 +467,7 @@ LRESULT CALLBACK proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){if(scroll_window(w,ms
    auto m=element(L"BUTTON",L"Mute microphone on this computer",BS_AUTOCHECKBOX|BS_PUSHLIKE|BS_ICON|WS_TABSTOP,x,448,44,44,slot?421:411);
    auto d=element(L"BUTTON",L"Deafen this computer",BS_AUTOCHECKBOX|BS_PUSHLIKE|BS_ICON|WS_TABSTOP,x+52,448,44,44,slot?422:412);
    control_message(m,BM_SETIMAGE,IMAGE_ICON,reinterpret_cast<LPARAM>(audio_icons[0][0]));control_message(d,BM_SETIMAGE,IMAGE_ICON,reinterpret_cast<LPARAM>(audio_icons[1][0]));audio_tooltip(m);audio_tooltip(d);
-   mix_controls.push_back(m);mix_controls.push_back(d);if(slot){second_mute=m;second_deafen=d;second_label=card_name[slot];}else{first_mute=m;first_deafen=d;first_label=card_name[slot];}
+   mix_controls.push_back(m);mix_controls.push_back(d);if(slot){second_mute=m;second_deafen=d;}else{first_mute=m;first_deafen=d;}
   }
   element(L"STATIC",L"Connect headphones to the Output Hub. The Input Hub supplies microphone audio to both computers.",0,32,538,906,22,754);
   element(L"BUTTON",L"Advanced audio routes",WS_TABSTOP,32,502,250,28,606);element(L"BUTTON",L"Advanced audio routes",WS_TABSTOP,522,502,250,28,607);
@@ -488,8 +486,6 @@ LRESULT CALLBACK proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){if(scroll_window(w,ms
   playback_label=element(L"STATIC",L"Playback cable capture",0,38,354,175,22,0);playback_box=combo(215,349,575,305);micoutput_label=element(L"STATIC",L"Shared mic output",0,38,400,175,22,0);micoutput_box=combo(215,395,575,306);
   element(L"STATIC",L"Connect AirPods to the Output Hub in Bluetooth settings.\nSan Audisco does not move their Bluetooth connection.",0,38,460,560,44,0);apply_button=element(L"BUTTON",L"Apply devices",WS_TABSTOP,630,461,160,32,307);
   balance_label=element(L"STATIC",L"Mix balance",SS_ENDELLIPSIS,38,530,190,22,308);balance=slider(525,430,50);position(balance,230,525,560,28);
-  // Compatibility role controls are hidden: the main screen associates roles with each device.
-  building_page=-1;hub_box=combo(0,0,1,401);mic_source=combo(0,0,1,402);ShowWindow(hub_box,SW_HIDE);ShowWindow(mic_source,SW_HIDE);fill_roles();
   building_page=3;element(L"BUTTON",L"Check setup",WS_TABSTOP,38,92,160,30,501);element(L"BUTTON",L"Reconnect background agent",WS_TABSTOP,215,92,245,30,503);diagnostics_box=element(L"EDIT",L"",WS_BORDER|ES_MULTILINE|ES_READONLY|ES_AUTOVSCROLL|WS_VSCROLL,38,132,750,110,502);
   element(L"STATIC",L"Application audio",0,210,256,160,20,0);element(L"STATIC",L"Physical microphone",0,385,256,165,20,0);element(L"STATIC",L"Shared microphone",0,560,256,160,20,0);
   for(int slot=0;slot<2;++slot){int y=285+slot*72;signal_labels[slot]=element(L"STATIC",L"Waiting for device",0,38,y,165,24,0);for(int c=0;c<3;++c){signal_bars[slot][c]=element(PROGRESS_CLASSW,L"",0,210+c*175,y,155,18,510+slot*3+c);control_message(signal_bars[slot][c],PBM_SETRANGE,0,MAKELPARAM(0,100));}tone_buttons[slot]=element(L"BUTTON",L"Play 2-second test sound",WS_TABSTOP,210,y+27,245,27,520+slot);enable_control(tone_buttons[slot],FALSE);}
@@ -545,7 +541,6 @@ LRESULT CALLBACK proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){if(scroll_window(w,ms
   else if((id==302||id==303||id==305||id==306)&&event==CBN_SELCHANGE){device_dirty=true;enable_control(apply_button,TRUE);}
   else if(id==304){advanced=!advanced;set_text(advanced_button,advanced?L"Hide advanced routes":L"Show advanced routes");show_page();}
   else if(id==307)apply_devices();
-  else if((id==401||id==402)&&event==CBN_SELCHANGE)set_role(static_cast<int>(control_message(id==401?hub_box:mic_source,CB_GETCURSEL,0,0)),id==402);
   else if(id==411)device_control(0,"mute",control_message(first_mute,BM_GETCHECK,0,0)==BST_CHECKED);
   else if(id==412)device_control(0,"deafen",control_message(first_deafen,BM_GETCHECK,0,0)==BST_CHECKED);
   else if(id==421)device_control(1,"mute",control_message(second_mute,BM_GETCHECK,0,0)==BST_CHECKED);
@@ -558,7 +553,6 @@ LRESULT CALLBACK proc(HWND w,UINT msg,WPARAM wp,LPARAM lp){if(scroll_window(w,ms
   else if(id==601)request({{"command",(running||wanted_running)?"stop":"start"}});
   else if(id==603)request({{"command","autoconfigure"}});
   else if(id==604)open_panel(1);else if(id==605)open_panel(3);else if(id==606||id==607){auto d=slot_device(id==607?1:0);for(size_t i=0;i<devices.size();++i)if(string_value(devices[i],"id")==string_value(d,"id"))control_message(computer_box,CB_SETCURSEL,i,0);choose_configured_device();open_panel(2);}
-  else if(id==602){quitting=true;request({{"command","quit"}},false,true);}
   return 0;}
  case WM_HSCROLL:{if(!lp)break;if(updating)return 0;auto h=reinterpret_cast<HWND>(lp);double value=static_cast<double>(control_message(h,TBM_GETPOS,0,0))/100;if(h==first_volume||h==second_volume)device_control(h==first_volume?0:1,"volume",value);else control(h==master?"master":"balance",h==balance?value*2-1:value);return 0;}
  case response_message:{std::unique_ptr<Response> result(reinterpret_cast<Response*>(lp));{std::lock_guard lock(queue_mutex);if(result->quiet)status_queued=false;else if(outstanding)--outstanding;}
@@ -594,7 +588,7 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR command_line,int show){
  if(command_line&&wcsstr(command_line,L"--ui-test-theme=dark"))appearance::testTheme=1;else if(command_line&&wcsstr(command_line,L"--ui-test-theme=light"))appearance::testTheme=0;
 #endif
  appearance::graphics_ready();appearance::refresh();
- INITCOMMONCONTROLSEX cc{sizeof(cc),ICC_BAR_CLASSES|ICC_TAB_CLASSES|ICC_PROGRESS_CLASS};InitCommonControlsEx(&cc);
+ INITCOMMONCONTROLSEX cc{sizeof(cc),ICC_BAR_CLASSES|ICC_PROGRESS_CLASS};InitCommonControlsEx(&cc);
  WNDCLASSW cls{};cls.lpfnWndProc=proc;cls.hInstance=instance;
 #ifdef BRIDGE_UI_TEST
  cls.lpszClassName=L"SanAudiscoTestRoomWindow";

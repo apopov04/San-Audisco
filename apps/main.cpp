@@ -164,7 +164,7 @@ int main(int argc,char** argv) {try {
         std::cout<<(removed?"Pairing credential deleted.\n":"Pairing credential was not present.\n");return 0;
     }
     if(argc!=3||std::string(argv[1])!="run") {
-        std::cout<<"San Audisco: devices | keygen FILE | key-import ID FILE | key-delete ID | run CONFIG\nCommands on stdin: primary 0|1, mic_source 0|1, slot0_volume 0..1, slot1_volume 0..1, slot0_mute 0|1, slot1_mute 0|1, slot0_deafen 0|1, slot1_deafen 0|1, mute 0|1, deafen 0|1, balance -1..1, quit\n";return 0;
+        std::cout<<"San Audisco: devices | keygen FILE | key-import ID FILE | key-delete ID | run CONFIG\nCommands on stdin: state EPOCH REVISION SNAPSHOT, test_tone, quit (see docs/ENGINE.md)\n";return 0;
     }
     auto config=read_config(argv[2]);auto required=[&](const char* k){if(config[k].empty())throw std::runtime_error(std::string("Missing config: ")+k);return config[k];};
     if(required("slot")!="0"&&required("slot")!="1")throw std::runtime_error("slot must be 0 or 1");
@@ -207,7 +207,7 @@ int main(int argc,char** argv) {try {
     playback.start();micSink.start();
     // A receive burst may contain 16 packets after an 80 ms Wi-Fi pause.
     Engine engine(local);net::JitterBuffer jp{32,4},jm{32,4};net::AudioDecoder decoder;
-    std::array<float,480> lp{},lm{},rm{},localMic{},remoteMic{},txp{},txm{};
+    std::array<float,480> lp{},lm{},rm{},localMic{},txp{},txm{};
     std::array<int16_t,480> wire{};
     uint64_t tick=0,revision=0,authorityEpoch=0,micEnableRevision=0,remoteRevision=0,remoteEpoch=0,generation=0,nextSampleTime=0,playbackDiscontinuities=0,microphoneDiscontinuities=0;
     float playbackLevel=0,microphoneLevel=0,deliveryLevel=0,receivedMicLevel=0;
@@ -293,8 +293,8 @@ int main(int argc,char** argv) {try {
         }
         previous=settings;
         if(settings.primary==local&&!listen.running()&&began>=retryHeadphones) {
-            try {if(headphoneId.empty())throw std::runtime_error("No headphones_output configured on the selected primary device");listen.open(headphoneId,false,[&](float* p,size_t n){listeningMixer.render(p,n);if(listeningBlocked.load())std::fill(p,p+n*2,0.f);});listen.start();}
-            catch(const std::exception& e){listen.close();std::cerr<<"Headphones unavailable: "<<e.what()<<'\n';retryHeadphones=began+std::chrono::seconds(1);}
+            try {if(headphoneId.empty())throw std::runtime_error("No headphones_output configured on the selected Output Hub");listen.open(headphoneId,false,[&](float* p,size_t n){listeningMixer.render(p,n);if(listeningBlocked.load())std::fill(p,p+n*2,0.f);});listen.start();}
+            catch(const std::exception& e){listen.close();std::cerr<<"Output unavailable: "<<e.what()<<'\n';retryHeadphones=began+std::chrono::seconds(1);}
         } else if(settings.primary!=local&&listen.running())listen.close();
         if(!config.contains("buffer_frames")&&listen.running()){
             const auto captureFrames=playback.callback_frames_hint(),renderFrames=listen.callback_frames_hint();
@@ -360,7 +360,7 @@ int main(int argc,char** argv) {try {
         }
         previousMicBlocked=micBlocked;previousRemoteMicEnabled=remoteMicEnabled;
         engine.setSettings(effective);listeningMixer.setSettings(effective);
-        engine.process({lp.data(),nullptr,lm.data(),rm.data()},{nullptr,localMic.data(),remoteMic.data(),txp.data(),txm.data()},240);
+        engine.process({lp.data(),nullptr,lm.data(),rm.data()},{nullptr,localMic.data(),nullptr,txp.data(),txm.data()},240);
         micOut.push(localMic.data(),240);
         auto level=[](const auto&samples){double sum=0;for(float x:samples)sum+=double(x)*x;return float(std::min(1.,std::sqrt(sum/samples.size())));};
         playbackLevel=std::max(playbackLevel,level(lp));microphoneLevel=std::max(microphoneLevel,level(lm));deliveryLevel=std::max(deliveryLevel,level(localMic));receivedMicLevel=std::max(receivedMicLevel,level(rm));

@@ -1,5 +1,12 @@
 # v0.2 validation — 2026-11-18
 
+> Historical version record. Statements about pending tests, installed versions,
+> and temporary artifact paths describe the run recorded here. For current behavior
+> and installation, start with [README](../README.md). Temporary build/test folders
+> were removed during the November 18, 2026 cleanup; retained evidence is in
+> `validation/` and the owner’s cleanup archives.
+
+
 This record separates software checks from the remaining hardware acceptance.
 The working v0.1 baseline is commit `32ae9ccb81a0692b9d2846316938a74980bd43fa`.
 The user reported successful Discord-on-Mac / Deadlock-on-Windows audio with that

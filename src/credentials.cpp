@@ -19,6 +19,8 @@
 #endif
 
 namespace bridge::credentials {
+// Record magic, Keychain service, DPAPI entropy, and the legacy keys directory
+// are persisted compatibility identifiers, not user-visible product branding.
 void validate_id(std::string_view id){
  if(id.empty()||id.size()>64)throw std::invalid_argument("Credential ID must contain 1 to 64 ASCII letters, digits, hyphens or underscores");
  for(unsigned char c:id)if(!((c>='a'&&c<='z')||(c>='A'&&c<='Z')||(c>='0'&&c<='9')||c=='-'||c=='_'))throw std::invalid_argument("Credential ID contains an invalid character");

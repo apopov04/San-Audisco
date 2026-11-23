@@ -1,4 +1,4 @@
-# San Audisco private setup (v0.3)
+# San Audisco private setup (v0.4.0 preview)
 
 These installers are assembled for the owner's private machines. They contain
 third-party packages, are not public release artifacts, and must not be uploaded
@@ -13,7 +13,7 @@ The branded Welcome screen leads to a background check, component readiness card
 ## What setup does
 
 Windows setup installs the three application executables for the current user in
-`%LOCALAPPDATA%\SanAudisco\app` and adds an San Audisco Start Menu shortcut. Driver
+`%LOCALAPPDATA%\SanAudisco\app` and adds a San Audisco Start Menu shortcut. Driver
 installation opens the original VB-Audio installers with the normal Windows
 administrator prompt. App installation does not require administrator rights.
 
@@ -91,7 +91,7 @@ windows. Silent installation can be added only after its documented contract and
 return codes are validated for these exact versions.
 
 Build tools are needed only on the build machine, never on the end user's machines.
-Supply a built v0.2 app containing all three binaries (including `bridge-agent`).
+Supply the matching current app containing all three binaries (including `bridge-agent`).
 
 ```sh
 python3 scripts/package-private.py --platform mac \
@@ -127,8 +127,10 @@ Removing San Audisco never removes BlackHole or VB-Audio drivers: other programs
 may depend on them. Vendor driver removal remains a separate explicit operation.
 
 For application rollback, quit the agent and restore the retained previous app
-directory. The known working source baseline is commit `32ae9cc`. Keep its original
-application archives available until v0.2 real-device acceptance is complete.
+directory, together with the compatible state schema when required. The last installed
+baseline before this cleanup was v0.3.3, commit `ef4160f`. Its older binary backups
+were deliberately removed during the owner’s November 18 disk cleanup; do not
+assume they are still available. Keep the current verified installer when updating.
 
 ## Validation boundaries
 

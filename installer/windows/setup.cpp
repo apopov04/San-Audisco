@@ -182,7 +182,7 @@ void render(){
 
 void installApp(){
  if(processRunning(L"SanAudisco.exe")||processRunning(L"san-audisco.exe")||processRunning(L"AudioBridgeApp.exe")||processRunning(L"audiobridge.exe")||processRunning(L"bridge-agent.exe"))fail("Quit San Audisco and its background agent before updating. Setup will not interrupt live audio.");
- auto candidate=base/L"app-v0.2-new";std::error_code ec;fs::remove_all(candidate,ec);extract(L"app",candidate);
+ auto candidate=base/L"app-install-new";std::error_code ec;fs::remove_all(candidate,ec);extract(L"app",candidate);
  auto backup=base/(L"app-backup-"+std::to_wstring(GetTickCount64()));
  if(fs::exists(appDir))fs::rename(appDir,backup);
  fs::create_directories(appDir.parent_path());

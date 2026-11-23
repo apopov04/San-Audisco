@@ -45,6 +45,8 @@ std::filesystem::path executable_path(){
 #endif
 }
 std::filesystem::path default_directory(){
+// Keep the legacy data location so upgrades reopen existing rooms and routing
+// recovery journals. Display/install names are San Audisco (see BRANDING.md).
 #ifdef _WIN32
  PWSTR p=nullptr;if(FAILED(SHGetKnownFolderPath(FOLDERID_LocalAppData,0,nullptr,&p)))throw std::runtime_error("LocalAppData unavailable");std::filesystem::path r(p);CoTaskMemFree(p);return r/L"AudioBridge"/L"room-v2";
 #else

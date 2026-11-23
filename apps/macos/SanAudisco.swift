@@ -15,14 +15,14 @@ struct AudioEndpoint: Identifiable {
 }
 struct RoomDevice: Identifiable {
  let appPlaybackOutput:String;let appMicrophoneInput:String
- let id: String; let name: String; let platform: String; let online: Bool
+ let id: String; let name: String; let online: Bool
  let slot:Int; let kind:String; let kindOverride:String; let mix:[String:Double]
  let audio: [AudioEndpoint]; let headphones: String; let microphone: String
  let playback: String; let micOutput: String; let setup: String; let diagnostics:[String:Any]
  init(_ value: [String: Any]) {
   id=value["id"] as? String ?? ""; name=value["name"] as? String ?? id
   appPlaybackOutput=value["app_playback_output"] as? String ?? "";appMicrophoneInput=value["app_microphone_input"] as? String ?? ""
-  platform=value["platform"] as? String ?? ""; online=value["online"] as? Bool ?? false
+  online=value["online"] as? Bool ?? false
   slot=(value["slot"] as? NSNumber)?.intValue ?? -1
   kind=value["kind"] as? String ?? "unknown";kindOverride=value["kind_override"] as? String ?? "auto"
   var decoded:[String:Double]=[:]
@@ -53,7 +53,6 @@ final class BridgeModel: ObservableObject {
  @Published var inputHubID=""
  @Published var deviceKindChoice="auto"
  @Published var deviceMix:[String:[String:Double]]=[:]
- @Published var roomID=""
  @Published var deviceName=""
  @Published var invite=""
  @Published var expires=0
@@ -153,10 +152,10 @@ final class BridgeModel: ObservableObject {
  func apply(_ state:[String:Any]) {
   localID=state["device_id"] as? String ?? localID
   if deviceName.isEmpty {deviceName=state["name"] as? String ?? Host.current().localizedName ?? "Mac"}
-  roomID=state["room_id"] as? String ?? "";invite=state["invite_code"] as? String ?? ""
+  invite=state["invite_code"] as? String ?? ""
   expires=(state["invite_expires_seconds"] as? NSNumber)?.intValue ?? 0
   paired=state["paired"] as? Bool ?? false;connected=state["connected"] as? Bool ?? false;running=state["running"] as? Bool ?? false;wantedRunning=state["wanted_running"] as? Bool ?? running
-  status=state["status"] as? String ?? (connected ? "Room connected" : "Waiting for the other computer")
+  status=state["status"] as? String ?? (connected ? "Connected" : "Waiting for the other computer")
   compatible=state["compatible"] as? Bool ?? false;sharedReady=state["shared_ready"] as? Bool ?? false;controlsReady=state["controls_ready"] as? Bool ?? false;handoverActive=state["handover_active"] as? Bool ?? false
   muteReason=state["mute_reason"] as? String ?? ""
   devices=(state["devices"] as? [[String:Any]] ?? []).map(RoomDevice.init).sorted{a,b in a.slot == b.slot ? a.id < b.id:a.slot < b.slot}
@@ -190,7 +189,6 @@ final class BridgeModel: ObservableObject {
  var canStart:Bool {available && connected && compatible && sharedReady && !handoverActive}
  func number(_ key:String,default fallback:Double=0)->Double {settings[key] ?? fallback}
  func scalar(_ key:String,default fallback:Double=0)->Binding<Double> {Binding(get:{self.number(key,default:fallback)},set:{self.control(key,$0,debounce:true)})}
- func toggle(_ key:String)->Binding<Bool> {Binding(get:{self.number(key) != 0},set:{self.control(key,$0 ? 1:0)})}
  var formattedInvite:String {invite.count==8 ? String(invite.prefix(4))+"-"+String(invite.suffix(4)) : invite}
  func setLogin(_ enabled:Bool) {do{if enabled{try SMAppService.mainApp.register()}else{try SMAppService.mainApp.unregister()};startAtLogin=SMAppService.mainApp.status == .enabled;if enabled && !startAtLogin{error="Approve San Audisco in System Settings → General → Login Items."}}catch{self.error=error.localizedDescription;startAtLogin=SMAppService.mainApp.status == .enabled}}
  func deviceLabel(_ device:RoomDevice)->String {let matches=devices.filter{$0.name==device.name};guard matches.count>1 else{return device.name};var count=4;while count<device.id.count && matches.filter({$0.id.prefix(count)==device.id.prefix(count)}).count>1{count+=1};return "\(device.name) · \(device.id.prefix(count))"}
@@ -346,7 +344,7 @@ struct RoomSettingsView:View {
     Button("Forget this pairing…",role:.destructive){forget=true}
    }
    Divider();Toggle("Start San Audisco at login",isOn:Binding(get:{m.startAtLogin},set:{m.setLogin($0)})).disabled(m.busy || !m.available)
-   Text("Closing the window keeps audio running. Quit San Audisco from its menu-bar icon to stop this computer.").font(.caption).foregroundColor(.secondary)
+   Text("Closing the window keeps audio running. Quit San Audisco from its menu-bar icon to stop the shared audio session.").font(.caption).foregroundColor(.secondary)
    if !m.error.isEmpty{Text(m.error).foregroundColor(.red).textSelection(.enabled)}
   }}
  }.padding(24).frame(width:540,height:520).alert("Forget this pairing?",isPresented:$forget){Button("Cancel",role:.cancel){};Button("Forget",role:.destructive){m.send(["command":"forget"])}}message:{Text("Audio will stop on this computer. Forget the pairing on the other computer as well before creating a new room.")}}
@@ -547,6 +545,8 @@ struct MenuControls:View {
  @StateObject private var model=BridgeModel()
  var body:some Scene {
   WindowGroup("San Audisco",id:"main"){ContentView().environmentObject(model)}.commands{CommandGroup(replacing:.appTermination){Button("Quit San Audisco"){model.quit()}.keyboardShortcut("q")}}
-  MenuBarExtra("San Audisco",systemImage:"waveform"){MenuControls().environmentObject(model)}
+  MenuBarExtra {MenuControls().environmentObject(model)} label: {
+   Label("San Audisco",systemImage:"waveform").help("San Audisco")
+  }
  }
 }
